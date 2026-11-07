@@ -246,20 +246,45 @@ function newHumanClub(p){
 }
 
 // ---------- Draft ----------
-function drafter(st){const d=st.draft,n=d.order.length;const rd=Math.floor(d.pick/n),i=d.pick%n;return d.order[rd%2?n-1-i:i];}
+function drafterAt(st,p){const d=st.draft,n=d.order.length;const rd=Math.floor(p/n),i=p%n;if(d.board)return d.order[(rd+i)%n];return d.order[rd%2?n-1-i:i];}
+function drafter(st){return drafterAt(st,st.draft.pick);}
+const BOARD=10;
+function boardPlayer(st,r,pos){if(!pos)pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:5},{v:'A',w:3}]).v;return genPlayer(st,r,pos,64,8,18,33);}
+function fillBoard(st){
+  const d=st.draft;const r=RNG(st.seed,'board'+d.pick);
+  while(d.board.length<BOARD)d.board.push(boardPlayer(st,r));
+  const c=st.clubs[drafter(st)];
+  if(c&&c.human&&!d.board.some(p=>canTake(c,p.pos))){const need=['G','D','M','A'].filter(p=>canTake(c,p));if(need.length)d.board.push(boardPlayer(st,r,r.pick(need)));}
+}
+function npcDraft(st){
+  while(st.draft&&st.draft.board&&st.draft.pick<st.draft.total){
+    const c=st.clubs[drafter(st)];if(c.human)break;
+    const r=RNG(st.seed,'npcpick'+st.draft.pick);
+    const top=st.draft.board.slice().sort((a,b)=>b.rat-a.rat||(a.id<b.id?-1:1)).slice(0,3);
+    takeDraft(st,c,r.f()<0.6?top[0]:r.pick(top));
+  }
+}
 function canTake(c,pos){return c.squad.filter(p=>p.pos===pos).length<QUOTA[pos];}
 function autoPick(st){
   const c=st.clubs[drafter(st)];
-  const cand=st.draft.pool.filter(p=>canTake(c,p.pos)).sort((a,b)=>b.rat-a.rat||(a.id<b.id?-1:1));
+  const cand=(st.draft.board||st.draft.pool).filter(p=>canTake(c,p.pos)).sort((a,b)=>b.rat-a.rat||(a.id<b.id?-1:1));
   takeDraft(st,c,cand[0]);
 }
 function takeDraft(st,c,p){
+  const d=st.draft;
+  if(d.board){
+    d.board=d.board.filter(x=>x.id!==p.id);if(c.human)c.squad.push(p);
+    d.log.push({c:c.id,n:p.name,pos:p.pos,rat:p.rat});if(d.log.length>12)d.log.shift();
+    d.pick++;
+    if(d.pick>=d.total){finishDraft(st);return;}
+    fillBoard(st);npcDraft(st);return;
+  }
   st.draft.pool=st.draft.pool.filter(x=>x.id!==p.id);c.squad.push(p);st.draft.pick++;
   if(st.draft.pick>=st.draft.total)finishDraft(st);
 }
 function finishDraft(st){
   const r=RNG(st.seed,'afterdraft');
-  const left=st.draft.pool.map(p=>{p.tier=tierOf(r,p);return p;});
+  const left=(st.draft.board||st.draft.pool).map(p=>{p.tier=tierOf(r,p);return p;});
   st.market=left.concat(genMarket(st,r,8));
   st.staffPool=genStaff(st,r,6);
   st.draft=null;
@@ -576,6 +601,13 @@ const H={
     const npcN=LEAGUE-st.players.length;const names=r.shuffle(NPC_NAMES).slice(0,npcN);
     names.forEach((n,i)=>{const b=r.int(63,71)+doff(st);st.clubs['n'+i]={id:'n'+i,human:false,name:n,color:NPC_COL[i%NPC_COL.length],A:b+r.int(-4,4),M:b+r.int(-4,4),D:b+r.int(-4,4)};});
     st.league=Object.keys(st.clubs);
+    if(st.rv>=4){
+      st.draft={board:[],log:[],order:r.shuffle(st.league),pick:0,total:15*st.league.length};
+      st.phase='draft';feed(st,'Der Draft beginnt! Alle 8 Vereine wählen reihum aus 10 Spielern – jede Runde fängt ein anderer Klub an.');
+      fillBoard(st);npcDraft(st);
+      if(st.settings.draft==='auto')while(st.draft&&st.draft.pick<st.draft.total){autoPick(st);}
+      return;
+    }
     const n=st.players.length,pool=[];
     const extra={G:2,D:3,M:3,A:3};
     for(const pos of ['G','D','M','A'])for(let i=0;i<QUOTA[pos]*n+extra[pos];i++)pool.push(genPlayer(st,r,pos,64,8,18,33));
@@ -585,7 +617,7 @@ const H={
     if(st.settings.draft==='auto')while(st.draft&&st.draft.pick<st.draft.total)autoPick(st);
   },
   PICK(st,a){needPhase(st,'draft');if(drafter(st)!==a.by)rej('Du bist nicht dran.');const c=st.clubs[a.by];
-    const p=st.draft.pool.find(x=>x.id===a.player);if(!p)rej('Spieler ist weg.');if(!canTake(c,p.pos))rej(`Du hast schon genug ${POSL[p.pos]}.`);takeDraft(st,c,p);},
+    const p=(st.draft.board||st.draft.pool).find(x=>x.id===a.player);if(!p)rej('Spieler ist weg.');if(!canTake(c,p.pos))rej(`Du hast schon genug ${POSL[p.pos]}.`);takeDraft(st,c,p);},
   AUTOPICK(st,a){needPhase(st,'draft');if(!isHuman(st,a.by)&&!isHost(st,a))rej('Nicht erlaubt.');autoPick(st);},
   AUTODRAFT(st,a){needPhase(st,'draft');if(!isHost(st,a))rej('Nur der Host.');while(st.draft&&st.draft.pick<st.draft.total)autoPick(st);},
   BUY(st,a){needPhase(st,'offseason');const c=myClub(st,a);if(st.ready[a.by])rej('Du bist schon bereit.');
@@ -716,7 +748,7 @@ async function openGame(code,create){
     if(!snap.metadata.fromCache)clearTimeout(NET.timer);
     recompute();
   },err=>{clearTimeout(NET.timer);ui.loadMsg='Verbindung unterbrochen ('+(err&&err.code||'?')+'). Öffne das Spiel bitte neu.';render();});
-  if(create)await send('CREATE',{seed:rid(12),code,rv:3,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});
+  if(create)await send('CREATE',{seed:rid(12),code,rv:4,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});
 }
 async function loadOpen(){
   if(!NET.db)return;
@@ -731,7 +763,7 @@ function render(){const app=document.getElementById('app');const k=saveInputs();
 
 function rulesCard(){return `<div class="card"><details><summary>So funktioniert's</summary><div class="small" style="margin-top:8px">
 <p><b>Ziel:</b> Gewinne die <b>Champions League</b>. Dafür brauchst du am Saisonende 50 Sterne ★ oder 3 Meistertitel. Verlierst du das CL-Finale, halbieren sich deine Sterne.</p>
-<p><b>1. Draft:</b> Reihum (Schlangenreihenfolge) wählt jeder 15 Spieler: 2 Torhüter, 5 Abwehr, 5 Mittelfeld, 3 Sturm.</p>
+<p><b>1. Draft:</b> Alle 8 Vereine – auch die Computer – wählen reihum aus 10 ausliegenden Spielern, nach jedem Pick wird nachgelegt. Jede Runde beginnt ein anderer Klub. Du brauchst 15 Spieler: 2 Torhüter, 5 Abwehr, 5 Mittelfeld, 3 Sturm.</p>
 <p><b>2. Sommerpause:</b> Bis zu 2 Spieler kaufen, beliebig verkaufen, bis zu 3 Mitarbeiter einstellen, Trainingszentrum, Scouting, Stadion und Jugendakademie ausbauen, notfalls Kredit aufnehmen. Wer fertig ist, tippt auf <i>Bereit</i>.</p>
 <p><b>3. Spieltage:</b> Formation und Taktik wählen. Konter schlägt offensive und pressende Gegner, Pressing gewinnt das Mittelfeld, Defensiv mauert. Sind alle bereit, wird simuliert – mit Live-Ticker, Verletzungen und einer Ereigniskarte für jeden.</p>
 <p><b>Pokal:</b> Läuft nebenher mit Viertelfinale, Halbfinale und Finale.</p><p><b>Sichtungscamp:</b> Einmal pro Saison Talente (16–19) für 1–2 Mio sichten – mit etwas Glück ist ein Rohdiamant dabei.</p>
@@ -862,14 +894,16 @@ lobby(){
 },
 draft(){
   const d=ST.draft;const cur=drafter(ST);const curC=ST.clubs[cur];const mine=cur===me();const c=myC();const n=d.order.length;
-  const nxt=[];for(let i=d.pick+1;i<Math.min(d.total,d.pick+5);i++){const rd=Math.floor(i/n),k=i%n;nxt.push(d.order[rd%2?n-1-k:k]);}
-  let h=`<div class="card"><div class="mut small">Pick ${d.pick+1} von ${d.total}</div><h3 style="margin:2px 0 6px">${mine?'Du bist dran!':'Am Zug: '+esc(curC.name)}</h3>
+  const nxt=[];for(let i=d.pick+1;i<Math.min(d.total,d.pick+(d.board?8:5));i++)nxt.push(drafterAt(ST,i));
+  let h=`<div class="card"><div class="mut small">${d.board?`Runde ${Math.floor(d.pick/n)+1} von ${d.total/n} · Pick ${d.pick%n+1} von ${n}`:`Pick ${d.pick+1} von ${d.total}`}</div><h3 style="margin:2px 0 6px">${mine?'Du bist dran!':'Am Zug: '+esc(curC.name)}</h3>
   ${nxt.length?`<div class="small mut">Danach: ${nxt.map(id=>esc(ST.clubs[id].name)).join(' → ')}</div>`:''}
   <div class="row wrap" style="margin-top:10px;gap:6px">${mine?'<button class="btn sm" data-a="autopick">Automatisch wählen</button>':c?`<button class="btn sm" data-a="autopick">${cl('autopick',`Für ${esc(curC.name)} automatisch`)}</button>`:''}${isHostMe()?`<button class="btn sm" data-a="autodraft">${cl('autodraft','Rest automatisch')}</button>`:''}</div></div>`;
   if(c)h+=`<div class="chips">${['G','D','M','A'].map(p=>{const k=c.squad.filter(x=>x.pos===p).length;return `<span class="chip ${k>=QUOTA[p]?'on':''}">${POSL[p]} ${k}/${QUOTA[p]}</span>`;}).join('')}</div>`;
   h+=posChips();
-  const list=d.pool.filter(p=>ui.pos==='all'||p.pos===ui.pos).sort((a,b)=>b.rat-a.rat);
-  h+=`<div class="card">${list.map(p=>prow(p,{right:mine?`<button class="btn sm ok" data-a="pick" data-v="${p.id}" ${canTake(c,p.pos)?'':'disabled'}>Wählen</button>`:''})).join('')||'<div class="empty">Keine Spieler.</div>'}</div>`;
+  let logH='';if(d.board&&d.log.length)logH=`<div class="card"><h4 style="margin-top:0">Zuletzt gewählt</h4>${d.log.slice(-8).reverse().map(x=>{const cc=ST.clubs[x.c];return `<div class="row small" style="padding:3px 0">${dot(cc)}<span class="sp">${esc(cc.name)}</span><span class="pos ${x.pos}">${POSL[x.pos]}</span><b style="width:26px;text-align:right">${x.rat}</b><span style="width:110px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(x.n)}</span></div>`;}).join('')}</div>`;
+  const list=(d.board||d.pool).filter(p=>ui.pos==='all'||p.pos===ui.pos).sort((a,b)=>b.rat-a.rat);
+  if(d.board)h+=`<h4>Auf dem Tisch (${d.board.length})</h4>`;
+  h+=`<div class="card">${list.map(p=>prow(p,{right:mine?`<button class="btn sm ok" data-a="pick" data-v="${p.id}" ${canTake(c,p.pos)?'':'disabled'}>Wählen</button>`:''})).join('')||'<div class="empty">Keine Spieler.</div>'}</div>`+logH;
   return h;
 },
 office(){
@@ -1040,7 +1074,7 @@ const ACT={
   joinCode(){const code=val('codeIn').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==5){toast('Der Code hat 5 Zeichen.');return;}openGame(code,false);},
   openGame(v){openGame(v,false);},
   refreshOpen(){ui.openList=null;render();loadOpen();},
-  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:3,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});},
+  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:4,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});},
   contLocal(){cleanup();NET.mode='local';const d=LS.get('kc:local',{raw:[]});NET.raw=d.raw||[];ui.seat=null;ui.view='game';recompute();},
   copy(){const c=ST.code;if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(()=>toast('Code kopiert: '+c,true)).catch(()=>toast('Code: '+c,true));else toast('Code: '+c,true);},
   color(v){ui.jColor=v;render();},
