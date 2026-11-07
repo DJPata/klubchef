@@ -155,7 +155,7 @@ const STAFF={
   gk:{n:'Torwarttrainer',d:'Abwehr +2,5'},
   st:{n:'Stürmertrainer',d:'Angriff +3'},
   def:{n:'Abwehrtrainer',d:'Abwehr +3'},
-  mkt:{n:'Marketingchef',d:'+1,5 Mio Sponsoring pro Saison'},
+  mkt:{n:'Marketingchef',d:'+1,5 Mio Sponsoring pro Saison',d3:'+3 Mio Sponsoring pro Saison'},
   youth:{n:'Jugendkoordinator',d:'Jugendspieler kommen mit +5 Stärke'}
 };
 const UPS={
@@ -174,6 +174,8 @@ const CATCHUP=[0,1,2,3,3.5,4,4.5,5];
 const CL_CLUBS=['Real Castilla CF','AC Lombardia','Olympique Riviera','Royal Thames FC','Sporting Atlântico','FC Amstel','Inter Partenope','Athletic Bravura','Dynamo Baltika','Galatasaray Bosporus'];
 const CL_NATIONS=['Brasilien','Frankreich','Argentinien','Spanien','England','Portugal','Niederlande','Italien'];
 const BUY_MAX=2;
+const DIFF={leicht:{n:'Leicht',o:-5},normal:{n:'Normal',o:0},schwer:{n:'Schwer',o:4},profi:{n:'Profi',o:8}};
+function doff(st){return st.rv>=2?(DIFF[st.settings.diff]||DIFF.normal).o:0;}
 function seasonsLeft(st){return !st.settings.seasons||st.season<st.settings.seasons;}
 function titles(c){return c.trophies.filter(t=>t.startsWith('Meister')).length;}
 function clEligible(c){return c.fame>=50||titles(c)>=3;}
@@ -213,6 +215,7 @@ function genMarket(st,r,n){
 }
 function genStaff(st,r,n){
   const types=r.shuffle(Object.keys(STAFF)).slice(0,n);
+  if(st.rv>=3)return types.map(t=>({id:'s'+(st.nextId++),type:t,name:pname(r),fee:r.int(20,40)/10,sal:r.int(10,20)/10}));
   return types.map(t=>({id:'s'+(st.nextId++),type:t,name:pname(r),fee:r.int(4,12)/10,sal:r.int(3,9)/10}));
 }
 function humans(st){return st.players.map(p=>p.pid);}
@@ -232,7 +235,9 @@ function createState(a){
 function normSettings(s,rv){
   let n=Number(s.seasons);
   const seasons=rv>=2?(n===0?0:clamp(Number.isFinite(n)&&n>0?n:3,1,20)):clamp(+s.seasons||3,1,6);
-  return{seasons,double:!!s.double,draft:s.draft==='auto'?'auto':'manual'};
+  const o={seasons,double:!!s.double,draft:s.draft==='auto'?'auto':'manual'};
+  if(rv>=2)o.diff=DIFF[s.diff]?s.diff:'normal';
+  return o;
 }
 function newHumanClub(p){
   return{id:p.pid,human:true,name:p.club,manager:p.name,color:p.color,cash:15,debt:0,fame:0,fans:20000,moral:3,
@@ -260,7 +265,7 @@ function finishDraft(st){
   st.draft=null;
   setupSeason(st);
   st.phase='offseason';st.offFirst=true;st.ready={};
-  for(const pid of humans(st))st.clubs[pid].buys=0;
+  for(const pid of humans(st)){st.clubs[pid].buys=0;if(st.rv>=3)st.clubs[pid].hires=0;}
   feed(st,'Der Draft ist beendet. Die Sommerpause beginnt – Transfermarkt geöffnet!');
 }
 
@@ -454,7 +459,7 @@ function endSeason(st){
     const sal=r2(c.squad.reduce((s,p)=>s+salary(p),0));
     const ssal=r2(c.staff.reduce((s,x)=>s+x.sal,0));
     const fin=[['TV-Geld',r2(9-(place-1)*5/7)],['Sponsoring',r2(3+0.15*c.fame)]];
-    if(has(c,'mkt'))fin.push(['Marketingchef',1.5]);
+    if(has(c,'mkt'))fin.push(['Marketingchef',st.rv>=3?3:1.5]);
     fin.push(['Gehälter Spieler',-sal]);if(ssal)fin.push(['Gehälter Staff',-ssal]);
     if(st.rv>=2&&CATCHUP[place-1])fin.push(['Ausgleichsbonus',CATCHUP[place-1]]);
     if(c.debt>0)fin.push(['Kreditzinsen (10 %)',-r2(c.debt*0.1)]);
@@ -468,7 +473,7 @@ function endSeason(st){
     const ent={};
     for(const pid of humans(st)){const c=st.clubs[pid];if(!clEligible(c))continue;
       const r=RNG(st.seed,`cl-${st.season}-${pid}`);const nat=r.chance(0.4);
-      const base=nat?r.int(77,82):r.int(75,81);const id='cl'+st.season+pid;
+      const base=(nat?r.int(77,82):r.int(75,81))+Math.round(doff(st)/2);const id='cl'+st.season+pid;
       st.clubs[id]={id,human:false,cl:true,name:nat?r.pick(CL_NATIONS):r.pick(CL_CLUBS),color:'#c9a227',A:base+r.int(-2,2),M:base+r.int(-2,2),D:base+r.int(-2,2)};
       ent[pid]=id;feed(st,`⭐ ${c.name} hat sich für die Champions League qualifiziert – Gegner: ${st.clubs[id].name}!`);}
     if(Object.keys(ent).length)st.cl={season:st.season,ent};
@@ -514,11 +519,11 @@ function nextSeason(st){
     const need=pos=>c.squad.filter(p=>p.pos===pos).length;
     if(need('G')<1){const p={id:newId(st),name:pname(r),pos:'G',age:r.int(22,30),rat:50,pot:52,inj:0};c.squad.push(p);amateurs.push(p.name);}
     while(c.squad.length<SQUAD_MIN){const pos=r.pick(['D','M','A']);const p={id:newId(st),name:pname(r),pos,age:r.int(20,30),rat:r.int(48,54),inj:0};p.pot=p.rat+2;c.squad.push(p);amateurs.push(p.name);}
-    c.moral=3;c.pending=null;c.buys=0;c.camp=null;
+    c.moral=3;c.pending=null;c.buys=0;c.camp=null;if(st.rv>=3)c.hires=0;
     c.devReport={dev,gone,youth,amateurs};
   }
   for(const id of st.league){const c=st.clubs[id];if(c.human)continue;
-    if(st.rv>=2){for(const k of ['A','M','D'])c[k]=clamp(c[k]+r.int(-2,2)+(c[k]<66?1:c[k]>72?-1:0),58,80);}
+    if(st.rv>=2){{const o=doff(st);for(const k of ['A','M','D'])c[k]=clamp(c[k]+r.int(-2,2)+(c[k]<66+o?1:c[k]>72+o?-1:0),58+o,80+o);}}
     else{c.A=clamp(c.A+r.int(-1,3),55,84);c.M=clamp(c.M+r.int(-1,3),55,84);c.D=clamp(c.D+r.int(-1,3),55,84);}}
   st.cl=null;
   st.market=genMarket(st,r,18);
@@ -569,7 +574,7 @@ const H={
     const r=RNG(st.seed,'start');
     for(const p of st.players)st.clubs[p.pid]=newHumanClub(p);
     const npcN=LEAGUE-st.players.length;const names=r.shuffle(NPC_NAMES).slice(0,npcN);
-    names.forEach((n,i)=>{const b=r.int(63,71);st.clubs['n'+i]={id:'n'+i,human:false,name:n,color:NPC_COL[i%NPC_COL.length],A:b+r.int(-4,4),M:b+r.int(-4,4),D:b+r.int(-4,4)};});
+    names.forEach((n,i)=>{const b=r.int(63,71)+doff(st);st.clubs['n'+i]={id:'n'+i,human:false,name:n,color:NPC_COL[i%NPC_COL.length],A:b+r.int(-4,4),M:b+r.int(-4,4),D:b+r.int(-4,4)};});
     st.league=Object.keys(st.clubs);
     const n=st.players.length,pool=[];
     const extra={G:2,D:3,M:3,A:3};
@@ -599,8 +604,8 @@ const H={
     money(c,-cost);c.up[a.kind]=l+1;feed(st,`${c.name} baut ${UPS[a.kind].n} auf Stufe ${l+1} aus.`,c.id);},
   HIRE(st,a){needPhase(st,'offseason');const c=myClub(st,a);if(st.ready[a.by])rej('Du bist schon bereit.');
     const s=st.staffPool.find(x=>x.id===a.staff);if(!s)rej('Schon vergeben.');if(c.staff.length>=3)rej('Maximal 3 Mitarbeiter.');
-    if(has(c,s.type))rej('Diese Position ist schon besetzt.');if(c.cash<s.fee)rej('Nicht genug Geld.');
-    st.staffPool=st.staffPool.filter(x=>x!==s);c.staff.push(s);money(c,-s.fee);feed(st,`${c.name} stellt ${s.name} als ${STAFF[s.type].n} ein.`,c.id);},
+    if(has(c,s.type))rej('Diese Position ist schon besetzt.');if(st.rv>=3&&(c.hires||0)>=1)rej('Nur eine Neueinstellung pro Sommerpause.');if(c.cash<s.fee)rej('Nicht genug Geld.');
+    st.staffPool=st.staffPool.filter(x=>x!==s);c.staff.push(s);money(c,-s.fee);if(st.rv>=3)c.hires=(c.hires||0)+1;feed(st,`${c.name} stellt ${s.name} als ${STAFF[s.type].n} ein.`,c.id);},
   FIRE(st,a){needPhase(st,'offseason');const c=myClub(st,a);if(st.ready[a.by])rej('Du bist schon bereit.');
     const s=c.staff.find(x=>x.id===a.staff);if(!s)rej('Nicht gefunden.');c.staff=c.staff.filter(x=>x!==s);feed(st,`${c.name} trennt sich von ${s.name}.`,c.id);},
   LOAN(st,a){needPhase(st,'offseason','matchday');const c=myClub(st,a);if(c.debt+5>30)rej('Die Bank gibt nicht mehr als 30 Mio.');c.debt+=5;money(c,5);},
@@ -711,7 +716,7 @@ async function openGame(code,create){
     if(!snap.metadata.fromCache)clearTimeout(NET.timer);
     recompute();
   },err=>{clearTimeout(NET.timer);ui.loadMsg='Verbindung unterbrochen ('+(err&&err.code||'?')+'). Öffne das Spiel bitte neu.';render();});
-  if(create)await send('CREATE',{seed:rid(12),code,rv:2,settings:{seasons:0,double:false,draft:'manual'}});
+  if(create)await send('CREATE',{seed:rid(12),code,rv:3,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});
 }
 async function loadOpen(){
   if(!NET.db)return;
@@ -823,6 +828,7 @@ function resLine(m){
 function rbar(label,a,b){const w=v=>clamp((v-45)/45*100,4,100);return `<div class="row small" style="margin:7px 0"><span style="width:82px">${label}</span><b style="width:24px">${Math.round(a)}</b><div class="bar"><i style="width:${w(a)}%;background:var(--acc)"></i></div><div class="bar"><i style="width:${w(b)}%;background:#8a9a92;margin-left:auto"></i></div><b style="width:24px;text-align:right">${Math.round(b)}</b></div>`;}
 function lvl(n){let s='<span class="lvl">';for(let i=1;i<=5;i++)s+=`<i class="${i<=n?'f':''}"></i>`;return s+'</span>';}
 
+function sd(t){return (ST.rv>=3&&STAFF[t].d3)||STAFF[t].d;}
 function tacPicker(c,form,tac,rd){
   return `<div class="card"><h3>Formation</h3><div class="chips">${Object.keys(FORM).map(f=>`<span class="chip ${f===form?'on':''}" ${rd?'':`data-a="form" data-v="${f}"`}>${f}</span>`).join('')}</div>
     <h3 style="margin-top:14px">Taktik</h3>${Object.keys(TAC).map(k=>`<div class="tac ${k===tac?'on':''}" ${rd?'':`data-a="tac" data-v="${k}"`}><b>${TAC[k].n}</b><span class="small mut">${TAC[k].d}</span></div>`).join('')}
@@ -850,7 +856,7 @@ lobby(){
   }
   if(NET.mode==='online'&&!joined&&ST.players.length)h+=claimCard(false);
   const s=ST.settings;const opt=(k,v,l)=>`<span class="chip ${s[k]===v?'on':''}" ${host?`data-a="set" data-k="${k}" data-v="${v}"`:''}>${l}</span>`;
-  h+=`<div class="card"><h3>Einstellungen</h3><h4>Saisons</h4><div class="chips">${(ST.rv>=2?[[3,'max. 3'],[5,'max. 5'],[8,'max. 8'],[0,'Bis zum CL-Sieg']]:[[1,1],[2,2],[3,3],[4,4],[5,5]]).map(([n,l])=>opt('seasons',n,l)).join('')}</div>${ST.rv>=2?'<p class="tiny mut">Gewonnen hat, wer die Champions League gewinnt. Ist vorher das Saison-Limit erreicht, entscheiden die Sterne.</p>':''}<h4>Liga</h4><div class="chips">${opt('double',false,'Einfach · 7 Spieltage')}${opt('double',true,'Hin & Rück · 14')}</div><h4>Draft</h4><div class="chips">${opt('draft','manual','Selbst wählen')}${opt('draft','auto','Automatisch')}</div>${host?'':'<p class="tiny mut">Nur der Host kann das ändern.</p>'}</div>`;
+  h+=`<div class="card"><h3>Einstellungen</h3><h4>Saisons</h4><div class="chips">${(ST.rv>=2?[[3,'max. 3'],[5,'max. 5'],[8,'max. 8'],[0,'Bis zum CL-Sieg']]:[[1,1],[2,2],[3,3],[4,4],[5,5]]).map(([n,l])=>opt('seasons',n,l)).join('')}</div>${ST.rv>=2?'<p class="tiny mut">Gewonnen hat, wer die Champions League gewinnt. Ist vorher das Saison-Limit erreicht, entscheiden die Sterne.</p>':''}<h4>Liga</h4><div class="chips">${opt('double',false,'Einfach · 7 Spieltage')}${opt('double',true,'Hin & Rück · 14')}</div>${ST.rv>=2?`<h4>Computer-Vereine</h4><div class="chips">${Object.keys(DIFF).map(k=>opt('diff',k,DIFF[k].n)).join('')}</div><p class="tiny mut">Leicht −5, Schwer +4, Profi +8 Stärke für die Computer-Teams. Die CL-Gegner werden halb so stark angepasst.</p>`:''}<h4>Draft</h4><div class="chips">${opt('draft','manual','Selbst wählen')}${opt('draft','auto','Automatisch')}</div>${host?'':'<p class="tiny mut">Nur der Host kann das ändern.</p>'}</div>`;
   h+=host?`<button class="btn pri block" data-a="start" ${ST.players.length?'':'disabled'}>Spiel starten</button>`:'<div class="card empty">Warte, bis der Host startet…</div>';
   return h;
 },
@@ -880,8 +886,9 @@ office(){
       ${D.youth.length?`<h4>Aus der Jugend</h4><div class="small">${D.youth.map(esc).join(', ')}</div>`:''}${D.gone.length?`<h4>Abgänge</h4><div class="small">${D.gone.map(esc).join('<br>')}</div>`:''}${D.amateurs.length?`<h4>Aufgefüllt mit Amateuren</h4><div class="small">${D.amateurs.map(esc).join(', ')}</div>`:''}</div>`;}
   }
   if(ui.sub==='staff'){
-    h+=`<div class="card"><h3>Dein Staff (${c.staff.length}/3)</h3>${c.staff.length?c.staff.map(s=>`<div class="pl"><div class="pn"><b>${esc(STAFF[s.type].n)}</b><span>${esc(s.name)} · ${esc(STAFF[s.type].d)} · Gehalt ${fm(s.sal)}/Saison</span></div>${off&&!rd?`<button class="btn sm bad" data-a="fire" data-v="${s.id}">${cl('fire'+s.id,'Entlassen')}</button>`:''}</div>`).join(''):'<div class="empty small">Noch niemand eingestellt.</div>'}</div>`;
-    h+=`<div class="card"><h3>Auf Jobsuche</h3>${off?'':'<p class="small mut">Einstellen geht nur in der Sommerpause.</p>'}${ST.staffPool.length?ST.staffPool.map(s=>{const dis=!off||rd||c.staff.length>=3||has(c,s.type)||c.cash<s.fee;return `<div class="pl"><div class="pn"><b>${esc(STAFF[s.type].n)}</b><span>${esc(s.name)} · ${esc(STAFF[s.type].d)}<br>Ablöse ${fm(s.fee)} · Gehalt ${fm(s.sal)}/Saison</span></div><button class="btn sm ok" data-a="hire" data-v="${s.id}" ${dis?'disabled':''}>Holen</button></div>`;}).join(''):'<div class="empty small">Alle vergeben.</div>'}</div>`;
+    h+=`<div class="card"><h3>Dein Staff (${c.staff.length}/3)</h3>${c.staff.length?c.staff.map(s=>`<div class="pl"><div class="pn"><b>${esc(STAFF[s.type].n)}</b><span>${esc(s.name)} · ${esc(sd(s.type))} · Gehalt ${fm(s.sal)}/Saison</span></div>${off&&!rd?`<button class="btn sm bad" data-a="fire" data-v="${s.id}">${cl('fire'+s.id,'Entlassen')}</button>`:''}</div>`).join(''):'<div class="empty small">Noch niemand eingestellt.</div>'}</div>`;
+    const hl=ST.rv>=3&&(c.hires||0)>=1;
+    h+=`<div class="card"><h3>Auf Jobsuche</h3>${off?(ST.rv>=3?`<p class="small mut">Neueinstellungen diese Sommerpause: ${c.hires||0}/1</p>`:''):'<p class="small mut">Einstellen geht nur in der Sommerpause.</p>'}${ST.staffPool.length?ST.staffPool.map(s=>{const dis=!off||rd||hl||c.staff.length>=3||has(c,s.type)||c.cash<s.fee;return `<div class="pl"><div class="pn"><b>${esc(STAFF[s.type].n)}</b><span>${esc(s.name)} · ${esc(sd(s.type))}<br>Ablöse ${fm(s.fee)} · Gehalt ${fm(s.sal)}/Saison</span></div><button class="btn sm ok" data-a="hire" data-v="${s.id}" ${dis?'disabled':''}>Holen</button></div>`;}).join(''):'<div class="empty small">Alle vergeben.</div>'}</div>`;
   }
   if(ui.sub==='ausbau'){
     h+=Object.keys(UPS).map(k=>{const l=c.up[k];const max=l>=5;return `<div class="card"><div class="row"><h3 style="margin:0">${UPS[k].n}</h3><span class="sp"></span>${lvl(l)}</div><p class="small" style="margin:6px 0">${esc(UPS[k].d(l))}</p>${max?'<div class="small mut">Maximal ausgebaut.</div>':`<div class="small mut">Stufe ${l+1}: ${esc(UPS[k].d(l+1))}</div>${off?`<button class="btn sm ok" style="margin-top:8px" data-a="up" data-v="${k}" ${rd||c.cash<UPCOST[l]?'disabled':''}>${cl('up'+k,'Ausbauen für '+fm(UPCOST[l]))}</button>`:''}`}</div>`;}).join('');
@@ -1033,7 +1040,7 @@ const ACT={
   joinCode(){const code=val('codeIn').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==5){toast('Der Code hat 5 Zeichen.');return;}openGame(code,false);},
   openGame(v){openGame(v,false);},
   refreshOpen(){ui.openList=null;render();loadOpen();},
-  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:2,settings:{seasons:0,double:false,draft:'manual'}});},
+  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:3,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});},
   contLocal(){cleanup();NET.mode='local';const d=LS.get('kc:local',{raw:[]});NET.raw=d.raw||[];ui.seat=null;ui.view='game';recompute();},
   copy(){const c=ST.code;if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(()=>toast('Code kopiert: '+c,true)).catch(()=>toast('Code: '+c,true));else toast('Code: '+c,true);},
   color(v){ui.jColor=v;render();},
