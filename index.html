@@ -759,6 +759,7 @@ const CCARDS=[
   {k:'quiet',w:3,g:1,t:'Ruhige Woche',run:()=> 'Keine Schlagzeilen.'}
 ];
 function CR(st){return RNG(st.seed,'c'+(st.rc++));}
+function mktRate(c){return Math.round(SPON[c.lg]*0.6/18*1000)/1000;}
 function careerEcon(st,c){const t=c.lg;return{ticket:r2(Math.min(c.fans,CCAP[c.up.stadium])*TPRICE[t]/1e6),win:WINB[t]};}
 function clubName(r,used){for(let i=0;i<200;i++){const n=r.pick(PREF)+' '+r.pick(TOWNS);if(!used.has(n)){used.add(n);return n;}}return 'SV '+used.size;}
 function lgClubs(st,L){return st.order[L];}
@@ -837,6 +838,7 @@ function careerResolve(st){
     if(st.cups.kreis.winner==='me')feed(st,`⭐ Als Kreispokalsieger spielt ${me.name} im Landespokal gegen die Großen!`);
   }
   if(st.cups.land)careerCupRound(st,st.cups.land,r,inj,results);
+  if(has(me,'mkt')){const x=mktRate(me);me.cash=Math.round((me.cash+x)*1000)/1000;me.mktPaid=Math.round(((me.mktPaid||0)+x)*1000)/1000;}
   for(const p of me.squad)if(p.inj>0)p.inj--;
   for(const [p,n] of inj)p.inj=Math.max(p.inj||0,n);
   const F=SPON[me.lg];const card=r.wpick(CCARDS);const data=card.prep?card.prep(me,r,st,F):{};
@@ -864,12 +866,12 @@ function careerEndSeason(st){
   // Finanzen
   const fin=[];const tv=r2(TVB[t]*(1.25-0.05*(place-1)));fin.push(['TV-Geld',tv]);
   const sp=me.spon;if(sp){fin.push(['Sponsor '+sp.n,sp.amount]);if(sp.type==='goal'){const ok=sp.goal==='Top 3'?place<=3:status==='Aufstieg'||place===1;if(ok)fin.push(['Sponsor-Bonus ('+sp.goal+')',sp.bonus]);}}
-  if(has(me,'mkt'))fin.push(['Marketingchef',r2(SPON[t]*0.35)]);
   const sal=r2(me.squad.reduce((s,p)=>s+salary(p),0)),ssal=r2(me.staff.reduce((s,x)=>s+x.sal,0));
   fin.push(['Gehälter Spieler',-sal]);if(ssal)fin.push(['Gehälter Staff',-ssal]);
   if(status==='Aufstieg'){const nl=t-1;fin.push(['Aufstiegsprämie',r2(TVB[nl]*0.5)]);}
   if(me.debt>0)fin.push(['Kreditzinsen (10 %)',-r2(me.debt*0.1)]);
   for(const f of fin)money(me,f[1]);
+  if(me.mktPaid){fin.splice(sp?(fin.length>2&&fin[2][0].startsWith('Sponsor-Bonus')?3:2):1,0,['Marketingchef (schon ausgezahlt)',r2(me.mktPaid)]);me.mktPaid=0;}
   let emer=0;const ls=LOANS[t];while(me.cash<0&&emer<20){money(me,ls);me.debt=r2(me.debt+ls);emer++;}
   if(emer)fin.push(['Notkredit',r2(emer*ls)]);
   me.report={season:st.season,place,lg:t,status,fin};
@@ -1125,7 +1127,7 @@ function resLine(m){
 function rbar(label,a,b){const w=v=>clamp((v-45)/45*100,4,100);return `<div class="row small" style="margin:7px 0"><span style="width:82px">${label}</span><b style="width:24px">${Math.round(a)}</b><div class="bar"><i style="width:${w(a)}%;background:var(--acc)"></i></div><div class="bar"><i style="width:${w(b)}%;background:#8a9a92;margin-left:auto"></i></div><b style="width:24px;text-align:right">${Math.round(b)}</b></div>`;}
 function lvl(n){let s='<span class="lvl">';for(let i=1;i<=5;i++)s+=`<i class="${i<=n?'f':''}"></i>`;return s+'</span>';}
 
-function sd(t){return (ST.rv>=3&&STAFF[t].d3)||STAFF[t].d;}
+function sd(t){if(ST.career&&t==='mkt'){const c=ST.clubs.me;return `+${fm(mktRate(c)*18)} Sponsoring pro Saison in der ${LNAME[c.lg]} – ${fm(mktRate(c))} nach jedem Spieltag`;}return (ST.rv>=3&&STAFF[t].d3)||STAFF[t].d;}
 function curLu(c){return ui.lu!==undefined?ui.lu:(c.lineup||null);}
 function luCard(c,form,rd){
   if(ST.rv<5)return '';
@@ -1231,7 +1233,7 @@ coffice(){
   if(ui.sub==='finanzen'){
     const sal=c.squad.reduce((s,p)=>s+salary(p),0),ssal=c.staff.reduce((s,x)=>s+x.sal,0);const ls=LOANS[c.lg];
     h+=`<div class="card"><div class="grid2"><div class="kpi"><span>Kontostand</span><b style="${c.cash<0?'color:var(--bad)':''}">${fm(c.cash)}</b></div><div class="kpi"><span>Schulden</span><b>${fm(c.debt)}</b></div><div class="kpi"><span>Fans</span><b>${num(c.fans)}</b></div><div class="kpi"><span>Stadion</span><b>${num(CCAP[c.up.stadium])}</b></div></div>
-    <h4>Am Saisonende</h4><div class="fin"><span>TV-Geld ${LNAME[c.lg]} (je nach Platz)</span><span class="pos-p">ca. +${fm(TVB[c.lg])}</span></div>${c.spon?`<div class="fin"><span>Sponsor (fest)</span><span class="pos-p">+${fm(c.spon.amount)}</span></div>`:''}<div class="fin"><span>Gehälter Spieler</span><span class="neg-p">−${fm(sal)}</span></div><div class="fin"><span>Gehälter Staff</span><span class="neg-p">−${fm(ssal)}</span></div><div class="fin"><span>Zinsen (10 %)</span><span class="neg-p">−${fm(c.debt*0.1)}</span></div>
+    <h4>Am Saisonende</h4><div class="fin"><span>TV-Geld ${LNAME[c.lg]} (je nach Platz)</span><span class="pos-p">ca. +${fm(TVB[c.lg])}</span></div>${c.spon?`<div class="fin"><span>Sponsor (fest)</span><span class="pos-p">+${fm(c.spon.amount)}</span></div>`:''}${has(c,'mkt')?`<div class="fin"><span>Marketingchef (pro Spieltag ${fm(mktRate(c))})</span><span class="pos-p">bisher +${fm(c.mktPaid||0)}</span></div>`:''}<div class="fin"><span>Gehälter Spieler</span><span class="neg-p">−${fm(sal)}</span></div><div class="fin"><span>Gehälter Staff</span><span class="neg-p">−${fm(ssal)}</span></div><div class="fin"><span>Zinsen (10 %)</span><span class="neg-p">−${fm(c.debt*0.1)}</span></div>
     <p class="small mut">Pro Heimspiel: ${num(Math.min(c.fans,CCAP[c.up.stadium]))} Zuschauer × ${TPRICE[c.lg]} € = ${fm(careerEcon(ST,c).ticket)}. Siegprämie: ${fm(WINB[c.lg])}.</p>
     <h4>Bank</h4><div class="row"><button class="btn sm" data-a="loan">Kredit +${fm(ls)}</button><button class="btn sm" data-a="repay" ${c.debt<=0?'disabled':''}>Tilgen</button></div><p class="tiny mut">Max. ${fm(ls*6)} Schulden in dieser Liga.</p></div>`;
   }
