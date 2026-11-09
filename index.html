@@ -302,6 +302,7 @@ function roundRobin(ids){
   return rounds;
 }
 function setupSeason(st){
+  if(statsOn(st))st.ss={};
   const r=RNG(st.seed,'season'+st.season);
   const order=r.shuffle(st.league);
   let rr=roundRobin(order);
@@ -365,6 +366,25 @@ function scorer(c,R,r){
   const pool=[];for(const [k,w] of [['A',6],['M',3],['D',1]])for(const x of R.xi[k])if(x.p)pool.push({v:x.p.name,w});
   return pool.length?r.wpick(pool).v:'Eigentor';
 }
+function statsOn(st){return st.rv>=6||!!st.career;}
+function goalStat(st,c,R,r){
+  if(!st.ss)st.ss={};
+  const bump=(key,n,cid,f)=>{const e=st.ss[key]||(st.ss[key]={n,c:cid,lg:c.lg||0,g:0,a:0});e[f]++;e.lg=c.lg||0;};
+  if(c.human){
+    const pool=[];for(const [k,w] of [['A',6],['M',3],['D',1]])for(const x of R.xi[k])if(x.p)pool.push({v:x.p,w});
+    if(!pool.length)return{x:'Eigentor'};
+    const p=r.wpick(pool).v;p.gs=(p.gs||0)+1;p.gc=(p.gc||0)+1;bump('p'+p.id,p.name,c.id,'g');
+    let an=null;
+    if(r.f()<0.7){const ap=[];for(const [k,w] of [['M',5],['A',3],['D',2]])for(const x of R.xi[k])if(x.p&&x.p!==p)ap.push({v:x.p,w});
+      if(ap.length){const q=r.wpick(ap).v;q.as=(q.as||0)+1;q.ac=(q.ac||0)+1;bump('p'+q.id,q.name,c.id,'a');an=q.name;}}
+    return{x:p.name,as:an};
+  }
+  if(!c.sc){c.sc=[];for(let i=0;i<8;i++)c.sc.push({v:r.pick(FIRST)[0]+'. '+r.pick(LAST),w:[6,5,4,3,2,2,1,1][i]});}
+  const sn=r.wpick(c.sc).v;bump(c.id+'|'+sn,sn,c.id,'g');
+  let an=null;if(r.f()<0.7){const o=c.sc.filter(x=>x.v!==sn);if(o.length){an=r.wpick(o).v;bump(c.id+'|'+an,an,c.id,'a');}}
+  return{x:sn,as:an};
+}
+function topScorer(st,filt){const l=Object.values(st.ss||{}).filter(e=>!filt||filt(e)).sort((a,b)=>b.g-a.g||b.a-a.a);return l[0]&&l[0].g>0?{n:l[0].n,c:l[0].c,g:l[0].g}:null;}
 function playMatch(st,hId,aId,r,o){
   const h=st.clubs[hId],a=st.clubs[aId];
   const th=h.human?h.tac:npcTac(r),ta=a.human?a.tac:npcTac(r);
@@ -376,7 +396,7 @@ function playMatch(st,hId,aId,r,o){
     if(r.f()<0.55){
       const gp=clamp(0.33+(att.A-def.D)/45,0.08,0.7);
       const min=Math.floor(s*7.5)+r.int(1,7);
-      if(r.f()<gp){if(home)gh++;else ga++;ev.push({m:min,t:'g',s:home?'h':'a',x:scorer(home?h:a,att,r),sc:gh+':'+ga});}
+      if(r.f()<gp){if(home)gh++;else ga++;if(statsOn(st)){const g=goalStat(st,home?h:a,att,r);ev.push({m:min,t:'g',s:home?'h':'a',x:g.x,as:g.as,sc:gh+':'+ga});}else ev.push({m:min,t:'g',s:home?'h':'a',x:scorer(home?h:a,att,r),sc:gh+':'+ga});}
       else if(r.f()<0.3)ev.push({m:min,t:'c',s:home?'h':'a',x:scorer(home?h:a,att,r)});
     }
   }
@@ -482,7 +502,7 @@ function endSeason(st){
   const tbl=sortedTable(st);
   const champ=tbl[0].id;
   feed(st,`🥇 ${st.clubs[champ].name} ist Meister der Saison ${st.season}!`);
-  st.history.push({season:st.season,champ,cup:st.cup.winner,order:tbl.map(t=>t.id)});
+  st.history.push({season:st.season,champ,cup:st.cup.winner,order:tbl.map(t=>t.id),top:statsOn(st)?topScorer(st):undefined});
   for(const pid of humans(st)){
     const c=st.clubs[pid];const place=tbl.findIndex(t=>t.id===pid)+1;
     if(c.pending){c.pending=null;}
@@ -540,6 +560,7 @@ const dev=[],gone=[];
       if(p.age>=34&&(p.age>=36||r.chance(0.5))){gone.push(`${p.name} (Karriereende mit ${p.age})`);continue;}
       let d=p.age<=21?r.int(1,4):p.age<=24?r.int(0,3):p.age<=28?r.int(-1,2):p.age<=31?r.int(-2,1):r.int(-4,0);
       if(p.age<=26){const b=(c.up.training-1)*0.5;d+=Math.floor(b)+(r.f()<b-Math.floor(b)?1:0);}
+      if(statsOn(st)){p.gs=0;p.as=0;}
       let eb=0;if(st.rv>=5){const share=(p.apps||0)/Math.max(1,st.schedule.length);if(p.age<=24)eb=share>=0.7?2:share>=0.4?1:0;d+=eb;p.apps=0;}
       const before=p.rat;let nr=p.rat+d;if(d>0)nr=Math.min(nr,Math.max(p.pot,p.rat));nr=clamp(nr,35,95);
       p.rat=nr;if(p.pot<p.rat)p.pot=p.rat;
@@ -764,6 +785,7 @@ function newCareer(name,club,color){
   return st;
 }
 function careerSetupSeason(st){
+  st.ss={};
   const r=CR(st);
   for(let L=1;L<=4;L++){
     const ids=r.shuffle(st.order[L]);let rr=roundRobin(ids);rr=rr.concat(rr.map(m=>m.map(([a,b])=>[b,a])));
@@ -851,7 +873,8 @@ function careerEndSeason(st){
   let emer=0;const ls=LOANS[t];while(me.cash<0&&emer<20){money(me,ls);me.debt=r2(me.debt+ls);emer++;}
   if(emer)fin.push(['Notkredit',r2(emer*ls)]);
   me.report={season:st.season,place,lg:t,status,fin};
-  st.history.push({season:st.season,lg:t,place,status,champs:Object.assign({},champs),kreis:st.cups.kreis.winner,land:st.cups.land&&st.cups.land.winner});
+  const tops={};for(let L=1;L<=4;L++)tops[L]=topScorer(st,e=>e.lg===L);
+  st.history.push({season:st.season,lg:t,place,status,champs:Object.assign({},champs),kreis:st.cups.kreis.winner,land:st.cups.land&&st.cups.land.winner,tops});
   st.pendingMoves=newOrder;
   feed(st,`Saison ${st.season} beendet: ${me.name} wird ${place}. in der ${LNAME[t]} – ${status}!`);
   for(let L=1;L<=4;L++)feed(st,`🥇 ${st.clubs[champs[L]].name} ist Meister der ${LNAME[L]}.`);
@@ -978,7 +1001,7 @@ async function openGame(code,create){
     if(!snap.metadata.fromCache)clearTimeout(NET.timer);
     recompute();
   },err=>{clearTimeout(NET.timer);ui.loadMsg='Verbindung unterbrochen ('+(err&&err.code||'?')+'). Öffne das Spiel bitte neu.';render();});
-  if(create)await send('CREATE',{seed:rid(12),code,rv:5,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});
+  if(create)await send('CREATE',{seed:rid(12),code,rv:6,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});
 }
 async function loadOpen(){
   if(!NET.db)return;
@@ -1063,7 +1086,7 @@ function claimCard(spect){
 }
 function prow(p,o){
   o=o||{};
-  return `<div class="pl"><span class="pos ${p.pos}">${POSL[p.pos]}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${p.inj>0?`<span class="tag inj">🚑 ${p.inj}</span>`:''}${p.loan?'<span class="tag">Leihe</span>':''}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${p.age} J. · Pot. ${o.pot?p.pot:'?'} · ${fm(value(p))}${o.sal?' · Gehalt '+fm(salary(p)):''}${o.apps?' · '+(p.apps||0)+' Einsätze':''}</span></div>${o.right||''}</div>`;
+  return `<div class="pl"><span class="pos ${p.pos}">${POSL[p.pos]}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${p.inj>0?`<span class="tag inj">🚑 ${p.inj}</span>`:''}${p.loan?'<span class="tag">Leihe</span>':''}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${p.age} J. · Pot. ${o.pot?p.pot:'?'} · ${fm(value(p))}${o.sal?' · Gehalt '+fm(salary(p)):''}${o.apps?' · '+(p.apps||0)+' Einsätze':''}${o.st?` · ⚽ ${p.gs||0} · 🅰️ ${p.as||0}`:''}</span></div>${o.right||''}</div>`;
 }
 function posChips(){return `<div class="chips" style="margin:8px 0">${[['all','Alle'],['G','TW'],['D','AB'],['M','MF'],['A','ST']].map(([k,l])=>`<span class="chip ${ui.pos===k?'on':''}" data-a="pos" data-v="${k}">${l}</span>`).join('')}</div>`;}
 function subChips(list){if(!list.find(s=>s[0]===ui.sub))ui.sub=list[0][0];return `<div class="chips" style="margin:12px 0 0">${list.map(([k,l])=>`<span class="chip ${ui.sub===k?'on':''}" data-a="sub" data-v="${k}">${l}</span>`).join('')}</div>`;}
@@ -1147,6 +1170,19 @@ function cupHtml(cup){
   return `<div class="card"><h3>${esc(cup.name)}</h3>${cup.log.map(r=>`<h4>${esc(r.round)}</h4>${r.ms.map(m=>resLine(m)).join('')}`).join('')||'<div class="small mut">Noch keine Spiele.</div>'}${cup.winner?`<p style="margin:10px 0 0">🏆 <b>${esc(ST.clubs[cup.winner].name)}</b></p>`:`<p class="small mut" style="margin:10px 0 0">${cup.alive.includes('me')?'Du bist noch dabei! ':''}Nächste Runde an Spieltag ${cup.mds[cup.log.length]+1}.</p>`}</div>`;
 }
 function cupToday(c){const out=[];for(const cup of [ST.cups.kreis,ST.cups.land]){if(!cup||cup.winner)continue;if(cup.mds.indexOf(ST.md)<0)continue;const i=cup.alive.indexOf('me');if(i>=0)out.push({cup,opp:ST.clubs[cup.alive[i^1]],rn:CUPR[4-Math.log2(cup.alive.length)]});}return out;}
+function statsCard(filt,title){
+  if(!statsOn(ST))return '';
+  const all=Object.values(ST.ss||{}).filter(e=>!filt||filt(e));
+  const tg=all.filter(e=>e.g>0).sort((a,b)=>b.g-a.g||b.a-a.a).slice(0,10);
+  const ta=all.filter(e=>e.a>0).sort((a,b)=>b.a-a.a||b.g-a.g).slice(0,5);
+  const row=(e,i,v)=>{const c=ST.clubs[e.c];return `<div class="row small" style="padding:4px 0;border-top:1px solid var(--line)${c&&c.human&&e.c===me()?';font-weight:700':''}"><b style="width:20px">${i+1}</b>${c?dot(c):''}<span class="sp" style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(e.n)} <span class="mut tiny">${c?esc(c.name):''}</span></span><b>${v}</b></div>`;};
+  return `<div class="card"><h3>${title||'Statistik'}</h3><h4 style="margin-top:0">⚽ Torjäger</h4>${tg.map((e,i)=>row(e,i,e.g+(e.a?` <span class="mut tiny">(${e.a} V.)</span>`:''))).join('')||'<div class="small mut">Noch keine Tore.</div>'}<h4>🅰️ Vorlagen</h4>${ta.map((e,i)=>row(e,i,e.a)).join('')||'<div class="small mut">Noch keine Vorlagen.</div>'}</div>`;
+}
+function teamStats(c){
+  if(!statsOn(ST))return '';
+  const ps=c.squad.filter(p=>(p.gs||0)+(p.as||0)+(p.gc||0)+(p.ac||0)>0).sort((a,b)=>(b.gs||0)-(a.gs||0)||(b.as||0)-(a.as||0)||(b.gc||0)-(a.gc||0));
+  return `<div class="card"><h3>Torschützen ${esc(c.name)}</h3>${ps.length?`<div class="row tiny mut" style="padding:2px 0"><span class="sp"></span><span style="width:74px;text-align:center">Saison</span><span style="width:74px;text-align:center">Gesamt</span></div>`+ps.map(p=>`<div class="row small" style="padding:4px 0;border-top:1px solid var(--line)"><span class="pos ${p.pos}">${POSL[p.pos]}</span><span class="sp" style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(p.name)}</span><span style="width:74px;text-align:center">⚽ ${p.gs||0} · 🅰️ ${p.as||0}</span><span class="mut" style="width:74px;text-align:center">${p.gc||0} · ${p.ac||0}</span></div>`).join(''):'<div class="small mut">Noch keine Tore oder Vorlagen.</div>'}</div>`;
+}
 const VIEWS={
 cmatch(){
   const c=myC();let h='';const md=ST.md;
@@ -1165,10 +1201,10 @@ cmatch(){
 cleague(){
   const c=myC();const L=ui.lgv||c.lg;
   let h=`<div class="chips" style="margin:12px 0 0">${[1,2,3,4].map(l=>`<span class="chip ${l===L?'on':''}" data-a="lgv" data-v="${l}">${LNAME[l]}${l===c.lg?' •':''}</span>`).join('')}</div>`;
-  h+=`<div class="card"><h3>${LNAME[L]} · Saison ${ST.season}</h3>${ctable(L)}<p class="tiny mut" style="margin:8px 0 0">${L>1?'🟩 Plätze 1–2 steigen auf. ':''}${L<4?'🟥 Plätze 9–10 steigen ab.':''}</p></div>`;
+  h+=`<div class="card"><h3>${LNAME[L]} · Saison ${ST.season}</h3>${ctable(L)}<p class="tiny mut" style="margin:8px 0 0">${L>1?'🟩 Plätze 1–2 steigen auf. ':''}${L<4?'🟥 Plätze 9–10 steigen ab.':''}</p></div>`+statsCard(e=>e.lg===L,'Statistik '+LNAME[L]+' (inkl. Pokal)');
   h+=cupHtml(ST.cups.kreis)+cupHtml(ST.cups.land);
   if(!ST.cups.land)h+='<div class="card small mut">🏆 Landespokal: Der Kreispokalsieger trifft ab Spieltag 12 auf alle Teams der 1. Liga und fünf aus der 2. Liga.</div>';
-  if(ST.history.length)h+=`<div class="card"><h3>Vereinschronik</h3>${ST.history.map(x=>`<div class="fin"><span>Saison ${x.season} · ${LNAME[x.lg]}</span><span class="small">Platz ${x.place} · ${esc(x.status)}</span></div>`).join('')}${c.trophies.length?`<h4>Titel</h4><div class="small">🏆 ${esc(c.trophies.join(', '))}</div>`:''}</div>`;
+  if(ST.history.length)h+=`<div class="card"><h3>Vereinschronik</h3>${ST.history.map(x=>`<div class="fin"><span>Saison ${x.season} · ${LNAME[x.lg]}</span><span class="small">Platz ${x.place} · ${esc(x.status)}${x.tops&&x.tops[x.lg]?` · ⚽ ${esc(x.tops[x.lg].n)} (${x.tops[x.lg].g})`:''}</span></div>`).join('')}${c.trophies.length?`<h4>Titel</h4><div class="small">🏆 ${esc(c.trophies.join(', '))}</div>`:''}</div>`;
   return h;
 },
 coffice(){
@@ -1294,19 +1330,20 @@ squad(){
   if(ST.phase==='matchday'){const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),ui.form||c.form);for(const k of ['G','D','M','A'])for(const x of X[k])if(x.p)xi.add(x.p.id);}
   const sal=c.squad.reduce((s,p)=>s+salary(p),0),v=c.squad.reduce((s,p)=>s+value(p),0);
   let h=`<div class="card"><div class="grid2"><div class="kpi"><span>Spieler</span><b>${c.squad.length}/${SQUAD_MAX}</b></div><div class="kpi"><span>Marktwert</span><b>${fm(v)}</b></div><div class="kpi"><span>Gehälter/Saison</span><b>${fm(sal)}</b></div><div class="kpi"><span>Moral</span><b>${'●'.repeat(c.moral)}<span style="opacity:.25">${'●'.repeat(5-c.moral)}</span></b></div></div></div>`;
+  h+=teamStats(c);
   for(const pos of ['G','D','M','A']){
     const ps=c.squad.filter(p=>p.pos===pos).sort((a,b)=>b.rat-a.rat);
-    h+=`<div class="card"><h4 style="margin-top:0">${{G:'Torhüter',D:'Abwehr',M:'Mittelfeld',A:'Sturm'}[pos]} (${ps.length})</h4>${ps.map(p=>prow(p,{pot:true,sal:true,apps:ST.rv>=5,xi:xi.has(p.id),right:off&&!p.loan?`<button class="btn sm" data-a="sell" data-v="${p.id}">${cl('sell'+p.id,'Verkaufen',fm(sellPrice(c,p))+'?')}</button>`:''})).join('')||'<div class="mut small">—</div>'}</div>`;
+    h+=`<div class="card"><h4 style="margin-top:0">${{G:'Torhüter',D:'Abwehr',M:'Mittelfeld',A:'Sturm'}[pos]} (${ps.length})</h4>${ps.map(p=>prow(p,{pot:true,sal:true,st:statsOn(ST),apps:ST.rv>=5,xi:xi.has(p.id),right:off&&!p.loan?`<button class="btn sm" data-a="sell" data-v="${p.id}">${cl('sell'+p.id,'Verkaufen',fm(sellPrice(c,p))+'?')}</button>`:''})).join('')||'<div class="mut small">—</div>'}</div>`;
   }
   return h;
 },
 league(){
-  let h=`<div class="card"><h3>Tabelle · Saison ${ST.season}</h3>${tableHtml(false)}</div>`;
+  let h=`<div class="card"><h3>Tabelle · Saison ${ST.season}</h3>${tableHtml(false)}</div>`+statsCard(null,'Statistik · Saison '+ST.season);
   const cup=ST.cup;
   if(cup){h+=`<div class="card"><h3>Pokal</h3>${cup.log.map(r=>`<h4>${esc(r.round)}</h4>${r.ms.map(m=>resLine(m)).join('')}`).join('')}${cup.winner?`<p style="margin:10px 0 0">🏆 <b>${esc(ST.clubs[cup.winner].name)}</b> ist Pokalsieger.</p>`:`<p class="small mut" style="margin:10px 0 0">Nächste Runde: ${esc(CUPN[cup.round])} an Spieltag ${ST.cupMds[cup.round]+1}. Noch dabei: ${cup.alive.map(id=>esc(ST.clubs[id].name)).join(', ')}</p>`}</div>`;}
   const mgr=ST.players.slice().sort((a,b)=>(ST.clubs[b.pid]?ST.clubs[b.pid].fame:0)-(ST.clubs[a.pid]?ST.clubs[a.pid].fame:0));
   if(ST.clubs[mgr[0]&&mgr[0].pid])h+=`<div class="card"><h3>Ruhm-Wertung</h3>${mgr.map((p,i)=>{const c=ST.clubs[p.pid];return `<div class="pl"><b style="width:18px">${i+1}</b>${dot(c)}<div class="pn"><b>${esc(c.name)}</b><span>${esc(p.name)}${ST.rv>=2?` · Meister ${titles(c)}/3`:''}${c.trophies.length?' · 🏆 '+esc(c.trophies.join(', ')):''}</span></div><b>★ ${c.fame}${ST.rv>=2?'<span class="tiny mut">/50</span>':''}</b></div>`;}).join('')}${ST.rv>=2?'<p class="tiny mut" style="margin:8px 0 0">⭐ Champions League: Wer am Saisonende 50 ★ oder 3 Meistertitel hat, spielt das CL-Finale. Sieg = Spielgewinn, Niederlage = Sterne halbiert.</p>':''}</div>`;
-  if(ST.history.length)h+=`<div class="card"><h3>Chronik</h3>${ST.history.map(x=>`<div class="fin"><span>Saison ${x.season}</span><span class="small">🥇 ${esc(ST.clubs[x.champ].name)} · 🏆 ${x.cup?esc(ST.clubs[x.cup].name):'—'}</span></div>`).join('')}</div>`;
+  if(ST.history.length)h+=`<div class="card"><h3>Chronik</h3>${ST.history.map(x=>`<div class="fin"><span>Saison ${x.season}</span><span class="small">🥇 ${esc(ST.clubs[x.champ].name)} · 🏆 ${x.cup?esc(ST.clubs[x.cup].name):'—'}${x.top?` · ⚽ ${esc(x.top.n)} (${x.top.g})`:''}</span></div>`).join('')}</div>`;
   return h;
 },
 news(){
@@ -1395,7 +1432,7 @@ function drawTicker(){
   <div class="score"><div class="tm">${dot(H)}<br>${esc(H.name)}</div><div class="sc">${gh}:${ga}</div><div class="tm">${dot(A)}<br>${esc(A.name)}</div></div>
   <div class="row tiny mut"><span class="sp" style="text-align:center">${esc(TAC[m.th].n)}</span><span class="sp" style="text-align:center">${esc(TAC[m.ta].n)}</span></div>
   <div class="clock" style="margin-top:6px">${done?(m.pens?`Elfmeterschießen ${m.pens[0]}:${m.pens[1]}`:'Abpfiff'):TK.min+'′'}</div>
-  <div style="margin-top:10px;min-height:120px">${ev.slice().reverse().map(e=>`<div class="tk ${e.s}"><span class="m">${e.m}′</span><span>${e.t==='g'?`⚽ <b>Tor!</b> ${esc(e.x)} <span class="mut">(${e.sc})</span>`:e.t==='c'?`💨 Chance für ${esc(e.x)}`:`🚑 ${esc(e.x)} verletzt (${e.n} Sp.)`}</span></div>`).join('')||'<div class="mut small" style="text-align:center;padding-top:30px">Anpfiff…</div>'}</div>
+  <div style="margin-top:10px;min-height:120px">${ev.slice().reverse().map(e=>`<div class="tk ${e.s}"><span class="m">${e.m}′</span><span>${e.t==='g'?`⚽ <b>Tor!</b> ${esc(e.x)} <span class="mut">(${e.sc})</span>${e.as?`<br><span class="tiny mut">Vorlage: ${esc(e.as)}</span>`:''}`:e.t==='c'?`💨 Chance für ${esc(e.x)}`:`🚑 ${esc(e.x)} verletzt (${e.n} Sp.)`}</span></div>`).join('')||'<div class="mut small" style="text-align:center;padding-top:30px">Anpfiff…</div>'}</div>
   ${done?(more?'<button class="btn pri block" style="margin-top:12px" data-ov="next">Nächstes Spiel</button>':TK.card?'<button class="btn pri block" style="margin-top:12px" data-ov="card">Ereigniskarte aufdecken</button>':'<button class="btn pri block" style="margin-top:12px" data-ov="close">Schließen</button>'):'<button class="btn block" style="margin-top:12px" data-ov="skip">Überspringen</button>'}`;
 }
 document.getElementById('ov').addEventListener('click',e=>{
@@ -1413,7 +1450,7 @@ const ACT={
   joinCode(){const code=val('codeIn').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==5){toast('Der Code hat 5 Zeichen.');return;}openGame(code,false);},
   openGame(v){openGame(v,false);},
   refreshOpen(){ui.openList=null;render();loadOpen();},
-  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:5,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});},
+  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:6,settings:{seasons:0,double:false,draft:'manual',diff:'normal'}});},
   contLocal(){cleanup();NET.mode='local';const d=LS.get('kc:local',{raw:[]});NET.raw=d.raw||[];ui.seat=null;ui.view='game';recompute();},
   copy(){const c=ST.code;if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(()=>toast('Code kopiert: '+c,true)).catch(()=>toast('Code: '+c,true));else toast('Code: '+c,true);},
   color(v){ui.jColor=v;render();},
