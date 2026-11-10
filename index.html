@@ -80,7 +80,7 @@ nav button.on{color:var(--acc)}
 .hero .logo{font-family:'Bebas Neue',sans-serif;font-size:64px;line-height:.9;letter-spacing:2px}
 .hero .logo span{color:var(--acc)}
 .lvl{display:flex;gap:4px}.lvl i{width:16px;height:6px;border-radius:3px;background:#0b1a13;display:block}.lvl i.f{background:var(--acc)}
-#ov{position:fixed;inset:0;z-index:50;background:rgba(5,12,9,.92);display:none;align-items:center;justify-content:center;padding:16px}
+#ov{position:fixed;inset:0;z-index:50;background:rgba(5,12,9,.985);display:none;align-items:center;justify-content:center;padding:16px}
 #ov .box{background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:16px}
 .score{display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0 4px}
 .score .tm{flex:1;text-align:center;font-weight:700;font-size:14px}
@@ -1906,6 +1906,83 @@ Object.assign(ACT,{
     if(NET.mode==='local'&&ST&&ST.ready[who]){const nx=ST.players.find(x=>!ST.ready[x.pid]);if(nx){ui.seat=nx.pid;toast('Weiter mit '+nx.name,true);render();}}}
 });
 const _tab=ACT.tab;ACT.tab=function(v){ui.pl=null;_tab(v);};
+
+// ---------- Live-Ticker: 1. Halbzeit live, Elfmeter-Animation ----------
+function showHalfTicker(){
+  if(!ST.ht)return;const ctx=ST.ht.ctx;
+  if(TK&&TK.iv)clearInterval(TK.iv);
+  TK={ms:[{h:ctx.h,a:ctx.a,ev:ctx.ev.slice().sort((x,y)=>x.m-y.m),th:ctx.th,ta:ctx.ta,cup:null,pens:null}],i:0,min:0,card:null,showCard:false,md:ST.md,half:true};
+  document.getElementById('ov').style.display='flex';runTicker();
+}
+function runTicker(){
+  clearInterval(TK.iv);const m0=TK.ms[TK.i];TK.max=TK.half?45:90;TK.min=TK.auto&&m0&&m0.ht?45:0;TK.penDone=new Set();TK.pen=null;
+  drawTicker();tickTicker();
+}
+function tickTicker(){
+  TK.iv=setInterval(()=>{
+    if(!TK){return;}
+    TK.min++;const m=TK.ms[TK.i];
+    const pe=m.ev.find(e=>(e.t==='p'||e.t==='pm')&&e.m===TK.min&&!TK.penDone.has(e));
+    if(pe){TK.penDone.add(pe);clearInterval(TK.iv);TK.pen=pe;drawTicker();animPen(pe,m);
+      setTimeout(()=>{if(!TK||TK.pen!==pe)return;TK.pen=null;drawTicker();if(TK.min<TK.max)tickTicker();},3000);return;}
+    if(TK.min>=TK.max){TK.min=TK.max;clearInterval(TK.iv);}
+    drawTicker();
+  },75);
+}
+function penPlan(e,m){
+  const hv=h32(`${m.h}|${m.a}|${e.m}|${e.x}|${e.t}`);
+  const col=hv%3,row=(hv>>3)%2;const X=[78,150,222],Y=[62,118];
+  if(e.t==='p'){const kc=(col+1+((hv>>5)%2))%3;return{bx:X[col],by:Y[row],kx:X[kc]-150,goal:true,txt:'TOR!'};}
+  const miss=!e.x&&((hv>>7)%10)<4;
+  if(miss){const opts=[[22,90],[278,90],[150,16]];const o=opts[(hv>>9)%3];return{bx:o[0],by:o[1],kx:X[col]-150,goal:false,txt:'VORBEI!'};}
+  return{bx:X[col],by:Y[row],kx:X[col]-150,goal:false,txt:'GEHALTEN!'};
+}
+function penSvg(e,m){
+  const H=ST.clubs[m.h],A=ST.clubs[m.a];const shooter=e.s==='h'?H:A,keeperC=e.s==='h'?A:H;
+  let net='';for(let x=50;x<=250;x+=20)net+=`<line x1="${x}" y1="32" x2="${x}" y2="150" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;for(let y=46;y<=146;y+=16)net+=`<line x1="42" y1="${y}" x2="258" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="1"/>`;
+  return `<div class="card" style="padding:10px;margin:8px 0;text-align:center"><div class="tiny mut">ELFMETER für ${esc(shooter.name)}</div>
+  <svg viewBox="0 0 300 195" style="width:100%;display:block;margin-top:4px"><rect x="0" y="150" width="300" height="45" fill="#1d6b3a"/><rect x="0" y="0" width="300" height="150" fill="#0f2a1d"/>${net}
+  <rect x="40" y="28" width="220" height="124" fill="none" stroke="#fff" stroke-width="5"/>
+  <g id="pkeep" style="transition:transform .55s cubic-bezier(.2,.8,.3,1);transform-origin:150px 130px"><rect x="138" y="96" width="24" height="46" rx="8" fill="${keeperC.color}" stroke="#fff" stroke-width="1.5"/><circle cx="150" cy="88" r="9" fill="#f1c9a5"/><rect x="118" y="100" width="64" height="9" rx="4" fill="${keeperC.color}"/></g>
+  <circle cx="150" cy="183" r="2" fill="#fff" opacity=".7"/>
+  <circle id="pball" cx="150" cy="178" r="8" fill="#fff" stroke="#222" stroke-width="1.5" style="transition:transform .6s ease-out, fill .2s;transform-box:fill-box;transform-origin:center"/></svg>
+  <div id="ptxt" class="h" style="font-size:28px;height:32px;margin-top:4px"></div></div>`;
+}
+function animPen(e,m){
+  const P=penPlan(e,m);
+  setTimeout(()=>{const b=document.getElementById('pball'),k=document.getElementById('pkeep');if(!b||!k)return;
+    const dx=P.bx-150,dy=P.by-178;b.style.transform=`translate(${dx}px,${dy}px) scale(.8)`;
+    const rot=P.kx<0?-70:P.kx>0?70:0;const ky=P.kx?(P.by<90?-6:20):(P.by<90?-22:4);k.style.transform=`translate(${P.kx*0.85}px,${ky}px) rotate(${P.by<90?rot*0.75:rot}deg)`;
+  },350);
+  setTimeout(()=>{const b=document.getElementById('pball'),t=document.getElementById('ptxt');if(!b)return;
+    b.setAttribute('fill',P.goal?'#3fd0a0':'#ff5b4d');if(t){t.textContent=P.txt;t.style.color=P.goal?'var(--acc2)':'var(--bad)';}},1000);
+}
+function drawTicker(){
+  const box=document.getElementById('ovb');
+  if(TK.showCard){const k=TK.card;box.innerHTML=`<div class="row"><span class="pill">Ereigniskarte</span><span class="sp"></span><button class="ic" data-ov="close">✕</button></div><div class="evc ${k.g?'':'bad'}" style="margin-top:12px;padding:18px"><div class="h" style="font-size:28px">🃏 ${esc(k.t)}</div><div>${esc(k.x)}</div>${k.choice?'<p class="small" style="margin-bottom:0"><b>Deine Entscheidung ist gefragt</b> – im Spieltag-Tab.</p>':''}</div><button class="btn pri block" data-ov="close">Weiter</button>`;return;}
+  const m=TK.ms[TK.i];const H=ST.clubs[m.h],A=ST.clubs[m.a];
+  const ev=m.ev.filter(e=>e.m<=TK.min&&e!==TK.pen);let gh=0,ga=0;for(const e of ev)if(e.t==='g'||e.t==='p'){if(e.s==='h')gh++;else ga++;}
+  const done=TK.min>=TK.max&&!TK.pen;const more=TK.i<TK.ms.length-1;
+  let btn;
+  if(!done)btn='<button class="btn block" style="margin-top:12px" data-ov="skip">Überspringen</button>';
+  else if(TK.half)btn='<button class="btn pri block" style="margin-top:12px" data-ov="close">⏸ Zur Halbzeitpause</button>';
+  else btn=more?'<button class="btn pri block" style="margin-top:12px" data-ov="next">Nächstes Spiel</button>':TK.card?'<button class="btn pri block" style="margin-top:12px" data-ov="card">Ereigniskarte aufdecken</button>':'<button class="btn pri block" style="margin-top:12px" data-ov="close">Schließen</button>';
+  box.innerHTML=`<div class="row"><span class="pill">${m.cup?esc(m.cup):'Liga · Spieltag '+(TK.md+1)}</span><span class="sp"></span>${TK.half?'':'<button class="ic" data-ov="close">✕</button>'}</div>
+  <div class="score"><div class="tm">${crest(H,34)}<br>${esc(H.name)}</div><div class="sc">${gh}:${ga}</div><div class="tm">${crest(A,34)}<br>${esc(A.name)}</div></div>
+  <div class="clock" style="margin-top:6px">${done?(TK.half?'Halbzeit':m.pens?`Elfmeterschießen ${m.pens[0]}:${m.pens[1]}`:'Abpfiff'):TK.min+'′'}</div>
+  ${TK.pen?penSvg(TK.pen,m):''}
+  <div style="margin-top:10px;min-height:120px">${ev.slice().reverse().map(evLine).join('')||'<div class="mut small" style="text-align:center;padding-top:30px">Anpfiff…</div>'}</div>${btn}`;
+}
+document.getElementById('ov').addEventListener('click',e=>{
+  const b=e.target.closest('[data-ov]');if(!b||!TK)return;
+  if(b.dataset.ov==='skip'){TK.pen=null;}
+},true);
+const _readyHT=ACT.ready;
+ACT.ready=async function(){
+  const wasMd=ST&&ST.career&&ST.phase==='matchday';
+  await _readyHT();
+  if(wasMd&&ST&&ST.phase==='halftime')showHalfTicker();
+};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
