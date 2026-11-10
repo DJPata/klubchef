@@ -1682,9 +1682,32 @@ function pitchSvg(c,form){
   let pl='';
   for(const [k,arr,y] of rows){const n=arr.length;arr.forEach((x,i)=>{const cx=(i+1)*100/(n+1);
     const nm=x.p?esc(x.p.name.split(' ').slice(-1)[0]):'Amateur';const r=x.p?Math.round(x.r):35;
-    pl+=`<g transform="translate(${cx},${y})"><circle r="5.2" fill="${x.oop?'#ff9a3d':c.color}" stroke="#fff" stroke-width=".7"/><text y="1.6" text-anchor="middle" font-size="4.2" font-weight="700" fill="${c.color==='#f0f0f0'||c.color==='#f5c542'?'#13210f':'#fff'}">${r}</text><text y="10" text-anchor="middle" font-size="3.6" fill="#eef3e8">${nm}</text></g>`;});}
-  return `<svg viewBox="0 0 100 100" style="width:100%;display:block;border-radius:12px;background:repeating-linear-gradient(180deg,#1d6b3a 0 10%,#1a6135 10% 20%)"><rect x="3" y="3" width="94" height="94" fill="none" stroke="rgba(255,255,255,.5)" stroke-width=".6"/><line x1="3" y1="50" x2="97" y2="50" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><circle cx="50" cy="50" r="9" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><rect x="30" y="80" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="30" y="3" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/>${pl}</svg><p class="tiny mut" style="margin:6px 0 0">Orange = auf fremder Position.</p>`;
+    const ed=xiEditable()&&x.p;const sel=ed&&ui.xiSel&&ui.xiSel.id===x.p.id;
+    pl+=`<g transform="translate(${cx},${y})" ${ed?`data-a="xiTap" data-v="${k}|${x.p.id}" style="cursor:pointer"`:''}>${sel?'<circle r="7.2" fill="none" stroke="#d8f24a" stroke-width="1.2"/>':''}<circle r="5.2" fill="${x.oop?'#ff9a3d':c.color}" stroke="#fff" stroke-width=".7"/><text y="1.6" text-anchor="middle" font-size="4.2" font-weight="700" fill="${c.color==='#f0f0f0'||c.color==='#f5c542'?'#13210f':'#fff'}">${r}</text><text y="10" text-anchor="middle" font-size="3.6" fill="#eef3e8">${nm}</text></g>`;});}
+  return `<svg viewBox="0 0 100 100" style="width:100%;display:block;border-radius:12px;background:repeating-linear-gradient(180deg,#1d6b3a 0 10%,#1a6135 10% 20%)"><rect x="3" y="3" width="94" height="94" fill="none" stroke="rgba(255,255,255,.5)" stroke-width=".6"/><line x1="3" y1="50" x2="97" y2="50" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><circle cx="50" cy="50" r="9" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><rect x="30" y="80" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="30" y="3" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/>${pl}</svg><p class="tiny mut" style="margin:6px 0 0">Orange = auf fremder Position.${xiEditable()?' Tippe auf einen Spieler, um ihn auszutauschen.':''}</p>${xiEditable()?xiSwapCard(c,form,X):''}`;
 }
+function xiEditable(){return !!(ST&&(ST.career||ST.rv>=5)&&['matchday','halftime'].includes(ST.phase)&&!ST.ready[me()]&&myC());}
+function xiSwapCard(c,form,X){
+  const S=ui.xiSel;if(!S)return '';
+  const all=[];for(const k of ['G','D','M','A'])X[k].forEach(x=>{if(x.p)all.push({k,p:x.p});});
+  const cur=all.find(a=>a.p.id===S.id);if(!cur){ui.xiSel=null;return '';}
+  const inXI=new Map(all.map(a=>[a.p.id,a.k]));
+  const eff=p=>p.pos===S.k?p.rat:p.rat-(S.k==='G'||p.pos==='G'?25:12);
+  const cands=c.squad.filter(p=>p.id!==S.id&&!(p.inj>0)&&!(p.sus>0)&&!p.sent).sort((a,b)=>(inXI.has(a.id)-inXI.has(b.id))||eff(b)-eff(a));
+  const row=p=>{const e=eff(p);const w=inXI.get(p.id);
+    return `<div class="pl" data-a="xiSwap" data-v="${p.id}" style="cursor:pointer"><span class="pos ${p.pos}">${POSL[p.pos]}</span><span class="rt" style="color:${ratCol(e)}">${e}</span><div class="pn"><b>${esc(p.name)}${p.pos!==S.k?' <span class="tag" style="background:#ff9a3d;color:#13210f">fremde Pos.</span>':''}</b><span>${p.age} J. · Stärke ${p.rat}${w?` · spielt jetzt ${POSL[w]} – Positionen tauschen`:''}</span></div><span class="mut">⇄</span></div>`;};
+  const bench=cands.filter(p=>!inXI.has(p.id)),xi=cands.filter(p=>inXI.has(p.id)&&inXI.get(p.id)!==S.k&&(p.pos===S.k||cur.p.pos===inXI.get(p.id)));
+  return `<div id="xiswap" class="card" style="margin:10px 0 0;padding:10px 12px;border:1px solid #d8f24a"><div class="row"><b>${esc(cur.p.name)} (${POSL[S.k]}, ${cur.p.rat}) ersetzen durch …</b><span class="sp"></span><button class="ic" data-a="xiTap" data-v="x|">✕</button></div>
+  ${bench.length?`<h4 style="margin:8px 0 2px">Bank</h4>${bench.map(row).join('')}`:'<div class="mut small">Keine Bankspieler verfügbar.</div>'}
+  ${xi.length?`<h4 style="margin:10px 0 2px">Positionen tauschen</h4>${xi.map(row).join('')}`:''}</div>`;
+}
+ACT.xiTap=function(v){const [k,id]=String(v).split('|');ui.xiSel=(k==='x'||(ui.xiSel&&ui.xiSel.id===id))?null:{k,id};render();const el=document.getElementById('xiswap');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});};
+ACT.xiSwap=function(v){const c=myC();const S=ui.xiSel;if(!S)return;const form=ui.form||c.form;
+  const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),form);const lu={};for(const k of ['G','D','M','A'])lu[k]=X[k].filter(x=>x.p).map(x=>x.p.id);
+  let other=null;for(const k of ['G','D','M','A']){const i=lu[k].indexOf(v);if(i>=0)other={k,i};}
+  const i=lu[S.k].indexOf(S.id);if(i<0){ui.xiSel=null;render();return;}
+  lu[S.k][i]=v;if(other)lu[other.k][other.i]=S.id;
+  ui.lu=lu;ui.xiSel=null;render();};
 
 // ---------- Kopfzeile mit Wappen ----------
 function header(){
