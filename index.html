@@ -2187,6 +2187,90 @@ ACT.ready=async function(){if(ST&&ST.career&&ST.so&&ST.phase==='matchday'){showS
 const _readyBarSO=readyBar;
 readyBar=function(){if(ST&&ST.career&&ST.so)return `<div style="height:96px"></div><div class="readybar"><div class="in"><button class="btn pri block" data-a="ready">🎯 Elfmeterschießen spielen</button></div></div>`;return _readyBarSO();};
 
+// ---------- Freunde & Online-Status ----------
+const FR={ok:false,err:'',me:null,docs:{},inv:[],unsubs:{},fs:null,db:null,uid:null};
+function frStore(){return LS.get('kc:fr',{code:null,name:'',friends:[]});}
+function frSave(s){LS.set('kc:fr',s);}
+function frAgo(ts){if(!ts)return 'noch nie online';const d=(Date.now()-ts)/60000;if(d<3)return 'online';if(d<60)return `zuletzt vor ${Math.round(d)} Min.`;if(d<1440)return `zuletzt vor ${Math.round(d/60)} Std.`;return `zuletzt vor ${Math.round(d/1440)} Tg.`;}
+function frTs(x){return x&&typeof x.toMillis==='function'?x.toMillis():(typeof x==='number'?x:0);}
+function frGameInfo(){
+  if(NET.mode!=='online'||!ST||!ST.code)return null;const c=myC();
+  const wait=!!c&&['draft','offseason','matchday','seasonEnd'].includes(ST.phase)&&(ST.phase==='draft'?drafter(ST)===me():!ST.ready[me()]);
+  return {code:ST.code,club:c?c.name:'',phase:ST.phase,wait};
+}
+async function frInit(){
+  try{
+    const V='https://www.gstatic.com/firebasejs/10.12.2/';
+    const appM=await import(V+'firebase-app.js');const fs=await import(V+'firebase-firestore.js');const au=await import(V+'firebase-auth.js');
+    const app=appM.getApp();const auth=au.getAuth(app);
+    const cred=await au.signInAnonymously(auth);FR.uid=cred.user.uid;
+    FR.fs=fs;FR.db=fs.getFirestore(app);
+    const s=frStore();
+    if(s.code){const snap=await fs.getDoc(fs.doc(FR.db,'u',s.code));if(snap.exists()&&snap.data().uid!==FR.uid)s.code=null;}
+    if(!s.code){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(let t=0;t<5;t++){let c='';for(let i=0;i<5;i++)c+=A[Math.floor(Math.random()*A.length)];const sn=await fs.getDoc(fs.doc(FR.db,'u',c));if(!sn.exists()){s.code=c;break;}}frSave(s);}
+    FR.ok=true;await frBeat();
+    fs.onSnapshot(fs.collection(FR.db,'u',s.code,'inv'),snap=>{FR.inv=snap.docs.map(d=>Object.assign({id:d.id},d.data()));if(ui.view==='start')render();},e=>{});
+    for(const f of s.friends)frWatch(f);
+    setInterval(()=>{if(document.visibilityState==='visible')frBeat();},90000);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')frBeat();});
+    if(ui.view==='start')render();
+  }catch(e){console.warn('Freunde:',e);FR.err=(e&&e.code)||'fehler';if(ui.view==='start')render();}
+}
+async function frBeat(){
+  if(!FR.ok)return;const s=frStore();if(!s.code)return;
+  const games=LS.get('kc:mine',[]).slice(0,5).map(g=>({code:g.code,club:g.club||''}));
+  const d={uid:FR.uid,name:s.name||'',seen:FR.fs.serverTimestamp(),game:frGameInfo(),games};
+  try{await FR.fs.setDoc(FR.fs.doc(FR.db,'u',s.code),d);}catch(e){console.warn(e);FR.err=e.code||'fehler';}
+}
+function frWatch(code){
+  if(FR.unsubs[code]||!FR.ok)return;
+  FR.unsubs[code]=FR.fs.onSnapshot(FR.fs.doc(FR.db,'u',code),sn=>{FR.docs[code]=sn.exists()?sn.data():{missing:true};if(ui.view==='start')render();},e=>{});
+}
+function frCard(){
+  if(!NET.db)return '';
+  const s=frStore();
+  let h=`<div class="card"><h3>👥 Freunde</h3>`;
+  if(!FR.ok)return h+(FR.err?`<p class="small mut">Freunde sind noch nicht eingerichtet (${esc(FR.err)}).</p>`:'<p class="small mut">Verbinde…</p>')+'</div>';
+  h+=`<div class="row"><div class="small mut">Dein Freundescode</div><span class="sp"></span><b style="font-size:20px;letter-spacing:2px">${esc(s.code)}</b><button class="btn sm" data-a="frCopy" style="margin-left:8px">Kopieren</button></div>`;
+  if(!s.name)h+=`<div class="row" style="margin-top:8px"><input type="text" id="frName" maxlength="20" placeholder="Dein Name für Freunde" style="margin:0"><button class="btn" data-a="frName">OK</button></div>`;
+  else h+=`<div class="tiny mut" style="margin-top:4px">Freunde sehen dich als <b>${esc(s.name)}</b> · <u data-a="frRename" style="cursor:pointer">ändern</u></div>`;
+  for(const iv of FR.inv)h+=`<div class="evc" style="margin-top:10px;padding:10px"><b>📩 ${esc(iv.fromName||iv.from)}</b> lädt dich zu Spiel <b>#${esc(iv.game)}</b> ein.<div class="row" style="margin-top:8px;gap:6px"><button class="btn sm ok" data-a="frAccept" data-v="${esc(iv.id)}">Beitreten</button><button class="btn sm" data-a="frDecline" data-v="${esc(iv.id)}">Ablehnen</button></div></div>`;
+  const list=s.friends.map(code=>({code,d:FR.docs[code]||{}})).map(x=>({...x,ts:frTs(x.d.seen)})).sort((a,b)=>b.ts-a.ts);
+  h+=list.length?list.map(({code,d,ts})=>{const on=ts&&Date.now()-ts<180000;const g=d.game;
+    const gl=g&&g.code?`<br>${on?'Spielt':'Zuletzt in'} #${esc(g.code)}${g.club?' – '+esc(g.club):''} · ${esc(phaseName(g.phase))}${g.wait&&on?' · <b style="color:var(--acc)">ist am Zug</b>':''}`:'';
+    return `<div class="pl"><span class="dot" style="background:${on?'#3fd0a0':'rgba(255,255,255,.25)'}"></span><div class="pn"><b>${esc(d.missing?'Unbekannter Code':(d.name||'Ohne Namen'))} <span class="tag">${esc(code)}</span></b><span>${d.missing?'Diesen Code gibt es nicht.':frAgo(ts)}${gl}</span></div>${g&&g.code?`<button class="btn sm" data-a="openGame" data-v="${esc(g.code)}">Öffnen</button>`:''}<button class="ic" data-a="frDel" data-v="${esc(code)}" style="margin-left:4px">${ui.confirm==='frDel'+code?'?':'✕'}</button></div>`;}).join(''):'<div class="empty small">Noch keine Freunde. Gib unten den Code eines Freundes ein.</div>';
+  h+=`<div class="row" style="margin-top:10px"><input type="text" id="frAdd" maxlength="5" placeholder="Freundescode" autocapitalize="characters" autocomplete="off" style="margin:0;text-transform:uppercase"><button class="btn" data-a="frAdd">Hinzufügen</button></div></div>`;
+  return h;
+}
+function frInviteCard(){
+  if(NET.mode!=='online'||!ST||ST.phase!=='lobby'||!FR.ok)return '';const s=frStore();
+  if(!s.friends.length)return `<div class="card"><h3>Freunde einladen</h3><p class="small mut">Füge auf der Startseite Freunde über ihren Freundescode hinzu, dann kannst du sie hier direkt einladen.</p></div>`;
+  const sent=ui.frSent||{};
+  return `<div class="card"><h3>Freunde einladen</h3>${s.friends.map(code=>{const d=FR.docs[code]||{};const ts=frTs(d.seen);const on=ts&&Date.now()-ts<180000;const k=ST.code+code;
+    return `<div class="pl"><span class="dot" style="background:${on?'#3fd0a0':'rgba(255,255,255,.25)'}"></span><div class="pn"><b>${esc(d.name||code)}</b><span>${frAgo(ts)}</span></div><button class="btn sm ${sent[k]?'':'ok'}" data-a="frInvite" data-v="${esc(code)}" ${sent[k]?'disabled':''}>${sent[k]?'Eingeladen ✓':'Einladen'}</button></div>`;}).join('')}<p class="tiny mut">Die Einladung sieht dein Freund, sobald er die Klubchef-Seite öffnet.</p></div>`;
+}
+const _vStartFR=vStart;
+vStart=function(){const h=_vStartFR();const fc=frCard();if(!fc)return h;const i=h.indexOf('<div class="card"><h3>⚽ Karriere');return i>0?h.slice(0,i)+fc+h.slice(i):h+fc;};
+const _lobbyFR=VIEWS.lobby;
+VIEWS.lobby=function(){const h=_lobbyFR();const ic=frInviteCard();if(!ic)return h;const i=h.indexOf('<div class="card"><h3>Einstellungen');return i>0?h.slice(0,i)+ic+h.slice(i):h+ic;};
+ACT.frCopy=function(){const c=frStore().code;try{navigator.clipboard.writeText(c);toast('Freundescode kopiert: '+c,true);}catch(e){toast(c);}};
+ACT.frName=function(){const n=val('frName');if(!n){toast('Bitte einen Namen eingeben.');return;}const s=frStore();s.name=n;frSave(s);frBeat();render();};
+ACT.frRename=function(){const s=frStore();s.name='';frSave(s);render();};
+ACT.frAdd=async function(){const code=val('frAdd').toUpperCase().replace(/[^A-Z0-9]/g,'');const s=frStore();
+  if(code.length!==5){toast('Der Freundescode hat 5 Zeichen.');return;}if(code===s.code){toast('Das ist dein eigener Code 😉');return;}if(s.friends.includes(code)){toast('Schon in deiner Liste.');return;}
+  try{const sn=await FR.fs.getDoc(FR.fs.doc(FR.db,'u',code));if(!sn.exists()){toast('Diesen Freundescode gibt es nicht.');return;}}catch(e){toast('Konnte den Code nicht prüfen.');return;}
+  s.friends.push(code);frSave(s);frWatch(code);toast('Freund hinzugefügt!',true);render();};
+ACT.frDel=function(v){if(!conf('frDel'+v))return;const s=frStore();s.friends=s.friends.filter(x=>x!==v);frSave(s);if(FR.unsubs[v]){FR.unsubs[v]();delete FR.unsubs[v];}delete FR.docs[v];render();};
+ACT.frInvite=async function(v){const s=frStore();if(!s.name){toast('Gib auf der Startseite zuerst deinen Namen für Freunde ein.');return;}
+  try{await FR.fs.addDoc(FR.fs.collection(FR.db,'u',v,'inv'),{from:s.code,fromName:s.name,game:ST.code,ts:Date.now()});ui.frSent=Object.assign(ui.frSent||{},{[ST.code+v]:1});toast('Einladung verschickt!',true);render();}
+  catch(e){toast('Einladung fehlgeschlagen.');}};
+async function frDelInv(id){try{await FR.fs.deleteDoc(FR.fs.doc(FR.db,'u',frStore().code,'inv',id));}catch(e){}}
+ACT.frAccept=async function(v){const iv=FR.inv.find(x=>x.id===v);if(!iv)return;await frDelInv(v);openGame(iv.game,false);};
+ACT.frDecline=function(v){frDelInv(v);FR.inv=FR.inv.filter(x=>x.id!==v);render();};
+(function frWait(){const t=setInterval(()=>{if(NET.ready){clearInterval(t);if(NET.web&&NET.db)frInit();}},300);})();
+const _sendFR=send;
+send=async function(type,p){const r=await _sendFR(type,p);if(NET.mode==='online'&&(type==='READY'||type==='JOIN'))setTimeout(frBeat,1500);return r;};
+
 // ---------- Start ----------
 async function initFirebase(cfg){
   const V='https://www.gstatic.com/firebasejs/10.12.2/';
