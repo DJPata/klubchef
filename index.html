@@ -971,7 +971,7 @@ function careerResolve(st,myCtx){
   const r=CR(st);const inj=[];const sus=[];const results=[],other=[];const me=st.clubs.me;
   for(let L=1;L<=4;L++){st.table=st.tables[L];
     for(const [h,a] of st.sched[L][st.md]){let m;
-      if(myCtx&&(h==='me'||a==='me'))m=mFinish(st,myCtx,r,{cup:false,inj,sus});
+      if(myCtx&&(h==='me'||a==='me')){m=mFinish(st,myCtx,r,{cup:false,inj,sus});m.ht=true;}
       else m=playMatch(st,h,a,r,{cup:false,inj,sus});
       m.lg=L;(L===me.lg?results:other).push(m);}}
   careerCupRound(st,st.cups.kreis,r,inj,results,sus);
@@ -1558,17 +1558,17 @@ function checkTicker(){
   ui.tickerShown=tag;
   if(seen[key]===`${ST.last.season}-${ST.last.md}`)return;
   seen[key]=`${ST.last.season}-${ST.last.md}`;LS.set('kc:seen',seen);
-  showTicker();
+  showTicker(true);
 }
-function showTicker(){
+function showTicker(auto){
   const c=myC();if(!c||!ST.last)return;
   const ms=ST.last.results.filter(m=>m.h===c.id||m.a===c.id);if(!ms.length)return;
   if(TK&&TK.iv)clearInterval(TK.iv);
-  TK={ms,i:0,min:0,card:ST.last.cards[c.id],showCard:false,md:ST.last.md};
+  TK={ms,i:0,min:0,card:ST.last.cards[c.id],showCard:false,md:ST.last.md,auto:!!auto};
   document.getElementById('ov').style.display='flex';
   runTicker();
 }
-function runTicker(){clearInterval(TK.iv);TK.min=0;drawTicker();TK.iv=setInterval(()=>{TK.min++;if(TK.min>=90){TK.min=90;clearInterval(TK.iv);}drawTicker();},75);}
+function runTicker(){clearInterval(TK.iv);const m0=TK.ms[TK.i];TK.min=TK.auto&&m0&&m0.ht?45:0;drawTicker();TK.iv=setInterval(()=>{TK.min++;if(TK.min>=90){TK.min=90;clearInterval(TK.iv);}drawTicker();},75);}
 function drawTicker(){
   const box=document.getElementById('ovb');
   if(TK.showCard){const k=TK.card;box.innerHTML=`<div class="row"><span class="pill">Ereigniskarte</span><span class="sp"></span><button class="ic" data-ov="close">✕</button></div><div class="evc ${k.g?'':'bad'}" style="margin-top:12px;padding:18px"><div class="h" style="font-size:28px">🃏 ${esc(k.t)}</div><div>${esc(k.x)}</div>${k.choice?'<p class="small" style="margin-bottom:0"><b>Deine Entscheidung ist gefragt</b> – im Spieltag-Tab.</p>':''}</div><button class="btn pri block" data-ov="close">Weiter</button>`;return;}
