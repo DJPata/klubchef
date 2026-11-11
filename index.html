@@ -2980,7 +2980,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='56',APP_RV=13;
+const APP_BUILD='57',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3128,6 +3128,9 @@ function recUpdate(st){
   const T=st.tables&&st.tables[me.lg]&&st.tables[me.lg].me;if(T&&T.w>0)un('sieg1');if((st.history||[]).some(h=>h.status==='Aufstieg'))un('auf1');
   if(me.lg===1)un('liga1');const tr=me.trophies||[];if(tr.some(x=>x.startsWith('Kreispokal')))un('kreis');if(tr.some(x=>x.startsWith('Landespokal')))un('land');if(tr.some(x=>x.startsWith('Meister')))un('meister');
   if(st.euro)un('euro');if(tr.some(x=>x.startsWith('Europapokal')))un('eurowin');if(me.cash>=10)un('mio10');if(me.up&&me.up.stadium>=5)un('stadion');if(st.season>=6)un('saison5');
+  R.ss=R.ss||{};const put=(k,o)=>{if(!o)return;const v={w:o.w||0,d:o.d||0,l:o.l||0,gf:o.gf||0,ga:o.ga||0};if(JSON.stringify(R.ss[k])!==JSON.stringify(v)){R.ss[k]=v;ch=true;}};
+  for(const h of st.history||[])if(h.my)put(st.seed+':'+h.season,h.my);
+  if(T&&st.phase!=='seasonEnd'&&!(st.history||[]).some(h=>h.season===st.season))put(st.seed+':'+st.season,T);
   if(ch)LS.set('kc:rec',R);
 }
 const _saveRec=saveCareer;saveCareer=function(){_saveRec();try{recUpdate(ST);}catch(e){}};
@@ -3140,6 +3143,8 @@ function recPage(){
   h+=row('⚽','Meiste Tore in einer Saison',R.goals?R.goals.g:null,R.goals?`${esc(R.goals.club)} · Saison ${R.goals.season} · ${LNAME[R.goals.lg]}`:'');
   h+=row('🎯','Bester Torjäger (Saison)',R.scorer?R.scorer.g:null,R.scorer?`${esc(R.scorer.n)} · ${esc(R.scorer.club)} · Saison ${R.scorer.season}`:'');
   h+=row('👑','Rekordtorschütze (gesamt)',R.scorerAll?R.scorerAll.g:null,R.scorerAll?`${esc(R.scorerAll.n)} · ${esc(R.scorerAll.club)}`:'');
+  {const S=Object.values(R.ss||{}).reduce((a,x)=>({w:a.w+x.w,d:a.d+x.d,l:a.l+x.l,gf:a.gf+x.gf,ga:a.ga+x.ga}),{w:0,d:0,l:0,gf:0,ga:0});const sp=S.w+S.d+S.l;
+   h+=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><div class="tiny mut" style="margin-bottom:6px">ALLE LIGASPIELE</div><div class="row" style="justify-content:space-between;text-align:center">${[['Spiele',sp],['Siege',S.w],['Remis',S.d],['Niederl.',S.l],['Tore',S.gf+':'+S.ga]].map(([l,v])=>`<div><div class="h" style="font-size:22px">${v}</div><div class="tiny mut">${l}</div></div>`).join('')}</div>${sp?`<div class="tiny mut" style="margin-top:6px;text-align:center">Siegquote ${Math.round(S.w/sp*100)} % · Tordifferenz ${S.gf-S.ga>0?'+':''}${S.gf-S.ga}</div>`:''}</div>`;}
   h+=`<p class="tiny mut" style="margin:6px 0 0">Gezählt werden alle deine Karrieren – auch wenn du eine neue startest.</p></div>`;
   h+=`<div class="card"><div class="row"><h3 style="margin:0">🎖️ Erfolge</h3><span class="sp"></span><b>${n}/${ACH.length}</b></div>${ACH.map(([k,i,t,d])=>{const a=R.ach&&R.ach[k];return `<div class="pl" style="${a?'':'opacity:.4'}"><span style="font-size:22px;width:34px;text-align:center">${a?i:'🔒'}</span><div class="pn"><b>${t}</b><span>${d}${a?` · ${esc(a.c)}, ${esc(a.d)}`:''}</span></div>${a?'<span style="color:var(--acc2)">✓</span>':''}</div>`;}).join('')}</div>`;
   return h;
