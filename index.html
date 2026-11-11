@@ -1533,7 +1533,7 @@ function resLine(m){
   const H=ST.clubs[m.h],A=ST.clubs[m.a];const mine=m.h===me()||m.a===me();
   return `<div class="row small" style="padding:5px 0;border-top:1px solid var(--line)${mine?';font-weight:700':''}"><span class="sp" style="text-align:right">${esc(H.name)}</span>${dot(H)}<b style="min-width:46px;text-align:center">${m.gh}:${m.ga}</b>${dot(A)}<span class="sp">${esc(A.name)}${m.pens?` <span class="tag">i.E. ${m.pens[0]}:${m.pens[1]}</span>`:''}${m.cup?` <span class="tag">${esc(m.cup)}</span>`:''}</span></div>`;
 }
-function rbar(label,a,b){const w=v=>clamp((v-45)/45*100,4,100);return `<div class="row small" style="margin:7px 0"><span style="width:82px">${label}</span><b style="width:24px">${Math.round(a)}</b><div class="bar"><i style="width:${w(a)}%;background:var(--acc)"></i></div><div class="bar"><i style="width:${w(b)}%;background:#8a9a92;margin-left:auto"></i></div><b style="width:24px;text-align:right">${Math.round(b)}</b></div>`;}
+function rbar(label,a,b,away){const w=v=>clamp((v-45)/45*100,4,100);const L=away?b:a,Rr=away?a:b,cl=away?'#8a9a92':'var(--acc)',cr=away?'var(--acc)':'#8a9a92';return `<div class="row small" style="margin:7px 0"><span style="width:82px">${label}</span><b style="width:24px">${Math.round(L)}</b><div class="bar"><i style="width:${w(L)}%;background:${cl}"></i></div><div class="bar"><i style="width:${w(Rr)}%;background:${cr};margin-left:auto"></i></div><b style="width:24px;text-align:right">${Math.round(Rr)}</b></div>`;}
 function lvl(n){let s='<span class="lvl">';for(let i=1;i<=5;i++)s+=`<i class="${i<=n?'f':''}"></i>`;return s+'</span>';}
 
 function sd(t){if(ST.career&&t==='mkt'){const c=ST.clubs.me;return `+${fm(mktRate(c)*18)} Sponsoring pro Saison in der ${LNAME[c.lg]} – ${fm(mktRate(c))} nach jedem Spieltag`;}return (ST.rv>=3&&STAFF[t].d3)||STAFF[t].d;}
@@ -1603,7 +1603,7 @@ cmatch(){
   const R=teamRat(Object.assign({},c,{lineup:curLu(c)}),form,tac,'bal',home);const O=teamRat(opp,'4-4-2','bal',tac,!home);
   const pos=careerTable(ST,c.lg).findIndex(x=>x.id==='me')+1;
   h+=`<div class="card"><div class="mut small">${LNAME[c.lg]} · Spieltag ${md+1}/18 · Platz ${pos} · ${home?'Heimspiel':'Auswärtsspiel'}</div><h3 style="margin:4px 0">${esc(c.name)} ${home?'vs':'@'} ${esc(opp.name)}</h3>${cupToday(c).map(x=>`<div class="small">🏆 Außerdem ${esc(x.cup.name)} (${x.rn}): gegen <b>${esc(x.opp.name)}</b>${x.opp.lg?` <span class="mut">(${LNAME[x.opp.lg]})</span>`:''}</div>`).join('')}
-  <div class="row tiny mut" style="margin-top:10px"><span style="width:82px"></span><span class="sp">Du</span><span>${esc(opp.name)}</span></div>${rbar('Angriff',R.A,O.A)}${rbar('Mittelfeld',R.M,O.M)}${rbar('Abwehr',R.D,O.D)}</div>`;
+  <div class="row tiny mut" style="margin-top:10px"><span style="width:82px"></span><span class="sp">${home?'Du':esc(opp.name)}</span><span>${home?esc(opp.name):'Du'}</span></div>${rbar('Angriff',R.A,O.A,!home)}${rbar('Mittelfeld',R.M,O.M,!home)}${rbar('Abwehr',R.D,O.D,!home)}</div>`;
   h+=tacPicker(c,form,tac,false)+luCard(c,form,false)+campCard(c,false);
   if(ST.last&&ST.last.season===ST.season&&ST.last.md!=='CL'){const L=ST.last;const mine=L.results.filter(m=>m.h==='me'||m.a==='me');const card=L.cards.me;
     h+=`<div class="card"><h3>Spieltag ${L.md+1} – Ergebnisse</h3>${mine.map(resLine).join('')}${mine.length?'<button class="btn sm" style="margin:8px 0" data-a="ticker">▶ Ticker ansehen</button>':''}${card?`<div class="evc ${card.g?'':'bad'}"><b>🃏 ${esc(card.t)}</b><div class="small">${esc(card.x)}</div></div>`:''}<h4>${LNAME[c.lg]}</h4>${L.results.filter(m=>!mine.includes(m)).map(resLine).join('')}</div>`;}
@@ -1774,8 +1774,8 @@ match(){
     if(c.pending){h+=`<div class="evc"><div class="tiny mut">EREIGNISKARTE – ENTSCHEIDUNG</div><b>🃏 ${esc(c.pending.t)}</b><div class="small" style="margin:4px 0 10px">${esc(c.pending.x)}</div><div class="row">${c.pending.opts.map((o,i)=>`<button class="btn sm ${i===0?'pri':''}" data-a="choose" data-v="${i}">${esc(o)}</button>`).join('')}</div></div>`;}
     else if(c.lastChoice&&ST.last&&ST.last.cards[c.id]&&ST.last.cards[c.id].choice){h+=`<div class="evc"><b>🃏 ${esc(c.lastChoice.t)}</b><div class="small">${esc(c.lastChoice.x)}</div></div>`;}
     h+=`<div class="card"><div class="mut small">Spieltag ${md+1} · ${home?'Heimspiel':'Auswärtsspiel'}</div><h3 style="margin:4px 0">${esc(c.name)} ${home?'vs':'@'} ${esc(opp.name)}</h3>${cupOpp?`<div class="small">🏆 Außerdem ${esc(CUPN[ci])}: gegen <b>${esc(cupOpp.name)}</b></div>`:''}
-    <div class="row tiny mut" style="margin-top:10px"><span style="width:82px"></span><span class="sp">Du</span><span>${esc(opp.name)}${opp.human?' (geschätzt)':''}</span></div>
-    ${rbar('Angriff',R.A,O.A)}${rbar('Mittelfeld',R.M,O.M)}${rbar('Abwehr',R.D,O.D)}</div>`;
+    <div class="row tiny mut" style="margin-top:10px"><span style="width:82px"></span><span class="sp">${home?'Du':esc(opp.name)+(opp.human?' (geschätzt)':'')}</span><span>${home?esc(opp.name)+(opp.human?' (geschätzt)':''):'Du'}</span></div>
+    ${rbar('Angriff',R.A,O.A,!home)}${rbar('Mittelfeld',R.M,O.M,!home)}${rbar('Abwehr',R.D,O.D,!home)}</div>`;
     h+=tacPicker(c,form,tac,rd);
     h+=luCard(c,form,rd);
     h+=campCard(c,rd);
@@ -2100,7 +2100,7 @@ function matchPage(c){
     const pos=ST.career?careerTable(ST,c.lg).findIndex(x=>x.id==='me')+1:sortedTable(ST).findIndex(x=>x.id===c.id)+1;
     h+=`<div class="card" style="text-align:center"><div class="mut small">${ST.career?LNAME[c.lg]+' · ':''}Spieltag ${ST.md+1} · Platz ${pos} · ${home?'Heim':'Auswärts'}</div>
     <div class="row" style="justify-content:center;gap:14px;margin:10px 0"><div style="flex:1">${crest(home?c:opp,40)}<div class="small" style="font-weight:700">${esc((home?c:opp).name)}</div></div><div class="h" style="font-size:26px">VS</div><div style="flex:1">${crest(home?opp:c,40)}<div class="small" style="font-weight:700">${esc((home?opp:c).name)}</div></div></div>${extra}</div>
-    <div class="card"><div class="row tiny mut"><span style="width:82px"></span><span class="sp">Du</span><span>Gegner${opp.human?' (geschätzt)':''}</span></div>${rbar('Angriff',R.A,O.A)}${rbar('Mittelfeld',R.M,O.M)}${rbar('Abwehr',R.D,O.D)}<p class="tiny mut" style="margin:6px 0 0">${esc(TAC[tac].n)} · ${form} · Moral ${c.moral}/5 · <u data-a="goXI" style="cursor:pointer">Aufstellung & Taktik ändern ›</u></p></div>`+xiWarn(c,form,pickXI(Object.assign({},c,{lineup:curLu(c)}),form));
+    <div class="card"><div class="row tiny mut"><span style="width:82px"></span><span class="sp">${home?'Du':'Gegner'+(opp.human?' (geschätzt)':'')}</span><span>${home?'Gegner'+(opp.human?' (geschätzt)':''):'Du'}</span></div>${rbar('Angriff',R.A,O.A,!home)}${rbar('Mittelfeld',R.M,O.M,!home)}${rbar('Abwehr',R.D,O.D,!home)}<p class="tiny mut" style="margin:6px 0 0">${esc(TAC[tac].n)} · ${form} · Moral ${c.moral}/5 · <u data-a="goXI" style="cursor:pointer">Aufstellung & Taktik ändern ›</u></p></div>`+xiWarn(c,form,pickXI(Object.assign({},c,{lineup:curLu(c)}),form));
     {const hc=home?c:opp;if(hc.stadium||(home&&c.ultras))h+=`<div class="small mut" style="text-align:center;margin:-4px 0 8px">🏟 ${hc.stadium?esc((home?'Heimspiel: ':'Auswärts: ')+hc.stadium):''}${home&&c.ultras?` · ${esc(c.ultras)} sind am Start`:''}</div>`;}
     if(ST.career&&c.poach)h+=`<div class="evc bad" style="padding:10px"><b>👀 Abwerbeversuch</b><div class="small">${esc(c.poach.club)} will ein NLZ-Talent holen. <u data-a="goNLZ" style="cursor:pointer">Zum NLZ ›</u></div></div>`;
     h+=analysisCard(c,opp,home,form,tac)+tipCard(c,opp,home,form,tac)+(ST.career?premCard(c):'');
@@ -2569,10 +2569,10 @@ function xiStrength(c,form){
   const prev=ui.xiPrev;const key=JSON.stringify([form,tac,curLu(c)]);
   const d=k=>{if(!prev||prev.key===key)return '';const v=Math.round(R[k])-Math.round(prev[k]);return v?` <b style="color:${v>0?'#3fd0a0':'#ff5b4d'}">(${v>0?'+':''}${v})</b>`:'';};
   if(!prev||prev.key!==key){ui.xiPrevNext={key,A:R.A,M:R.M,D:R.D};}
-  const row=(l,k)=>{const a=R[k],b=O[k];const w=v=>Math.max(4,Math.min(100,(v-45)/45*100));return `<div class="row small" style="margin:5px 0"><span style="width:86px">${l}</span><b style="width:48px">${Math.round(a)}${d(k)}</b><div class="bar"><i style="width:${w(a)}%;background:var(--acc)"></i></div><div class="bar"><i style="width:${w(b)}%;background:#8a9a92;margin-left:auto"></i></div><b style="width:24px;text-align:right">${Math.round(b)}</b></div>`;};
+  const row=(l,k)=>{const a=R[k],b=O[k];const w=v=>Math.max(4,Math.min(100,(v-45)/45*100));if(!o.home)return `<div class="row small" style="margin:5px 0"><span style="width:86px">${l}</span><b style="width:24px">${Math.round(b)}</b><div class="bar"><i style="width:${w(b)}%;background:#8a9a92"></i></div><div class="bar"><i style="width:${w(a)}%;background:var(--acc);margin-left:auto"></i></div><b style="width:48px;text-align:right;white-space:nowrap">${Math.round(a)}${d(k)}</b></div>`;return `<div class="row small" style="margin:5px 0"><span style="width:86px">${l}</span><b style="width:48px">${Math.round(a)}${d(k)}</b><div class="bar"><i style="width:${w(a)}%;background:var(--acc)"></i></div><div class="bar"><i style="width:${w(b)}%;background:#8a9a92;margin-left:auto"></i></div><b style="width:24px;text-align:right">${Math.round(b)}</b></div>`;};
   const tot=(R.A+R.M+R.D)/3,tO=(O.A+O.M+O.D)/3,df=tot-tO;
   const verdict=df>4?'klarer Vorteil':df>1.5?'leichter Vorteil':df>-1.5?'ausgeglichen':df>-4?'leichter Nachteil':'klarer Nachteil';
-  return `<div class="card" style="padding:10px 12px;margin:0 0 8px"><div class="row tiny mut"><span>Stärke · gegen ${esc(o.opp.name)}</span><span class="sp"></span><span>Du · Gegner</span></div>${row('Angriff','A')}${row('Mittelfeld','M')}${row('Abwehr','D')}<div class="small" style="margin-top:6px">Gesamt <b>${Math.round(tot)}</b> · Gegner ${Math.round(tO)} → <b style="color:${df>=0?'#3fd0a0':'#ff5b4d'}">${verdict}</b></div></div>`;
+  return `<div class="card" style="padding:10px 12px;margin:0 0 8px"><div class="row tiny mut"><span>Stärke · gegen ${esc(o.opp.name)}</span><span class="sp"></span><span>${o.home?'Du · Gegner':'Gegner · Du'}</span></div>${row('Angriff','A')}${row('Mittelfeld','M')}${row('Abwehr','D')}<div class="small" style="margin-top:6px">Gesamt <b>${Math.round(tot)}</b> · Gegner ${Math.round(tO)} → <b style="color:${df>=0?'#3fd0a0':'#ff5b4d'}">${verdict}</b></div></div>`;
 }
 function xiWarn(c,form,X){
   const w=[];const man=!!curLu(c);
@@ -2840,7 +2840,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='48',APP_RV=11;
+const APP_BUILD='49',APP_RV=11;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
