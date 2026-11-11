@@ -543,10 +543,10 @@ function mFinish(st,ctx,r,o){
     else if(draw){money(c,CE?r2(CE.win/3):0.1);}
     else{c.fans=CE?Math.max(150,Math.round(c.fans*0.99)):Math.max(3000,c.fans-200);if(r.chance(0.5)&&c.moral>1)c.moral--;}
     if(st.rv>=5)for(const k of ['G','D','M','A'])for(const x of R.xi[k])if(x.p)x.p.apps=(x.p.apps||0)+1;
-    let risk=0.025+(tac==='press'&&!has(c,'fit')?0.02:0);if(has(c,'phys'))risk/=2;
+    const lo=st.career||st.rv>=11;let risk=lo?0.015+(tac==='press'&&!has(c,'fit')?0.01:0):0.025+(tac==='press'&&!has(c,'fit')?0.02:0);if(has(c,'phys'))risk/=2;
     for(const k of ['G','D','M','A'])for(const x of R.xi[k]){
       const rk=x.p&&x.p.tr==='ver'?risk*2:risk;
-      if(x.p&&r.f()<rk){const n=Math.max(1,r.int(1,4)-(has(c,'phys')?1:0));o.inj.push([x.p,n]);ev.push({m:r.int(5,88),t:'i',s:c===h?'h':'a',x:x.p.name,n});}
+      if(x.p&&r.f()<rk){const n=Math.max(1,r.int(1,lo?3:4)-(has(c,'phys')?1:0));o.inj.push([x.p,n]);ev.push({m:r.int(5,88),t:'i',s:c===h?'h':'a',x:x.p.name,n});}
     }
   }
   if(ctx.sus&&o.sus)for(const id of ctx.sus)o.sus.push(id);
@@ -888,7 +888,7 @@ const SPONSN=['Brauerei','Autohaus','Sparkasse','Bäckerei','Baustoffe','Stadtwe
 const CCARDS=[
   {k:'sponsor',w:3,g:1,t:'Zusatz-Sponsor',run:(c,r,st,F)=>{const x=r2(0.25*F);money(c,x);return `Ein lokales Unternehmen zahlt ${fm(x)} extra.`;}},
   {k:'euph',w:3,g:1,t:'Fan-Euphorie',run:c=>{c.moral=Math.min(5,c.moral+1);const n=Math.round(c.fans*0.06)+30;c.fans+=n;return `Moral +1 und ${num(n)} neue Fans.`;}},
-  {k:'traininj',w:3,g:0,t:'Verletzung im Training',run:(c,r)=>{const p=randHealthy(c,r);if(!p)return 'Glück gehabt – niemand verletzt.';p.inj=r.int(1,3);return `${p.name} fällt ${p.inj} Spiel${p.inj>1?'e':''} aus.`;}},
+  {k:'traininj',w:2,g:0,t:'Verletzung im Training',run:(c,r)=>{const p=randHealthy(c,r);if(!p)return 'Glück gehabt – niemand verletzt.';p.inj=r.int(1,3);return `${p.name} fällt ${p.inj} Spiel${p.inj>1?'e':''} aus.`;}},
   {k:'tax',w:2,g:0,t:'Steuerprüfung',run:(c,r,st,F)=>{const x=r2(0.15*F);money(c,-x);return `Nachzahlung ans Finanzamt: ${fm(x)}.`;}},
   {k:'tv',w:2,g:1,t:'Im Fernsehen',run:(c,r,st,F)=>{const x=r2(0.12*F);money(c,x);return `Ein Bericht über euren Klub bringt ${fm(x)}.`;}},
   {k:'talent',w:2,g:1,t:'Juwel aus der Jugend',run:(c,r,st)=>{if(c.squad.length>=SQUAD_MAX)return 'Kader voll – das Talent geht woanders hin.';const p=genYouth(st,r,c);p.rat=clamp(p.rat+TMEAN[c.lg]-58,35,80);p.pot=Math.max(p.pot,p.rat+10);c.squad.push(p);return `${p.name} (${p.age}, ${POSL[p.pos]}, Stärke ${p.rat}) rückt hoch.`;}},
@@ -903,7 +903,7 @@ const CCARDS=[
   {k:'fine',w:2,g:0,t:'Strafe vom Verband',run:(c,r,st,F)=>{const x=r2(0.06*F);money(c,-x);return `Pyro im Block: ${fm(x)} Strafe.`;}},
   {k:'patron',w:1,g:1,t:'Mäzen steigt ein',run:(c,r,st,F)=>{const x=r2(0.6*F);money(c,x);return `Ein Gönner schießt ${fm(x)} zu.`;}},
   {k:'healer',w:1,g:1,t:'Wunderheiler',run:c=>{let n=0;for(const p of c.squad)if(p.inj>0){p.inj=0;n++;}return n?`Alle ${n} Verletzten sind fit.`:'Niemand verletzt.';}},
-  {k:'flu',w:2,g:0,t:'Grippewelle',run:(c,r)=>{const o=[];for(let i=0;i<2;i++){const p=randHealthy(c,r);if(p){p.inj=1;o.push(p.name);}}return o.length?`${o.join(' und ')} fallen 1 Spiel aus.`:'Alle gesund.';}},
+  {k:'flu',w:1,g:0,t:'Grippewelle',run:(c,r)=>{const o=[];for(let i=0;i<2;i++){const p=randHealthy(c,r);if(p){p.inj=1;o.push(p.name);}}return o.length?`${o.join(' und ')} fallen 1 Spiel aus.`:'Alle gesund.';}},
   {k:'party',w:2,g:1,t:'Vereinsfest',run:c=>{const n=Math.round(c.fans*0.05)+20;c.fans+=n;return `${num(n)} neue Fans.`;}},
   {k:'camp',w:2,g:1,t:'Starke Trainingswoche',run:c=>{c.moral=Math.min(5,c.moral+1);return 'Moral +1.';}},
   {k:'quiet',w:3,g:1,t:'Ruhige Woche',run:()=> 'Keine Schlagzeilen.'}
@@ -1386,7 +1386,7 @@ async function openGame(code,create){
     if(!snap.metadata.fromCache)clearTimeout(NET.timer);
     recompute();
   },err=>{clearTimeout(NET.timer);ui.loadMsg='Verbindung unterbrochen ('+(err&&err.code||'?')+'). Öffne das Spiel bitte neu.';render();});
-  if(create)await send('CREATE',{seed:rid(12),code,rv:10,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});
+  if(create)await send('CREATE',{seed:rid(12),code,rv:11,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});
 }
 async function loadOpen(){
   if(!NET.db)return;
@@ -1839,7 +1839,7 @@ const ACT={
   openGame(v){openGame(v,false);},
   forgetGame(v){if(!conf('fg'+v))return;LS.set('kc:mine',LS.get('kc:mine',[]).filter(x=>x.code!==v));toast('Spiel aus der Liste entfernt.',true);if(typeof frBeat==='function')frBeat();render();},
   refreshOpen(){ui.openList=null;render();loadOpen();},
-  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:10,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});},
+  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:11,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});},
   contLocal(){cleanup();NET.mode='local';const d=LS.get('kc:local',{raw:[]});NET.raw=d.raw||[];ui.seat=null;ui.view='game';recompute();},
   copy(){const c=ST.code;if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(()=>toast('Code kopiert: '+c,true)).catch(()=>toast('Code: '+c,true));else toast('Code: '+c,true);},
   color(v){ui.jColor=v;render();},
@@ -2811,6 +2811,15 @@ const _newCarTut=ACT.newCareer;ACT.newCareer=function(){_newCarTut.apply(this,ar
 const _contCarTut=ACT.contCareer;ACT.contCareer=function(){_contCarTut.apply(this,arguments);if(ST&&ST.career&&!LS.get('kc:tut',0)){ui.tut=0;tutGo();}};
 ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
+
+// ---------- Versionscheck / Update-Hinweis ----------
+const APP_BUILD='47',APP_RV=11;
+function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
+  d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
+  document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
+async function updCheck(){try{const t=await (await fetch(location.pathname+'?chk='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_BUILD='(\d+)'/);if(m&&+m[1]>+APP_BUILD)updBanner('Es gibt eine neue Version von Klubchef.');}catch(e){}}
+setTimeout(updCheck,3000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')updCheck();});
+const _recUpd=recompute;recompute=function(){_recUpd();if(ST&&ST.rv>APP_RV)updBanner('Dieses Spiel wurde mit einer neueren Version erstellt. Bitte aktualisieren, sonst läuft es nicht richtig.');};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
