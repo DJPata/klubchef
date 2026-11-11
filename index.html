@@ -3014,7 +3014,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='59',APP_RV=13;
+const APP_BUILD='60',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3082,7 +3082,7 @@ function lvDraw(){
   const ev=c.ev.filter(e=>e.m<=LV.min&&!(LV.pen&&e.m===LV.pen.m&&(e.t==='p'||e.t==='pm'))).sort((a,b)=>a.m-b.m);let gh=0,ga=0;for(const e of ev)if(e.t==='g'||e.t==='p'){if(e.s==='h')gh++;else ga++;}
   const pend=ST.ht&&ST.ht.ctx===c&&c.penPend;const st=LV.state;
   let clock=LV.min+'′',bottom='';
-  const ctl=`<div class="row" style="gap:8px;margin-top:12px"><button class="btn block" style="flex:1" data-lv="pause">⏸ Pause</button><button class="btn" data-lv="spd">${LV.speed>1?'⏩ 2×':'▶ 1×'}</button></div>`;
+  const ctl=`<div class="row" style="gap:8px;margin-top:12px"><button class="btn block" style="flex:1" data-lv="pause">⏸ Pause</button><button class="btn" data-lv="spd">${LV.speed>=4?'⏩⏩ 4×':LV.speed>1?'⏩ 2×':'▶ 1×'}</button></div>`;
   if(LV.pen){clock=LV.pen.m+'′ · Elfmeter';bottom='';}
   else if(st==='pen'&&pend){const mine=pend.s===(c.h==='me'?'h':'a');clock='⚽ Elfmeter! · '+pend.m+'′';bottom=`<div class="card" style="padding:10px;margin:8px 0;text-align:center"><div class="small" style="color:var(--acc);font-weight:700">${mine?'⚽ Elfmeter für euch – tippe in die Ecke!':'🧤 Elfmeter gegen euch – tippe, wohin du springst!'}</div><div class="tiny mut">Schütze: ${esc(pend.tkn)}</div>${soPadSvg({h:c.h,a:c.a},mine).replace(/data-ov="soz"/g,'data-lv="pk"')}</div>`;}
   else if(st==='inj'){const b=ST.ht.brk;clock='🚑 Unterbrechung · '+b.m+'′';bottom=`<button class="btn pri block" style="margin-top:12px;background:var(--bad);border-color:var(--bad)" data-lv="sub">🚑 ${esc(b.name)} verletzt – jetzt wechseln</button><button class="btn block" style="margin-top:8px" data-lv="go">Ohne Wechsel weiter (Ersatz kommt automatisch)</button>`;}
@@ -3100,7 +3100,7 @@ function lvDraw(){
 document.getElementById('ov').addEventListener('click',async e=>{
   const b=e.target.closest('[data-lv]');if(!b||!LV)return;e.stopPropagation();const a=b.dataset.lv;
   if(a==='pause'){LV.pause=true;if(!LV.busy)lvStop('paused');return;}
-  if(a==='spd'){LV.speed=LV.speed>1?1:2;LS.set('kc:spd',LV.speed);if(LV.iv)lvRun();lvDraw();return;}
+  if(a==='spd'){LV.speed=LV.speed>=4?1:LV.speed*2;LS.set('kc:spd',LV.speed);if(LV.iv)lvRun();lvDraw();return;}
   if(a==='resume'){LV.pause=false;LV.state=null;lvRun();lvDraw();return;}
   if(a==='sub'){const st=LV.state;clearInterval(LV.iv);LV.ctx.lm=LV.min;LV.on=false;LV=null;document.getElementById('ov').style.display='none';ui.tab='cht';ui.subs.cht=st==='ht'?'l':'e';render();scrollTo(0,0);return;}
   if(a==='go'){LV.ctx.lm=LV.min;LV.state=null;LV.busy=true;await send('READY',{form:myC().form,tac:myC().tac,lineup:curLu(myC())||null});LV.busy=false;if(!ST.ht){lvEnd();return;}lvRun();lvDraw();return;}
