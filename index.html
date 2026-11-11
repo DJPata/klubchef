@@ -1350,7 +1350,8 @@ function careerEndSeason(st){
   if(emer)fin.push(['Notkredit',r2(emer*ls)]);
   me.report={season:st.season,place,lg:t,status,fin,board:bres,fired:!!st.fired};
   const tops={};for(let L=1;L<=4;L++)tops[L]=topScorer(st,e=>e.lg===L);
-  st.history.push({season:st.season,lg:t,place,status,champs:Object.assign({},champs),kreis:st.cups.kreis.winner,land:st.cups.land&&st.cups.land.winner,tops});
+  const myRow=tb[t].find(x=>x.id==='me')||{};const myTop=me.squad.slice().sort((a,b)=>(b.gs||0)-(a.gs||0))[0];
+  st.history.push({season:st.season,lg:t,place,status,champs:Object.assign({},champs),kreis:st.cups.kreis.winner,land:st.cups.land&&st.cups.land.winner,tops,my:{pts:myRow.pts,gf:myRow.gf,ga:myRow.ga,w:myRow.w,d:myRow.d,l:myRow.l},top:myTop&&myTop.gs?{n:myTop.name,g:myTop.gs}:null});
   st.pendingMoves=newOrder;
   feed(st,`Saison ${st.season} beendet: ${me.name} wird ${place}. in der ${LNAME[t]} – ${status}!`);
   for(let L=1;L<=4;L++)feed(st,`🥇 ${st.clubs[champs[L]].name} ist Meister der ${LNAME[L]}.`);
@@ -2950,7 +2951,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='54',APP_RV=13;
+const APP_BUILD='55',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3066,6 +3067,60 @@ function posL(p){if(!p)return '';return subOn()?(SPL[spOf(p)]||POSL[p.pos]):POSL
 const ROLE_TXT={D:['Bleibt hinten: Abwehr +0,8, Mittelfeld −0,8','Normale Ausrichtung','Schaltet sich ein: Mittelfeld/Angriff +0,5, Abwehr −1'],M:['Defensiver Mittelfeldspieler: Abwehr +1, Mittelfeld −0,6','Normale Ausrichtung','Offensiv: Angriff +1,2, Mittelfeld −1'],A:['Lässt sich fallen: Mittelfeld +1, Angriff −1','Normale Ausrichtung','Bleibt vorne: Angriff +0,8, Mittelfeld −0,8']};
 ACT.xiRole=function(v){const [id,r]=String(v).split('|');const c=myC();const form=ui.form||c.form;const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),form);
   const lu={};for(const k of ['G','D','M','A'])lu[k]=X[k].filter(x=>x.p).map(x=>x.p.id);const R=Object.assign({},(curLu(c)||{}).R||{});if(+r)R[id]=+r;else delete R[id];lu.R=R;ui.lu=lu;render();};
+
+// ---------- Rekorde & Erfolge (bleiben auch bei neuer Karriere) ----------
+const ACH=[
+ ['sieg1','🥅','Erster Sieg','Dein erstes Ligaspiel gewonnen'],
+ ['auf1','⬆️','Aufsteiger','Zum ersten Mal aufgestiegen'],
+ ['liga1','🏟️','Ganz oben','Die 1. Liga erreicht'],
+ ['meister','🥇','Meister','Eine Liga als Erster abgeschlossen'],
+ ['kreis','🏆','Kreispokalsieger','Den Kreispokal gewonnen'],
+ ['land','🏆','Landespokalsieger','Den Landespokal gewonnen'],
+ ['euro','🌍','Europa ruft','Im Europapokal gespielt'],
+ ['eurowin','⭐','Europas Krone','Den Europapokal gewonnen'],
+ ['tor20','🎯','Knipser','Ein Spieler mit 20+ Saisontoren'],
+ ['tore60','💥','Torfabrik','60+ Ligatore in einer Saison'],
+ ['legende','🌟','Legendär','Einen Legenden-Spieler im Kader'],
+ ['mio10','💰','Krösus','10 Mio auf dem Konto'],
+ ['stadion','🏗️','Fußballtempel','Stadion voll ausgebaut'],
+ ['saison5','📅','Urgestein','5 Saisons mit einem Verein'],
+ ['ungeschl','🛡️','Ungeschlagen','Eine Saison ohne Niederlage']
+];
+function recUpdate(st){
+  if(!st||!st.career)return;const me=st.clubs.me;if(!me)return;const R=LS.get('kc:rec',{ach:{},best:null,goals:null,scorer:null,scorerAll:null,seasons:{}});
+  const club=me.name,now=new Date().toLocaleDateString('de-DE');let ch=false;const un=k=>{if(!R.ach[k]){R.ach[k]={d:now,c:club};ch=true;}};
+  for(const h of st.history||[]){const key=st.seed+':'+h.season;if(!R.seasons[key]){R.seasons[key]=1;ch=true;}
+    const score=(5-h.lg)*100+(11-h.place)+(h.my&&h.my.pts?h.my.pts/100:0);
+    if(!R.best||score>R.best.score){R.best={score,club,season:h.season,lg:h.lg,place:h.place,status:h.status,pts:h.my?h.my.pts:null};ch=true;}
+    if(h.my&&h.my.gf!=null&&(!R.goals||h.my.gf>R.goals.g)){R.goals={g:h.my.gf,club,season:h.season,lg:h.lg};ch=true;}
+    if(h.top&&(!R.scorer||h.top.g>R.scorer.g)){R.scorer={n:h.top.n,g:h.top.g,club,season:h.season};ch=true;}
+    if(h.status==='Aufstieg')un('auf1');if(h.place===1)un('meister');if(h.my&&h.my.gf>=60)un('tore60');if(h.my&&h.my.l===0&&h.my.w+h.my.d>=18)un('ungeschl');if(h.top&&h.top.g>=20)un('tor20');}
+  for(const p of me.squad){if(p.gc&&(!R.scorerAll||p.gc>R.scorerAll.g)&&p.gc>=(R.scorerAll?R.scorerAll.g+0:0)){if(!R.scorerAll||p.gc>R.scorerAll.g){R.scorerAll={n:p.name,g:p.gc,club};ch=true;}}if((p.gs||0)>=20)un('tor20');if(p.leg)un('legende');}
+  const T=st.tables&&st.tables[me.lg]&&st.tables[me.lg].me;if(T&&T.w>0)un('sieg1');if((st.history||[]).some(h=>h.status==='Aufstieg'))un('auf1');
+  if(me.lg===1)un('liga1');const tr=me.trophies||[];if(tr.some(x=>x.startsWith('Kreispokal')))un('kreis');if(tr.some(x=>x.startsWith('Landespokal')))un('land');if(tr.some(x=>x.startsWith('Meister')))un('meister');
+  if(st.euro)un('euro');if(tr.some(x=>x.startsWith('Europapokal')))un('eurowin');if(me.cash>=10)un('mio10');if(me.up&&me.up.stadium>=5)un('stadion');if(st.season>=6)un('saison5');
+  if(ch)LS.set('kc:rec',R);
+}
+const _saveRec=saveCareer;saveCareer=function(){_saveRec();try{recUpdate(ST);}catch(e){}};
+function recPage(){
+  try{const car=LS.get('kc:career',null);if(car)recUpdate(car);}catch(e){}
+  const R=LS.get('kc:rec',{ach:{}});const n=Object.keys(R.ach||{}).length;
+  const row=(i,l,v,s)=>`<div class="pl"><span style="font-size:22px;width:34px;text-align:center">${i}</span><div class="pn"><b>${l}</b><span>${s||'Noch kein Eintrag'}</span></div><b style="font-size:18px">${v!=null?v:'–'}</b></div>`;
+  let h=`<div class="card"><h3>🏅 Rekorde</h3>`;
+  h+=row('📈','Beste Saison',R.best?(R.best.place+'.'):null,R.best?`${esc(R.best.club)} · Saison ${R.best.season} · ${LNAME[R.best.lg]}${R.best.pts!=null?' · '+R.best.pts+' Pkt.':''} · ${esc(R.best.status)}`:'');
+  h+=row('⚽','Meiste Tore in einer Saison',R.goals?R.goals.g:null,R.goals?`${esc(R.goals.club)} · Saison ${R.goals.season} · ${LNAME[R.goals.lg]}`:'');
+  h+=row('🎯','Bester Torjäger (Saison)',R.scorer?R.scorer.g:null,R.scorer?`${esc(R.scorer.n)} · ${esc(R.scorer.club)} · Saison ${R.scorer.season}`:'');
+  h+=row('👑','Rekordtorschütze (gesamt)',R.scorerAll?R.scorerAll.g:null,R.scorerAll?`${esc(R.scorerAll.n)} · ${esc(R.scorerAll.club)}`:'');
+  h+=`<p class="tiny mut" style="margin:6px 0 0">Gezählt werden alle deine Karrieren – auch wenn du eine neue startest.</p></div>`;
+  h+=`<div class="card"><div class="row"><h3 style="margin:0">🎖️ Erfolge</h3><span class="sp"></span><b>${n}/${ACH.length}</b></div>${ACH.map(([k,i,t,d])=>{const a=R.ach&&R.ach[k];return `<div class="pl" style="${a?'':'opacity:.4'}"><span style="font-size:22px;width:34px;text-align:center">${a?i:'🔒'}</span><div class="pn"><b>${t}</b><span>${d}${a?` · ${esc(a.c)}, ${esc(a.d)}`:''}</span></div>${a?'<span style="color:var(--acc2)">✓</span>':''}</div>`;}).join('')}</div>`;
+  return h;
+}
+const _vStartRec=vStart;vStart=function(){
+  if(ui.startPg==='rec')return `<div class="row" style="margin:12px 0 0"><button class="btn sm" data-a="stPg" data-v="">‹ Zurück</button><span class="sp"></span><b>Rekorde & Erfolge</b></div>`+recPage();
+  const h=_vStartRec();if(ui.startPg)return h;
+  const R=LS.get('kc:rec',{ach:{}});const n=Object.keys(R.ach||{}).length;
+  return h+`<button class="card" data-a="stPg" data-v="rec" style="display:block;width:100%;text-align:left;cursor:pointer;border:1px solid rgba(245,197,66,.35)"><div class="row"><span style="font-size:34px">🏅</span><div style="margin-left:12px"><div class="h" style="font-size:24px">Rekorde & Erfolge</div><div class="small mut">${n}/${ACH.length} Erfolge${R.best?` · Beste Saison: ${R.best.place}. ${LNAME[R.best.lg]}`:''}</div></div><span class="sp"></span><span class="mut" style="font-size:22px">›</span></div></button>`;
+};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
