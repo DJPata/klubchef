@@ -243,7 +243,7 @@ const TRAITS={
   gie:{n:'Gierig',i:'💰',d:'Will 30 % mehr Gehalt',neg:1},
   ver:{n:'Verletzungsanfällig',i:'🩹',d:'Doppeltes Verletzungsrisiko',neg:1}
 };
-function traitFor(r,p,st){const o=Object.keys(TRAITS).filter(k=>{const t=TRAITS[k];if(t.x8&&!(st&&ext8(st)))return false;if(t.fld&&p.pos==='G')return false;if(t.pos&&t.pos!==p.pos)return false;if(t.young&&p.age>23)return false;if(t.old&&p.age<28)return false;return true;});return r.wpick(o.map(k=>({v:k,w:TRAITS[k].neg?0.5:TRAITS[k].pos?1.6:1}))).v;}
+function traitFor(r,p,st){if(p.pos==='G'&&st&&(st.career||st.rv>=10))return 'tw';const o=Object.keys(TRAITS).filter(k=>{const t=TRAITS[k];if(t.x8&&!(st&&ext8(st)))return false;if(t.fld&&p.pos==='G')return false;if(t.pos&&t.pos!==p.pos)return false;if(t.young&&p.age>23)return false;if(t.old&&p.age<28)return false;return true;});return r.wpick(o.map(k=>({v:k,w:TRAITS[k].neg?0.5:TRAITS[k].pos?1.6:1}))).v;}
 function ensureP(st,p){
   if(!p||p.ct!=null||p.loan)return;
   const r=RNG(st.seed,'pl'+p.id);
@@ -1091,6 +1091,7 @@ function careerWinter(st){
   feed(st,`❄️ Winterpause: 2 Transfers sind erlaubt, dann geht es mit der Rückrunde weiter.`,'me');
 }
 function careerEnsurePrep(st){
+  if(!st.gkFix){st.gkFix=1;for(const c of Object.values(st.clubs))for(const p of (c.squad||[]).concat(c.nlz||[]))if(p.pos==='G'&&p.tr&&p.tr!=='tw')p.tr='tw';for(const p of (st.market||[]))if(p.pos==='G'&&p.tr&&p.tr!=='tw')p.tr='tw';}
   {const me=st.clubs.me;if(me&&!me.nlz){nlzFill(st,CR(st),me);}if(me&&!me.board){boardSet(st);}}
   if(st.phase!=='matchday'||st.md>=18)return;const me=st.clubs.me;
   if(st.prep&&st.prep.md===st.md&&st.prep.s===st.season)return;
@@ -1385,7 +1386,7 @@ async function openGame(code,create){
     if(!snap.metadata.fromCache)clearTimeout(NET.timer);
     recompute();
   },err=>{clearTimeout(NET.timer);ui.loadMsg='Verbindung unterbrochen ('+(err&&err.code||'?')+'). Öffne das Spiel bitte neu.';render();});
-  if(create)await send('CREATE',{seed:rid(12),code,rv:9,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});
+  if(create)await send('CREATE',{seed:rid(12),code,rv:10,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});
 }
 async function loadOpen(){
   if(!NET.db)return;
@@ -1838,7 +1839,7 @@ const ACT={
   openGame(v){openGame(v,false);},
   forgetGame(v){if(!conf('fg'+v))return;LS.set('kc:mine',LS.get('kc:mine',[]).filter(x=>x.code!==v));toast('Spiel aus der Liste entfernt.',true);if(typeof frBeat==='function')frBeat();render();},
   refreshOpen(){ui.openList=null;render();loadOpen();},
-  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:9,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});},
+  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:10,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});},
   contLocal(){cleanup();NET.mode='local';const d=LS.get('kc:local',{raw:[]});NET.raw=d.raw||[];ui.seat=null;ui.view='game';recompute();},
   copy(){const c=ST.code;if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(()=>toast('Code kopiert: '+c,true)).catch(()=>toast('Code: '+c,true));else toast('Code: '+c,true);},
   color(v){ui.jColor=v;render();},
