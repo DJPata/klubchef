@@ -1822,8 +1822,9 @@ function drawTicker(){
 }
 document.getElementById('ov').addEventListener('click',e=>{
   const b=e.target.closest('[data-ov]');if(!b||!TK)return;const a=b.dataset.ov;
+  if((a==='close'||a==='skip')&&Date.now()-(TK.t0||0)<900)return;
   if(a==='close'){clearInterval(TK.iv);document.getElementById('ov').style.display='none';TK=null;return;}
-  if(a==='skip'){clearInterval(TK.iv);TK.min=90;drawTicker();}
+  if(a==='skip'){clearInterval(TK.iv);TK.min=TK.max||90;drawTicker();}
   if(a==='next'){TK.i++;runTicker();}
   if(a==='card'){TK.showCard=true;drawTicker();}
 });
@@ -2198,7 +2199,7 @@ function showHalfTicker(){
   document.getElementById('ov').style.display='flex';runTicker();
 }
 function runTicker(){
-  clearInterval(TK.iv);const m0=TK.ms[TK.i];TK.max=TK.half?45:90;TK.min=TK.auto&&m0&&m0.ht?45:0;TK.penDone=new Set();TK.pen=null;
+  clearInterval(TK.iv);TK.t0=Date.now();const m0=TK.ms[TK.i];TK.max=TK.half?45:90;TK.min=TK.auto&&m0&&m0.ht?45:0;TK.penDone=new Set();TK.pen=null;
   drawTicker();tickTicker();
 }
 function tickTicker(){
