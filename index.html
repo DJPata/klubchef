@@ -1215,6 +1215,7 @@ function careerResolve(st,myCtx,fat){
   if(me.spon&&me.spon.type==='win'&&me.spon.perWin){const lw=results.filter(m=>!m.cup&&m.w==='me').length;if(lw){const x=r2(me.spon.perWin*lw);me.sponWin=r2((me.sponWin||0)+x);feed(st,`💶 Siegprämie von ${me.spon.n}: +${fm(x)}`,'me');}}
   st.last={season:st.season,md:st.md,results,other,cards};
   st.md++;st.ready={};
+  if(st.md===14||st.md===17){const ex=me.squad.filter(p=>p.ct===1&&!p.loan);if(ex.length)feed(st,`📝 ${st.md===17?'Letzter Spieltag':'Noch '+(18-st.md)+' Spieltage'} – Verträge laufen aus: ${ex.map(p=>p.name).join(', ')}. Jetzt verlängern (Mannschaft › Verträge), sonst gehen sie ablösefrei!`,'me');}
   if(st.md>=18&&!st.so)careerEndSeason(st);
   else if(st.md===9)careerWinter(st);
 }
@@ -2102,6 +2103,7 @@ function matchPage(c){
     <div class="row" style="justify-content:center;gap:14px;margin:10px 0"><div style="flex:1">${crest(home?c:opp,40)}<div class="small" style="font-weight:700">${esc((home?c:opp).name)}</div></div><div class="h" style="font-size:26px">VS</div><div style="flex:1">${crest(home?opp:c,40)}<div class="small" style="font-weight:700">${esc((home?opp:c).name)}</div></div></div>${extra}</div>
     <div class="card"><div class="row tiny mut"><span style="width:82px"></span><span class="sp">${home?'Du':'Gegner'+(opp.human?' (geschätzt)':'')}</span><span>${home?'Gegner'+(opp.human?' (geschätzt)':''):'Du'}</span></div>${rbar('Angriff',R.A,O.A,!home)}${rbar('Mittelfeld',R.M,O.M,!home)}${rbar('Abwehr',R.D,O.D,!home)}<p class="tiny mut" style="margin:6px 0 0">${esc(TAC[tac].n)} · ${form} · Moral ${c.moral}/5 · <u data-a="goXI" style="cursor:pointer">Aufstellung & Taktik ändern ›</u></p></div>`+xiWarn(c,form,pickXI(Object.assign({},c,{lineup:curLu(c)}),form));
     {const hc=home?c:opp;if(hc.stadium||(home&&c.ultras))h+=`<div class="small mut" style="text-align:center;margin:-4px 0 8px">🏟 ${hc.stadium?esc((home?'Heimspiel: ':'Auswärts: ')+hc.stadium):''}${home&&c.ultras?` · ${esc(c.ultras)} sind am Start`:''}</div>`;}
+    if(feat(ST)&&ST.md>=(ST.career?14:ST.schedule.length-4)){const ex=c.squad.filter(p=>p.ct===1&&!p.loan);if(ex.length)h+=`<div class="evc" style="padding:10px;border-color:var(--gold)"><b>📝 Verträge laufen aus</b><div class="small">${ex.map(p=>esc(p.name)+' ('+POSL[p.pos]+', '+p.rat+')').join(', ')} – nach dieser Saison ablösefrei weg. <u data-a="goCt" style="cursor:pointer">Jetzt verlängern ›</u></div></div>`;}
     if(ST.career&&c.poach)h+=`<div class="evc bad" style="padding:10px"><b>👀 Abwerbeversuch</b><div class="small">${esc(c.poach.club)} will ein NLZ-Talent holen. <u data-a="goNLZ" style="cursor:pointer">Zum NLZ ›</u></div></div>`;
     h+=analysisCard(c,opp,home,form,tac)+tipCard(c,opp,home,form,tac)+(ST.career?premCard(c):'');
     const L=ST.last;
@@ -2725,6 +2727,7 @@ ACT.campPos=function(v){ui.campPos=v;render();};
 ACT.campC=function(v){if(conf('campC'+v))send('CAMP',{size:+v,pos:ui.campPos||''});};
 ACT.nlzUp=function(v){if(conf('nu'+v))send('NLZ_UP',{player:v});};
 ACT.poachLet=function(){send('POACH_LET');};
+ACT.goCt=function(){ui.tab='squad';ui.subs.squad='ct';render();scrollTo(0,0);};
 ACT.goNLZ=function(){ui.tab='squad';ui.subs.squad='nlz';render();scrollTo(0,0);};
 // Vorstand
 function boardPage(c){
@@ -2840,7 +2843,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='49',APP_RV=11;
+const APP_BUILD='50',APP_RV=11;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
