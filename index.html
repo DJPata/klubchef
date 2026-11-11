@@ -505,7 +505,8 @@ function mRun(st,ctx,r,to,o){
         let gk=null;if(kc.human&&keeperSide.xi&&keeperSide.xi.G[0])gk=keeperSide.xi.G[0].p;
         let pr=gk&&gk.tr==='tw'?0.55:0.76;const min=Math.floor(s*7.5)+r.int(1,7);
         const tk=ext8(st)?penTaker(hs?h:a,hs?RH:RA):null;if(tk&&tk.tr==='elf')pr=1-(1-pr)/2;
-        if(r.f()<pr){if(hs)ctx.gh++;else ctx.ga++;let gx;if(tk){tk.gs=(tk.gs||0)+1;tk.gc=(tk.gc||0)+1;if(statsOn(st)){if(!st.ss)st.ss={};const c0=hs?h:a;const e=st.ss['p'+tk.id]||(st.ss['p'+tk.id]={n:tk.name,c:c0.id,lg:c0.lg||0,g:0,a:0});e.g++;}gx=tk.name;}else gx=goalStat(st,hs?h:a,hs?RH:RA,r).x;ctx.ev.push({m:min,t:'p',s:hs?'h':'a',x:gx,sc:ctx.gh+':'+ctx.ga});}
+        if(o&&o.penStop&&(ctx.h===o.penStop||ctx.a===o.penStop)&&!ctx.penPend){ctx.penPend={s:hs?'h':'a',m:min,tk:tk?tk.id:null,tkn:tk?tk.name:scorer(hs?h:a,hs?RH:RA,r),gk:gk?gk.id:null,gkn:gk?gk.name:''};}
+        else if(r.f()<pr){if(hs)ctx.gh++;else ctx.ga++;let gx;if(tk){tk.gs=(tk.gs||0)+1;tk.gc=(tk.gc||0)+1;if(statsOn(st)){if(!st.ss)st.ss={};const c0=hs?h:a;const e=st.ss['p'+tk.id]||(st.ss['p'+tk.id]={n:tk.name,c:c0.id,lg:c0.lg||0,g:0,a:0});e.g++;}gx=tk.name;}else gx=goalStat(st,hs?h:a,hs?RH:RA,r).x;ctx.ev.push({m:min,t:'p',s:hs?'h':'a',x:gx,sc:ctx.gh+':'+ctx.ga});}
         else ctx.ev.push({m:min,t:'pm',s:hs?'h':'a',x:gk?gk.name:''});}
       // Rote Karte
       for(const side of ['h','a'])if(r.f()<0.006&&ctx.red[side]<2){
@@ -1003,6 +1004,7 @@ function careerCupRound(st,cup,r,inj,results,sus){
   const al=cup.alive,win=[],ms=[];const rn=CUPR[4-Math.log2(al.length)]||'Runde';
   for(let i=0;i<al.length;i+=2){
     const h=st.clubs[al[i]],a=st.clubs[al[i+1]];
+    if((h.human||a.human)&&!st.cupPend&&st.career){st.cupPend={key:cup===st.cups.kreis?'kreis':'land',j:ms.length,wi:win.length,h:al[i],a:al[i+1],md:st.md,name:cup.name+' · '+rn};ms.push({h:al[i],a:al[i+1],gh:null,ga:null,pens:null,w:null});win.push(null);continue;}
     const m=playMatch(st,al[i],al[i+1],r,{cup:true,cupName:cup.name+' · '+rn,inj,sus});ms.push(m);
     if(h.human||a.human)results.push(m);
     if((h.human||a.human)&&m.pens){m.pend=true;m.pens=null;m.w=null;st.so={cup:cup===st.cups.kreis?'kreis':'land',mi:results.length-1,j:ms.length-1,wi:win.length,h:m.h,a:m.a,kicks:[]};}
@@ -1142,14 +1144,54 @@ function careerKickoff(st){
   const me=st.clubs.me;const fx=st.sched[me.lg][st.md].find(m=>m.includes('me'));
   const r=CR(st);const ctx=mStart(st,fx[0],fx[1],r);
   if(st.prep&&st.prep.md===st.md&&st.prep.s===st.season){const os=fx[0]==='me'?'ta':'th';ctx[os]=st.prep.oppTac;}
-  st.ht={ctx,xi1:[...xiIds(me)],brk:null};ctx.seg0=0;
+  st.ht={ctx,xi1:[...xiIds(me)],brk:null,cup:null};ctx.seg0=0;
   const hit=liveRun(st,ctx,r,6);
   delete ctx.RH;delete ctx.RA;st.ht.brk=hit;st.phase='halftime';
   for(const id of ctx.sus||[]){const p=me.squad.find(x=>x.id===id);if(p)p.sent=true;}
 }
+function careerCupKick(st){
+  const me=st.clubs.me;const P=st.cupPend;const r=CR(st);const ctx=mStart(st,P.h,P.a,r);
+  st.ht={ctx,xi1:[...xiIds(me)],brk:null,cup:P};ctx.seg0=0;
+  const hit=liveRun(st,ctx,r,6);
+  delete ctx.RH;delete ctx.RA;st.ht.brk=hit;st.phase='halftime';
+  for(const id of ctx.sus||[]){const p=me.squad.find(x=>x.id===id);if(p)p.sent=true;}
+}
+function careerCupFinish(st,ctx,P,fat){
+  const me=st.clubs.me;const r=CR(st);const cup=st.cups[P.key];const inj=[],sus=[];
+  const m=mFinish(st,ctx,r,{cup:true,cupName:P.name,inj,sus,noInj:'me'});m.ht=true;m.from=ctx.seg0==null?45:ctx.seg0;
+  for(const [p,n] of inj)p.inj=Math.max(p.inj||0,n);
+  if(ctx.li)for(const l of ctx.li){const p=me.squad.find(x=>x.id===l.id);if(p)p.inj=Math.max(p.inj||0,l.n);}
+  applySus(st,sus);if(fat)condUpdate(me,fat.full,fat.half);
+  st.last={season:st.season,md:P.md+0.5,results:[m],other:[],cards:{}};
+  const lg=cup.log[cup.log.length-1];
+  if(m.pens){m.pend=true;m.pens=null;m.w=null;st.so={cup:P.key,mi:0,j:P.j,wi:P.wi,h:m.h,a:m.a,kicks:[]};}
+  else{cup.alive[P.wi]=m.w;if(lg&&lg.ms[P.j])Object.assign(lg.ms[P.j],{gh:m.gh,ga:m.ga,pens:null,w:m.w});if(m.w==='me')money(me,cup.name==='Kreispokal'?0.01:0.15);}
+  if(lg&&lg.ms[P.j]&&m.pend)Object.assign(lg.ms[P.j],{gh:m.gh,ga:m.ga});
+  st.cupPend=null;
+  if(!st.so)cupWinnerCheck(st,cup);
+  if(st.md>=18&&!st.so)careerEndSeason(st);
+}
+function penKick(st,zone){
+  if(st.phase!=='halftime'||!st.ht||!st.ht.ctx.penPend)rej('Kein Elfmeter.');
+  const ctx=st.ht.ctx,P=ctx.penPend,me=st.clubs.me;const r=CR(st);const meSide=ctx.h==='me'?'h':'a';const shooting=P.s===meSide;
+  const rz=()=>{const col=r.wpick([{v:0,w:4},{v:1,w:2},{v:2,w:4}]).v;return (r.chance(0.4)?0:1)*3+col;};
+  const rd=()=>{const col=r.wpick([{v:0,w:4},{v:1,w:2},{v:2,w:4}]).v;return (r.chance(0.45)?0:1)*3+col;};
+  const z=Math.max(0,Math.min(5,zone|0));const shot=shooting?z:rz(),dive=shooting?rd():z;
+  const sr=Math.floor(shot/3),sc=shot%3,dr=Math.floor(dive/3),dc=dive%3;
+  const tk=shooting&&P.tk?me.squad.find(p=>p.id===P.tk):null;const gk=!shooting&&P.gk?me.squad.find(p=>p.id===P.gk):null;
+  const ex=tk&&tk.tr==='elf'?0.5:1,kk=gk&&gk.tr==='tw'?1.5:1,fac=ex*kk;
+  let res;
+  if(r.chance((sr===0?0.12:0.05)*ex))res='miss';
+  else if(sc===dc){const p=sc===1?(sr===dr?0.85:0.55):(sr===dr?0.75:0.35);res=r.chance(Math.min(0.95,p*fac))?'save':'goal';}
+  else res=r.chance(0.03)?'save':'goal';
+  if(res==='goal'){if(P.s==='h')ctx.gh++;else ctx.ga++;if(tk){tk.gs=(tk.gs||0)+1;tk.gc=(tk.gc||0)+1;}ctx.ev.push({m:P.m,t:'p',s:P.s,x:P.tkn,sc:ctx.gh+':'+ctx.ga});}
+  else ctx.ev.push({m:P.m,t:'pm',s:P.s,x:res==='save'?P.gkn||'':''});
+  st.lastPen={s:P.s,shot,dive,res,name:P.tkn,m:P.m,h:ctx.h,a:ctx.a};
+  delete ctx.penPend;st.ht.brk={t:'pend',m:P.m,to:st.ht.brk?st.ht.brk.to:12};
+}
 // Live-Verletzungen: Spiel wird unterbrochen, damit man wechseln kann
 function liveRun(st,ctx,r,to){
-  while(ctx.s<to){mRun(st,ctx,r,ctx.s+1,{});const hit=liveInj(st,ctx,r,to);if(hit)return hit;}
+  while(ctx.s<to){mRun(st,ctx,r,ctx.s+1,{penStop:'me'});if(ctx.penPend){const P=ctx.penPend;return {t:'pen',m:P.m,to,s:P.s,name:P.tkn};}const hit=liveInj(st,ctx,r,to);if(hit)return hit;}
   return null;
 }
 function liveSubs(st){const me=st.clubs.me;const x1=new Set(st.ht.xi1||[]);return [...xiIds(me)].filter(i=>!x1.has(i)).length;}
@@ -1163,7 +1205,7 @@ function liveInj(st,ctx,r,to){
       ctx.li.push({id:p.id,n,m:min});
       if(liveSubs(st)>=3){ctx.ev.push({m:min,t:'i',s:side,x:p.name+' (spielt angeschlagen weiter – keine Wechsel mehr)',n});continue;}
       ctx.ev.push({m:min,t:'i',s:side,x:p.name,n});p.sent=true;p.liveInj=true;
-      return {m:min,pid:p.id,name:p.name,n,to};}
+      return {t:'inj',m:min,pid:p.id,name:p.name,n,to};}
   }
   return null;
 }
@@ -1178,9 +1220,9 @@ function careerSecondHalf(st){
   if(!ctx.RH)rateCtx(st,ctx);
   const x1=new Set(st.ht.xi1||[]),x2=xiIds(me);
   for(const p of me.squad){delete p.sent;delete p.liveInj;}
-  st.ht=null;st.phase='matchday';
+  const cupP=st.ht.cup;st.ht=null;st.phase='matchday';
   const full=new Set([...x1].filter(i=>x2.has(i))),half=new Set([...x1,...x2].filter(i=>!(x1.has(i)&&x2.has(i))));
-  careerResolve(st,ctx,{full,half});
+  if(cupP)careerCupFinish(st,ctx,cupP,{full,half});else careerResolve(st,ctx,{full,half});
 }
 function careerResolve(st,myCtx,fat){
   const r=CR(st);const inj=[];const sus=[];const results=[],other=[];const me=st.clubs.me;
@@ -1216,8 +1258,8 @@ function careerResolve(st,myCtx,fat){
   st.last={season:st.season,md:st.md,results,other,cards};
   st.md++;st.ready={};
   if(st.md===14||st.md===17){const ex=me.squad.filter(p=>p.ct===1&&!p.loan);if(ex.length)feed(st,`📝 ${st.md===17?'Letzter Spieltag':'Noch '+(18-st.md)+' Spieltage'} – Verträge laufen aus: ${ex.map(p=>p.name).join(', ')}. Jetzt verlängern (Mannschaft › Verträge), sonst gehen sie ablösefrei!`,'me');}
-  if(st.md>=18&&!st.so)careerEndSeason(st);
-  else if(st.md===9)careerWinter(st);
+  if(st.md>=18&&!st.so&&!st.cupPend)careerEndSeason(st);
+  else if(st.md===9&&!st.cupPend)careerWinter(st);
 }
 function careerEndSeason(st){
   const me=st.clubs.me;const t=me.lg;const r=CR(st);
@@ -1324,11 +1366,12 @@ const CH={
     if(ok){if(p.rat>=p.pot){p.rat=Math.min(99,p.rat+1);p.pot=Math.min(99,p.pot+1);c.lastTrain={id:p.id,ok:1,t:`${p.name}: Stärke ${p.rat} · Potenzial ${p.pot} (beide +1)`};}else{p.pot=Math.min(99,p.pot+1);c.lastTrain={id:p.id,ok:1,t:`${p.name}: Potenzial ${p.pot-1} → ${p.pot}`};}}
     else c.lastTrain={id:p.id,ok:0,t:`${p.name}: kein Fortschritt`};},
   COND(st,a){const c=st.clubs.me;c.cond=!!a.on;for(const p of c.squad){if(c.cond){if(p.fr==null)p.fr=100;}else delete p.fr;}},
+  PEN_KICK(st,a){penKick(st,a.zone);},
   READY(st,a){const c=st.clubs.me;
     if(st.phase==='offseason'&&st.winter){if(c.cash<0)rej('Kontostand negativ – verkaufe Spieler oder nimm einen Kredit auf.');st.winter=false;c.offers=[];c.bid=null;st.phase='matchday';feed(st,`Die Rückrunde beginnt!`);return;}
     if(st.phase==='offseason'){const gone=c.staff.filter(x=>x.exp);for(const x of gone)feed(st,`${x.name} (${STAFF[x.type].n}) verlässt ${c.name} – Vertrag ausgelaufen.`,c.id);c.staff=c.staff.filter(x=>!x.exp);if(!c.spon)rej('Wähle zuerst einen Sponsor (Büro).');if(c.cash<0)rej('Kontostand negativ – verkaufe Spieler oder nimm einen Kredit auf.');c.offers=[];c.bid=null;st.phase='matchday';st.offFirst=false;feed(st,`Anpfiff zur Saison ${st.season}!`);return;}
-    if(st.phase==='matchday'){if(st.so)rej('Erst das Elfmeterschießen spielen.');if(c.pending)rej('Triff erst deine offene Entscheidung.');if(a.form&&FORM[a.form])c.form=a.form;if(a.tac&&TAC[a.tac])c.tac=a.tac;setLineup(c,a.lineup);careerKickoff(st);return;}
-    if(st.phase==='halftime'){const old=c.lineup,of=c.form;if(a.form&&FORM[a.form])c.form=a.form;setLineup(c,a.lineup);
+    if(st.phase==='matchday'){if(st.so)rej('Erst das Elfmeterschießen spielen.');if(c.pending)rej('Triff erst deine offene Entscheidung.');if(a.form&&FORM[a.form])c.form=a.form;if(a.tac&&TAC[a.tac])c.tac=a.tac;setLineup(c,a.lineup);if(st.cupPend)careerCupKick(st);else careerKickoff(st);return;}
+    if(st.phase==='halftime'){if(st.ht&&st.ht.ctx.penPend)rej('Erst den Elfmeter schießen.');const old=c.lineup,of=c.form;if(a.form&&FORM[a.form])c.form=a.form;setLineup(c,a.lineup);
       if(st.ht&&st.ht.xi1){const x1=new Set(st.ht.xi1);const n=[...xiIds(c)].filter(i=>!x1.has(i)).length;if(n>3){c.lineup=old;c.form=of;rej(`Maximal 3 Wechsel pro Spiel (du hast ${n}).`);}}
       if(a.tac&&TAC[a.tac])c.tac=a.tac;careerSecondHalf(st);return;}
     if(st.phase==='seasonEnd'){if(st.cl&&!st.cl.done){if(a.form&&FORM[a.form])c.form=a.form;if(a.tac&&TAC[a.tac])c.tac=a.tac;setLineup(c,a.lineup);}careerNext(st);}
@@ -1509,7 +1552,7 @@ function readyBar(){
     if(ST.phase==='offseason'&&!c.spon){hint='Wähle zuerst einen Sponsor: <u data-a="tab" data-v="coffice" style="cursor:pointer">zum Büro</u>';dis='disabled';}
     if(ST.phase==='offseason'&&c.cash<0){hint='Kontostand negativ – verkaufe Spieler oder nimm einen Kredit auf.';dis='disabled';}
     if(ST.phase==='matchday'&&c.pending){hint='Erst die Ereigniskarte entscheiden: <u data-a="tab" data-v="cmatch" style="cursor:pointer">zum Spieltag</u>';dis='disabled';}
-    const label={offseason:ST.winter?'❄️ Rückrunde starten':'Saison starten',matchday:`Anpfiff Spieltag ${ST.md+1}`,seasonEnd:ST.cl&&!ST.cl.done?'⭐ CL-Finale spielen':'Weiter zur Sommerpause'}[ST.phase];
+    const label={offseason:ST.winter?'❄️ Rückrunde starten':'Saison starten',matchday:ST.cupPend?'🏆 Anpfiff Pokal':`Anpfiff Spieltag ${ST.md+1}`,seasonEnd:ST.cl&&!ST.cl.done?'⭐ CL-Finale spielen':'Weiter zur Sommerpause'}[ST.phase];
     return `<div style="height:96px"></div><div class="readybar"><div class="in">${hint?`<div class="tiny" style="color:var(--bad);margin-bottom:6px">${hint}</div>`:''}<button class="btn pri block" data-a="ready" ${dis}>${label}</button></div></div>`;}
   if(!['offseason','matchday','seasonEnd'].includes(ST.phase))return '';
   const c=myC();const host=isHostMe();
@@ -1988,7 +2031,7 @@ ACT.xiSwap=function(v){const c=myC();const S=ui.xiSel;if(!S)return;const form=ui
 // ---------- Kopfzeile mit Wappen ----------
 function header(){
   const c=myC();
-  const ph={lobby:'Lobby',draft:'Draft',offseason:ST.winter?'Winterpause':'Sommerpause',matchday:`Spieltag ${ST.md+1}/${ST.schedule.length}`,halftime:ST.ht&&ST.ht.brk?'Unterbrechung':'Halbzeit',seasonEnd:'Saisonende',over:'Spielende'}[ST.phase];
+  const ph={lobby:'Lobby',draft:'Draft',offseason:ST.winter?'Winterpause':'Sommerpause',matchday:ST.cupPend?'Pokal':`Spieltag ${ST.md+1}/${ST.schedule.length}`,halftime:ST.ht&&ST.ht.brk&&ST.ht.brk.t==='pen'?'Elfmeter!':ST.ht&&ST.ht.brk?'Unterbrechung':'Halbzeit',seasonEnd:'Saisonende',over:'Spielende'}[ST.phase];
   let seat='';
   if(NET.mode==='local'&&ST.players.length)seat=`<div class="row" style="margin-top:8px"><span class="small mut">Am Handy:</span><select data-ch="seat" style="flex:1">${ST.players.map(p=>`<option value="${esc(p.pid)}" ${p.pid===ui.seat?'selected':''}>${esc(p.name)} – ${esc(p.club)}${ST.ready[p.pid]?' ✓':''}</option>`).join('')}</select></div>`;
   const unread=bellUnread();
@@ -1999,7 +2042,7 @@ function header(){
 // ---------- Tabs ----------
 const _tabsFor=tabsFor;
 tabsFor=function(){
-  if(ST.career&&ST.phase==='halftime')return [['cht',ST.ht&&ST.ht.brk?'🚑':'⏸',ST.ht&&ST.ht.brk?'Pause':'Halbzeit'],['squad','👕','Mannschaft'],['cleague','🏆','Ligen']];
+  if(ST.career&&ST.phase==='halftime')return [['cht',ST.ht&&ST.ht.brk?(ST.ht.brk.t==='inj'?'🚑':'⚽'):'⏸',ST.ht&&ST.ht.brk?'Pause':'Halbzeit'],['squad','👕','Mannschaft'],['cleague','🏆','Ligen']];
   if(ST.career&&ST.phase==='offseason'&&ST.winter)return [['market','🔁','Markt'],['squad','👕','Mannschaft'],['cleague','🏆','Ligen'],['coffice','💼','Klub'],['settings','⚙️','Optionen']];
   return (_tabsFor()||[]).map(t=>t[0]==='squad'?[t[0],t[1],'Mannschaft']:t[0]==='news'?['settings','⚙️','Optionen']:t);
 };
@@ -2075,6 +2118,7 @@ function st0(){return ST;}
 
 // ---------- Spieltag (online + Karriere) ----------
 function oppInfo(c){
+  if(ST.career&&ST.cupPend){const P=ST.cupPend;const home=P.h==='me';return{home,opp:ST.clubs[home?P.a:P.h],cup:P};}
   if(ST.career){const fx=ST.sched[c.lg][ST.md].find(m=>m.includes('me'));const home=fx[0]==='me';return{home,opp:ST.clubs[home?fx[1]:fx[0]]};}
   const fx=ST.schedule[ST.md].find(m=>m.includes(c.id));const home=fx[0]===c.id;return{home,opp:ST.clubs[home?fx[1]:fx[0]]};
 }
@@ -2099,7 +2143,7 @@ function matchPage(c){
     if(ST.career)extra=cupToday(c).map(x=>`<div class="small" style="margin-top:6px">🏆 Außerdem ${esc(x.cup.name)} (${x.rn}): <b>${esc(x.opp.name)}</b></div>`).join('');
     else{const ci=ST.cupMds.indexOf(ST.md);if(ci>=0&&!ST.cup.winner){const i=ST.cup.alive.indexOf(c.id);if(i>=0)extra=`<div class="small" style="margin-top:6px">🏆 Außerdem ${esc(CUPN[ci])}: <b>${esc(ST.clubs[ST.cup.alive[i^1]].name)}</b></div>`;}}
     const pos=ST.career?careerTable(ST,c.lg).findIndex(x=>x.id==='me')+1:sortedTable(ST).findIndex(x=>x.id===c.id)+1;
-    h+=`<div class="card" style="text-align:center"><div class="mut small">${ST.career?LNAME[c.lg]+' · ':''}Spieltag ${ST.md+1} · Platz ${pos} · ${home?'Heim':'Auswärts'}</div>
+    h+=`<div class="card" style="text-align:center"><div class="mut small">${ST.career&&ST.cupPend?'🏆 '+esc(ST.cupPend.name)+' · '+(home?'Heim':'Auswärts'):`${ST.career?LNAME[c.lg]+' · ':''}Spieltag ${ST.md+1} · Platz ${pos} · ${home?'Heim':'Auswärts'}`}</div>${ST.career&&ST.cupPend?'<div class="small" style="color:var(--acc)">Pokalspiel nach dem Ligaspiel – stell jetzt Taktik und Elf um!</div>':''}
     <div class="row" style="justify-content:center;gap:14px;margin:10px 0"><div style="flex:1">${crest(home?c:opp,40)}<div class="small" style="font-weight:700">${esc((home?c:opp).name)}</div></div><div class="h" style="font-size:26px">VS</div><div style="flex:1">${crest(home?opp:c,40)}<div class="small" style="font-weight:700">${esc((home?opp:c).name)}</div></div></div>${extra}</div>
     <div class="card"><div class="row tiny mut"><span style="width:82px"></span><span class="sp">${home?'Du':'Gegner'+(opp.human?' (geschätzt)':'')}</span><span>${home?'Gegner'+(opp.human?' (geschätzt)':''):'Du'}</span></div>${rbar('Angriff',R.A,O.A,!home)}${rbar('Mittelfeld',R.M,O.M,!home)}${rbar('Abwehr',R.D,O.D,!home)}<p class="tiny mut" style="margin:6px 0 0">${esc(TAC[tac].n)} · ${form} · Moral ${c.moral}/5 · <u data-a="goXI" style="cursor:pointer">Aufstellung & Taktik ändern ›</u></p></div>`+xiWarn(c,form,pickXI(Object.assign({},c,{lineup:curLu(c)}),form));
     {const hc=home?c:opp;if(hc.stadium||(home&&c.ultras))h+=`<div class="small mut" style="text-align:center;margin:-4px 0 8px">🏟 ${hc.stadium?esc((home?'Heimspiel: ':'Auswärts: ')+hc.stadium):''}${home&&c.ultras?` · ${esc(c.ultras)} sind am Start`:''}</div>`;}
@@ -2124,14 +2168,14 @@ VIEWS.cht=function(){
   let h=subNav('cht',[['l','Lage'],['t','Taktik'],['e','Elf']]);const s=sub('cht');
   if(s==='l'){
     const myRed=ctx.red?ctx.red[ctx.h==='me'?'h':'a']:0;
-    const brk=ST.ht.brk;if(brk)h+=`<div class="card" style="border:1px solid var(--bad)"><b>🚑 Spielunterbrechung · ${brk.m}′</b><div class="small">${esc(brk.name)} hat sich verletzt (fällt ca. ${brk.n} Spiel${brk.n>1?'e':''} aus). Wechsle ihn unter „Elf“ aus – sonst rückt automatisch der beste Ersatz nach.</div></div>`;
-    h+=`<div class="card" style="text-align:center"><div class="mut small">${brk?'Unterbrechung · '+brk.m+'′':'Halbzeit'} · ${LNAME[c.lg]}</div><div class="score"><div class="tm">${crest(H,36)}<br>${esc(H.name)}</div><div class="sc">${ctx.gh}:${ctx.ga}</div><div class="tm">${crest(A,36)}<br>${esc(A.name)}</div></div>
+    const brk=ST.ht.brk;if(brk&&brk.t==='pen')h+=`<div class="card" style="border:1px solid var(--acc)"><b>⚽ Elfmeter · ${brk.m}′</b><div class="small">${brk.s===(ctx.h==='me'?'h':'a')?'Elfmeter für euch! Du bestimmst die Ecke.':'Elfmeter gegen euch – du springst mit dem Torwart.'}</div><button class="btn pri sm" style="margin-top:8px" data-a="penOpen">⚽ Zum Elfmeter</button></div>`;else if(brk&&brk.t==='inj')h+=`<div class="card" style="border:1px solid var(--bad)"><b>🚑 Spielunterbrechung · ${brk.m}′</b><div class="small">${esc(brk.name)} hat sich verletzt (fällt ca. ${brk.n} Spiel${brk.n>1?'e':''} aus). Wechsle ihn unter „Elf“ aus – sonst rückt automatisch der beste Ersatz nach.</div></div>`;
+    h+=`<div class="card" style="text-align:center"><div class="mut small">${brk?'Unterbrechung · '+brk.m+'′':'Halbzeit'} · ${ST.ht.cup?'🏆 '+esc(ST.ht.cup.name):LNAME[c.lg]}</div><div class="score"><div class="tm">${crest(H,36)}<br>${esc(H.name)}</div><div class="sc">${ctx.gh}:${ctx.ga}</div><div class="tm">${crest(A,36)}<br>${esc(A.name)}</div></div>
     ${myRed?`<p class="small" style="color:var(--bad)">🟥 Ihr spielt in Unterzahl (−${redPen(myRed)} auf alle Mannschaftsteile).</p>`:''}</div>
     <div class="card"><h4 style="margin-top:0">${brk?'Bisher':'1. Halbzeit'}</h4>${ctx.ev.length?ctx.ev.slice().sort((a,b)=>a.m-b.m).map(evLine).join(''):'<div class="small mut">Keine besonderen Vorkommnisse.</div>'}</div>
     <p class="small mut">Ändere jetzt Taktik oder Aufstellung (Wechsel) und ${brk?'spiel weiter':'pfeif die 2. Halbzeit an'}.</p>`;
   }
   if(s==='t')h+=tacPicker(c,form,tac,false);
-  if(s==='e'){const n=ST.ht&&ST.ht.xi1?htSubs(c,curLu(c),form):0;if(ST.ht.brk)h+=`<div class="card" style="border:1px solid var(--bad);padding:10px 14px"><span class="small">🚑 <b>${esc(ST.ht.brk.name)}</b> ist verletzt raus – wähle seinen Ersatz.</span></div>`;h+=`<div class="row" style="margin:10px 2px 0"><b>Wechsel ${n}/3</b><span class="sp"></span><span class="tiny mut">Ein- und Ausgewechselte verlieren nur 5 % Frische</span></div><div class="card">${pitchSvg(c,form)}</div>`+luCard(c,form,false);}
+  if(s==='e'){const n=ST.ht&&ST.ht.xi1?htSubs(c,curLu(c),form):0;if(ST.ht.brk&&ST.ht.brk.t==='inj')h+=`<div class="card" style="border:1px solid var(--bad);padding:10px 14px"><span class="small">🚑 <b>${esc(ST.ht.brk.name)}</b> ist verletzt raus – wähle seinen Ersatz.</span></div>`;h+=`<div class="row" style="margin:10px 2px 0"><b>Wechsel ${n}/3</b><span class="sp"></span><span class="tiny mut">Ein- und Ausgewechselte verlieren nur 5 % Frische</span></div><div class="card">${pitchSvg(c,form)}</div>`+luCard(c,form,false);}
   return h;
 };
 function evLine(e){return `<div class="tk ${e.s}"><span class="m">${e.m}′</span><span>${evText(e)}</span></div>`;}
@@ -2196,7 +2240,7 @@ function drawTicker(){
 // ---------- Ready-Leiste: Halbzeit ----------
 const _readyBar=readyBar;
 readyBar=function(){
-  if(ST.career&&ST.phase==='halftime')return `<div style="height:96px"></div><div class="readybar"><div class="in"><button class="btn pri block" data-a="ready">${ST.ht&&ST.ht.brk?'▶ Weiterspielen':'▶ 2. Halbzeit anpfeifen'}</button></div></div>`;
+  if(ST.career&&ST.phase==='halftime')return `<div style="height:96px"></div><div class="readybar"><div class="in">${ST.ht&&ST.ht.ctx.penPend?'<button class="btn pri block" data-a="penOpen">⚽ Elfmeter ausführen</button>':`<button class="btn pri block" data-a="ready">${ST.ht&&ST.ht.brk?'▶ Weiterspielen':'▶ 2. Halbzeit anpfeifen'}</button>`}</div></div>`;
   return _readyBar();
 };
 
@@ -2226,7 +2270,7 @@ const _tab=ACT.tab;ACT.tab=function(v){ui.pl=null;_tab(v);};
 function showHalfTicker(){
   if(!ST.ht)return;const ctx=ST.ht.ctx;
   if(TK&&TK.iv)clearInterval(TK.iv);
-  const brk=ST.ht.brk;TK={ms:[{h:ctx.h,a:ctx.a,ev:ctx.ev.slice().sort((x,y)=>x.m-y.m),th:ctx.th,ta:ctx.ta,cup:null,pens:null}],i:0,min:0,card:null,showCard:false,md:ST.md,half:true,from:ctx.seg0||0,hmax:brk?brk.m:45,brk:!!brk};
+  const brk=ST.ht.brk;TK={ms:[{h:ctx.h,a:ctx.a,ev:ctx.ev.slice().sort((x,y)=>x.m-y.m),th:ctx.th,ta:ctx.ta,cup:ST.ht.cup?ST.ht.cup.name:null,pens:null}],i:0,min:0,card:null,showCard:false,md:ST.md,half:true,from:ctx.seg0||0,hmax:brk&&brk.t!=='pend'?brk.m:45,brk:!!(brk&&brk.t==='inj'),penStop:!!(brk&&brk.t==='pen')};
   document.getElementById('ov').style.display='flex';runTicker();
 }
 function runTicker(){
@@ -2280,11 +2324,12 @@ function drawTicker(){
   const done=TK.min>=TK.max&&!TK.pen;const more=TK.i<TK.ms.length-1;
   let btn;
   if(!done)btn='<button class="btn block" style="margin-top:12px" data-ov="skip">Überspringen</button>';
+  else if(TK.half&&TK.penStop&&ST.ht&&ST.ht.ctx.penPend){const P=ST.ht.ctx.penPend;const mine=P.s===(m.h==='me'?'h':'a');btn=`<div class="card" style="padding:10px;margin:8px 0;text-align:center"><div class="small" style="color:var(--acc);font-weight:700">${mine?'⚽ Elfmeter! Tippe in die Ecke!':'🧤 Elfmeter gegen euch – tippe, wohin du springst!'}</div><div class="tiny mut">Schütze: ${esc(P.tkn)}</div>${soPadSvg(m,mine).replace(/data-ov="soz"/g,'data-ov="pkz"')}</div>`;}
   else if(TK.half)btn=TK.brk?'<button class="btn pri block" style="margin-top:12px;background:var(--bad);border-color:var(--bad)" data-ov="close">🚑 Spiel unterbrochen – jetzt wechseln</button>':'<button class="btn pri block" style="margin-top:12px" data-ov="close">⏸ Zur Halbzeitpause</button>';
   else btn=more?'<button class="btn pri block" style="margin-top:12px" data-ov="next">Nächstes Spiel</button>':TK.card?'<button class="btn pri block" style="margin-top:12px" data-ov="card">Ereigniskarte aufdecken</button>':'<button class="btn pri block" style="margin-top:12px" data-ov="close">Schließen</button>';
   box.innerHTML=`<div class="row"><span class="pill">${m.cup?esc(m.cup):'Liga · Spieltag '+(TK.md+1)}</span><span class="sp"></span>${TK.half?'':'<button class="ic" data-ov="close">✕</button>'}</div>
   <div class="score"><div class="tm">${crest(H,34)}<br>${esc(H.name)}</div><div class="sc">${gh}:${ga}</div><div class="tm">${crest(A,34)}<br>${esc(A.name)}</div></div>
-  <div class="clock" style="margin-top:6px">${done?(TK.half?(TK.brk?'🚑 Unterbrechung':'Halbzeit'):m.pens?`Elfmeterschießen ${m.pens[0]}:${m.pens[1]}`:'Abpfiff'):TK.min+'′'}</div>
+  <div class="clock" style="margin-top:6px">${done?(TK.half?(TK.penStop?'⚽ Elfmeter!':TK.brk?'🚑 Unterbrechung':'Halbzeit'):m.pens?`Elfmeterschießen ${m.pens[0]}:${m.pens[1]}`:'Abpfiff'):TK.min+'′'}</div>
   ${TK.pen?penSvg(TK.pen,m):''}
   <div style="margin-top:10px;min-height:120px">${ev.slice().reverse().map(evLine).join('')||'<div class="mut small" style="text-align:center;padding-top:30px">Anpfiff…</div>'}</div>${btn}`;
 }
@@ -2294,9 +2339,9 @@ document.getElementById('ov').addEventListener('click',e=>{
 },true);
 const _readyHT=ACT.ready;
 ACT.ready=async function(){
-  const wasMd=ST&&ST.career&&(ST.phase==='matchday'||ST.phase==='halftime');const s0=ST&&ST.ht?ST.ht.ctx.s+'|'+(ST.ht.brk?ST.ht.brk.m:''):'';
+  const wasMd=ST&&ST.career&&(ST.phase==='matchday'||ST.phase==='halftime');const s0=ST&&ST.ht?ST.ht.ctx.s+'|'+(ST.ht.brk?ST.ht.brk.m+ST.ht.brk.t:''):'';
   await _readyHT();
-  if(wasMd&&ST&&ST.phase==='halftime'&&(ST.ht.ctx.s+'|'+(ST.ht.brk?ST.ht.brk.m:''))!==s0){if(ST.ht.brk){ui.subs.cht='e';ui.tab='cht';render();}showHalfTicker();}
+  if(wasMd&&ST&&ST.phase==='halftime'&&(ST.ht.ctx.s+'|'+(ST.ht.brk?ST.ht.brk.m+ST.ht.brk.t:''))!==s0){if(ST.ht.brk&&ST.ht.brk.t==='inj'){ui.subs.cht='e';ui.tab='cht';render();}showHalfTicker();}
 };
 
 // ---------- Elfmeterschießen (Pokal) ----------
@@ -2843,13 +2888,24 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='50',APP_RV=11;
+const APP_BUILD='51',APP_RV=11;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
 async function updCheck(){try{const t=await (await fetch(location.pathname+'?chk='+Date.now(),{cache:'no-store'})).text();const m=t.match(/APP_BUILD='(\d+)'/);if(m&&+m[1]>+APP_BUILD)updBanner('Es gibt eine neue Version von Klubchef.');}catch(e){}}
 setTimeout(updCheck,3000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')updCheck();});
 const _recUpd=recompute;recompute=function(){_recUpd();if(ST&&ST.rv>APP_RV)updBanner('Dieses Spiel wurde mit einer neueren Version erstellt. Bitte aktualisieren, sonst läuft es nicht richtig.');};
+
+// ---------- Elfmeter im Spiel (Karriere): selbst schießen / halten ----------
+ACT.penOpen=function(){if(!ST.ht)return;showHalfTicker();if(TK){clearInterval(TK.iv);TK.min=TK.max;drawTicker();}};
+document.getElementById('ov').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-ov="pkz"]');if(!b||!TK||TK.pkBusy||!ST.ht||!ST.ht.ctx.penPend)return;
+  e.stopPropagation();TK.pkBusy=true;const m=TK.ms[TK.i];
+  await send('PEN_KICK',{zone:+b.dataset.z});
+  const k=ST.lastPen;if(!k){TK.pkBusy=false;return;}
+  TK.pen=Object.assign(soEv(k,0),{m:k.m,so:true});TK.penStop=false;drawTicker();animPen(TK.pen,m);
+  setTimeout(()=>{if(!TK)return;TK.pkBusy=false;ACT.ready();},2600);
+},true);
 
 // ---------- Start ----------
 async function initFirebase(cfg){
