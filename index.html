@@ -148,13 +148,16 @@ const SLOTS={'4-4-2':{D:['AV','IV','IV','AV'],M:['LM','ZM','ZM','RM'],A:['ST','S
   '3-5-2':{D:['IV','IV','IV'],M:['LM','ZM','ZM','ZM','RM'],A:['ST','ST']},'5-3-2':{D:['AV','IV','IV','IV','AV'],M:['ZM','ZM','ZM'],A:['ST','ST']},
   '4-5-1':{D:['AV','IV','IV','AV'],M:['LM','ZM','ZM','ZM','RM'],A:['ST']},'3-4-3':{D:['IV','IV','IV'],M:['LM','ZM','ZM','RM'],A:['FL','ST','FL']},
   '4-4-2R':{D:['AV','IV','IV','AV'],M:['ZM','ZM','ZM','ZM'],A:['ST','ST']},'3-5-2O':{D:['IV','IV','IV'],M:['LM','ZM','ZM','ZM','RM'],A:['ST','ST']},'3-5-2D':{D:['IV','IV','IV'],M:['LM','ZM','ZM','ZM','RM'],A:['ST','ST']}};
+const SPLINE={IV:'D',AV:'D',ZM:'M',LM:'M',RM:'M',ST:'A',FL:'A',TW:'G'};
+function knownSp(p){return [spOf(p)].concat(p&&p.xsp||[]);}
+function spPenP(p,slot){let b=9;for(const s of knownSp(p)){const v=spPen(s,slot);if(v<b)b=v;}return b;}
 function spPen(sp,slot){if(sp===slot)return 0;const k=[sp,slot].sort().join('');return {AVIV:3,LMRM:1,LMZM:2,RMZM:2,FLST:2}[k]!=null?{AVIV:3,LMRM:1,LMZM:2,RMZM:2,FLST:2}[k]:4;}
 function permBest(items,slots){const n=items.length;let best=null,bs=1e9;const idx=[...Array(n).keys()];
-  const rec=(i,used,acc,cost)=>{if(cost>=bs)return;if(i===n){bs=cost;best=acc.slice();return;}for(let j=0;j<n;j++){if(used&(1<<j))continue;const it=items[j];const c=it.p&&!it.oop?spPen(spOf(it.p),slots[i]):0;acc.push(j);rec(i+1,used|(1<<j),acc,cost+c);acc.pop();}};
+  const rec=(i,used,acc,cost)=>{if(cost>=bs)return;if(i===n){bs=cost;best=acc.slice();return;}for(let j=0;j<n;j++){if(used&(1<<j))continue;const it=items[j];const c=it.p&&!it.oop?spPenP(it.p,slots[i]):0;acc.push(j);rec(i+1,used|(1<<j),acc,cost+c);acc.pop();}};
   rec(0,0,[],0);return best||idx;}
 function arrangeSlots(xi,form){const S=SLOTS[form]||SLOTS['4-4-2'];
   for(const k of ['D','M','A']){const sl=S[k];if(!sl||sl.length!==xi[k].length)continue;const ord=permBest(xi[k],sl);
-    xi[k]=ord.map((j,i)=>{const x=Object.assign({},xi[k][j]);x.slot=sl[i];if(x.p&&!x.oop){const pe=spPen(spOf(x.p),sl[i]);if(pe){x.r-=pe;x.sw=pe;}}return x;});}
+    xi[k]=ord.map((j,i)=>{const x=Object.assign({},xi[k][j]);x.slot=sl[i];if(x.p&&!x.oop){const pe=spPenP(x.p,sl[i]);if(pe){x.r-=pe;x.sw=pe;}}return x;});}
   if(xi.G[0])xi.G[0].slot='TW';return xi;}
 const FORM={'4-4-2':[4,4,2],'4-3-3':[4,3,3],'3-5-2':[3,5,2],'5-3-2':[5,3,2],'4-5-1':[4,5,1],'3-4-3':[3,4,3],'4-4-2R':[4,4,2],'3-5-2O':[3,5,2],'3-5-2D':[3,5,2]};
 const FBASE=['4-4-2','4-3-3','3-5-2','5-3-2','4-5-1','3-4-3'];
@@ -421,11 +424,11 @@ function pickXI(c,form){
     xi={G:[],D:[],M:[],A:[]};const need={G:1,D:F[0],M:F[1],A:F[2]};
     for(const k of ['G','D','M','A'])for(const id of (c.lineup[k]||[])){
       if(xi[k].length>=need[k])break;const p=avail.find(q=>q.id===id);if(!p||used.has(p.id))continue;
-      used.add(p.id);xi[k].push(p.pos===k?{p,r:E(p)}:{p,r:E(p)-(k==='G'||p.pos==='G'?25:12),oop:true});
+      used.add(p.id);xi[k].push(p.pos===k||(p.xsp&&p.xsp.some(x=>SPLINE[x]===k))?{p,r:E(p)}:{p,r:E(p)-(k==='G'||p.pos==='G'?25:12),oop:true});
     }
     for(const k of ['G','D','M','A'])xi[k]=xi[k].concat(take(k,need[k]-xi[k].length));
   }else if(c.sp){const S=SLOTS[form]||SLOTS['4-4-2'];xi={G:take('G',1),D:[],M:[],A:[]};
-    for(const k of ['D','M','A'])for(const sl of S[k]){let b=null,bv=-1e9;for(const p of avail){if(p.pos!==k||used.has(p.id))continue;const v=E(p)-spPen(spOf(p),sl);if(v>bv){bv=v;b=p;}}if(b){used.add(b.id);xi[k].push({p:b,r:E(b)});}}
+    for(const k of ['D','M','A'])for(const sl of S[k]){let b=null,bv=-1e9;for(const p of avail){if(p.pos!==k||used.has(p.id))continue;const v=E(p)-spPenP(p,sl);if(v>bv){bv=v;b=p;}}if(b){used.add(b.id);xi[k].push({p:b,r:E(b)});}}
   }else xi={G:take('G',1),D:take('D',F[0]),M:take('M',F[1]),A:take('A',F[2])};
   for(const [k,n] of [['G',1],['D',F[0]],['M',F[1]],['A',F[2]]]){
     while(xi[k].length<n){
@@ -1165,6 +1168,7 @@ function careerEnsurePrep(st){
   }
   st.prep=pr;
 }
+function posChance(p){return Math.max(0.3,Math.min(0.75,0.75-(p.age-18)*0.02));}
 function trainChance(p){return Math.max(3,Math.min(60,60-(p.age-17)*3.5-(p.rat-40)*0.8))/100;}
 function soKick(st,zone){
   const so=st.so;if(!so)rej('Kein Elfmeterschießen.');const r=CR(st);
@@ -1460,7 +1464,12 @@ const CH={
     const slots=c.up.training||1;if(!c.trn||c.trn.md!==st.md||c.trn.s!==st.season)c.trn={md:st.md,s:st.season,n:0,ids:[]};
     if(c.trn.n>=slots)rej('Alle Trainingsplätze sind belegt.');if(c.trn.ids.includes(p.id))rej('Hat heute schon trainiert.');
     if(c.cond){if(p.fr==null)p.fr=100;if(p.fr<20)rej('Zu müde zum Trainieren (unter 20 %).');p.fr=Math.max(0,p.fr-5);}
-    c.trn.n++;c.trn.ids.push(p.id);const ok=CR(st).chance(trainChance(p));
+    c.trn.n++;c.trn.ids.push(p.id);
+    if(a.pos){const t=a.pos;if(!SPLINE[t]||t==='TW'||p.pos==='G'||knownSp(p).includes(t))rej('Diese Position kann er schon.');if(p.ptg!==t){p.ptg=t;p.ptp=0;}
+      if(CR(st).chance(posChance(p))){p.ptp=(p.ptp||0)+1;if(p.ptp>=5){p.xsp=(p.xsp||[]).concat([t]);delete p.ptg;delete p.ptp;c.lastTrain={id:p.id,ok:1,t:`🎓 ${p.name} beherrscht jetzt auch ${t}!`};feed(st,`🎓 ${p.name} hat die Position ${t} gelernt.`,'me');}
+        else c.lastTrain={id:p.id,ok:1,t:`${p.name}: ${t}-Training ${p.ptp}/5 ✓`};}
+      else c.lastTrain={id:p.id,ok:0,t:`${p.name}: ${t}-Training ohne Fortschritt (${p.ptp||0}/5)`};return;}
+    const ok=CR(st).chance(trainChance(p));
     if(ok){if(p.rat>=p.pot){p.rat=Math.min(99,p.rat+1);p.pot=Math.min(99,p.pot+1);c.lastTrain={id:p.id,ok:1,t:`${p.name}: Stärke ${p.rat} · Potenzial ${p.pot} (beide +1)`};}else{p.pot=Math.min(99,p.pot+1);c.lastTrain={id:p.id,ok:1,t:`${p.name}: Potenzial ${p.pot-1} → ${p.pot}`};}}
     else c.lastTrain={id:p.id,ok:0,t:`${p.name}: kein Fortschritt`};},
   COND(st,a){const c=st.clubs.me;c.cond=!!a.on;for(const p of c.squad){if(c.cond){if(p.fr==null)p.fr=100;}else delete p.fr;}},
@@ -2125,7 +2134,7 @@ function xiSwapCard(c,form,X){
   const all=[];for(const k of ['G','D','M','A'])X[k].forEach(x=>{if(x.p)all.push({k,p:x.p});});
   const cur=all.find(a=>a.p.id===S.id);if(!cur){ui.xiSel=null;return '';}
   const inXI=new Map(all.map(a=>[a.p.id,a.k]));
-  const eff=p=>Math.round(effRat(c,p)-(p.pos===S.k?0:(S.k==='G'||p.pos==='G'?25:12)));const e0=eff(cur.p);
+  const eff=p=>Math.round(effRat(c,p)-(p.pos===S.k||(p.xsp&&p.xsp.some(x=>SPLINE[x]===S.k))?0:(S.k==='G'||p.pos==='G'?25:12)));const e0=eff(cur.p);
   const cands=c.squad.filter(p=>p.id!==S.id&&!(p.inj>0)&&!(p.sus>0)&&!p.sent).sort((a,b)=>(inXI.has(a.id)-inXI.has(b.id))||eff(b)-eff(a));
   const row=p=>{const e=eff(p);const w=inXI.get(p.id);
     return `<div class="pl" data-a="xiSwap" data-v="${p.id}" style="cursor:pointer"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(e)}">${e}</span><div class="pn"><b>${esc(p.name)}${p.pos!==S.k?' <span class="tag" style="background:#ff9a3d;color:#13210f">fremde Pos.</span>':''}</b><span>${p.age} J. · Stärke ${p.rat}${c.cond&&p.fr!=null?` · ⚡ ${Math.round(p.fr)} %`:''}${w?` · spielt jetzt ${POSL[w]} – Positionen tauschen`:''}</span></div><b style="color:${e-e0>=0?'#3fd0a0':'#ff5b4d'};margin-right:6px">${e-e0>0?'+':''}${e-e0}</b><span class="mut">⇄</span></div>`;};
@@ -3005,7 +3014,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='58',APP_RV=13;
+const APP_BUILD='59',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3116,7 +3125,7 @@ function euroHtml(){const E=ST.euro;if(!E)return ST.euroQ?'<div class="card smal
 
 // ---------- Unterpositionen in der Anzeige ----------
 function subOn(){return !!(ST&&(ST.career||ST.rv>=13));}
-function posL(p){if(!p)return '';return subOn()?(SPL[spOf(p)]||POSL[p.pos]):POSL[p.pos];}
+function posL(p){if(!p)return '';return subOn()?(SPL[spOf(p)]||POSL[p.pos])+(p.xsp&&p.xsp.length?'+':''):POSL[p.pos];}
 
 const ROLE_TXT={D:['Bleibt hinten: Abwehr +0,8, Mittelfeld −0,8','Normale Ausrichtung','Schaltet sich ein: Mittelfeld/Angriff +0,5, Abwehr −1'],M:['Defensiver Mittelfeldspieler: Abwehr +1, Mittelfeld −0,6','Normale Ausrichtung','Offensiv: Angriff +1,2, Mittelfeld −1'],A:['Lässt sich fallen: Mittelfeld +1, Angriff −1','Normale Ausrichtung','Bleibt vorne: Angriff +0,8, Mittelfeld −0,8']};
 ACT.xiRole=function(v){const [id,r]=String(v).split('|');const c=myC();const form=ui.form||c.form;const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),form);
@@ -3208,6 +3217,25 @@ function prepCard(c){const done=c.prepS===ST.season;const cost=Math.round(SPON[c
   return `<div class="card"><h3>Saisonvorbereitung</h3><p class="small mut" style="margin-top:0">Einmal pro Sommerpause – wähle eine Variante:</p>${O.map(([k,t,d])=>`<div class="tac" data-a="prepGo" data-v="${k}"><b>${t}</b><span class="small">${d}</span></div>`).join('')}</div>`;}
 ACT.prepGo=function(v){send('PREP',{k:v});};
 const _cofficePrep=VIEWS.coffice;VIEWS.coffice=function(){const c=myC();let h=_cofficePrep.apply(this,arguments);if(ui.sub==='vorb')h+=prepCard(c);return h;};
+
+// ---------- Positionstraining ----------
+const _trainPageP=trainPage;
+trainPage=function(c){
+  const mode=ui.trnMode||'rat';
+  const chips=`<div class="chips" style="margin:8px 0 0">${[['rat','💪 Stärke'],['pos','🎓 Position lernen']].map(([k,l])=>`<span class="chip ${mode===k?'on':''}" data-a="trnMode" data-v="${k}">${l}</span>`).join('')}</div>`;
+  if(mode!=='pos')return chips+_trainPageP(c);
+  const slots=c.up.training||1;const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;const ids=used?c.trn.ids:[];const can=ST.phase==='matchday';
+  let h=chips+`<div class="card" style="padding:10px 14px"><div class="row"><b>🎓 Positionstraining</b><span class="sp"></span><span class="pill">Plätze ${used}/${slots}</span></div><p class="tiny mut" style="margin:6px 0 0">Nutzt dieselben Trainingsplätze und kostet 5 % Frische. Nach <b>5 erfolgreichen</b> Einheiten beherrscht der Spieler die neue Position ohne Abzug – auch in einem anderen Mannschaftsteil (z. B. ZM als IV).</p>${c.lastTrain?`<div class="small" style="margin-top:6px;color:${c.lastTrain.ok?'var(--acc2)':'var(--mut)'}">${esc(c.lastTrain.t)}</div>`:''}</div>`;
+  const ps=c.squad.filter(p=>!p.loan&&p.pos!=='G');
+  h+=`<div class="card" style="padding:8px 14px">${ps.map(p=>{const kn=knownSp(p);const opts=['IV','AV','ZM','LM','RM','ST','FL'].filter(x=>!kn.includes(x));const tgt=(ui.ptg&&ui.ptg[p.id])||p.ptg||opts[0];
+    const done=ids.includes(p.id);const tired=c.cond&&p.fr!=null&&p.fr<20;const dis=!can||done||used>=slots||tired||!tgt;const prog=p.ptg===tgt?(p.ptp||0):0;
+    return `<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row"><span class="pos ${p.pos}">${posL(p)}</span><div class="pn" style="margin-left:8px"><b>${esc(p.name)}</b><span>kann: ${kn.join(', ')} · ${p.age} J. · Chance ${Math.round(posChance(p)*100)} %</span></div><span class="sp"></span><b style="margin-right:8px">${prog}/5</b><button class="btn sm ${dis?'':'ok'}" data-a="ptrain" data-v="${p.id}|${tgt}" ${dis?'disabled':''}>${done?'✓':tired?'müde':'🎓'}</button></div>
+    <div class="chips" style="margin:6px 0 0 0;gap:4px">${opts.map(o=>`<span class="chip ${o===tgt?'on':''}" style="padding:3px 8px;font-size:11px" data-a="ptgSet" data-v="${p.id}|${o}">${o}${p.ptg===o&&p.ptp?' '+p.ptp+'/5':''}</span>`).join('')}</div></div>`;}).join('')}</div>`;
+  return h;
+};
+ACT.trnMode=function(v){ui.trnMode=v;render();};
+ACT.ptgSet=function(v){const [id,o]=String(v).split('|');ui.ptg=ui.ptg||{};ui.ptg[id]=o;render();};
+ACT.ptrain=function(v){const [id,o]=String(v).split('|');send('TRAIN',{player:id,pos:o});};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
