@@ -1122,7 +1122,7 @@ function soKick(st,zone){
   const ex=sp&&sp.tr==='elf'?0.5:1,kk=gk&&gk.tr==='tw'?1.5:1,fac=ex*kk;
   let res;
   if(r.chance((sr===0?0.12:0.05)*ex))res='miss';
-  else if(sc===dc){const p=sc===1?(sr===dr?0.85:0.55):(sr===dr?0.75:0.35);res=r.chance(Math.min(0.95,p*fac))?'save':'goal';}
+  else if(sc===dc){const p=sc===1?(sr===dr?0.9:0.55):(sr===dr?0.85:0.35);res=r.chance(Math.min(0.95,p*fac))?'save':'goal';}
   else res=r.chance(0.03)?'save':'goal';
   const k=side==='h'?Math.floor(n/2):Math.floor(n/2);
   so.kicks.push({s:side,shot,dive,res,name:soShooterName(st,side==='h'?so.h:so.a,k)});
@@ -1182,7 +1182,7 @@ function penKick(st,zone){
   const ex=tk&&tk.tr==='elf'?0.5:1,kk=gk&&gk.tr==='tw'?1.5:1,fac=ex*kk;
   let res;
   if(r.chance((sr===0?0.12:0.05)*ex))res='miss';
-  else if(sc===dc){const p=sc===1?(sr===dr?0.85:0.55):(sr===dr?0.75:0.35);res=r.chance(Math.min(0.95,p*fac))?'save':'goal';}
+  else if(sc===dc){const p=sc===1?(sr===dr?0.9:0.55):(sr===dr?0.85:0.35);res=r.chance(Math.min(0.95,p*fac))?'save':'goal';}
   else res=r.chance(0.03)?'save':'goal';
   if(res==='goal'){if(P.s==='h')ctx.gh++;else ctx.ga++;if(tk){tk.gs=(tk.gs||0)+1;tk.gc=(tk.gc||0)+1;}ctx.ev.push({m:P.m,t:'p',s:P.s,x:P.tkn,sc:ctx.gh+':'+ctx.ga});}
   else ctx.ev.push({m:P.m,t:'pm',s:P.s,x:res==='save'?P.gkn||'':''});
@@ -2311,7 +2311,7 @@ function animPen(e,m){
   const P=penPlan(e,m);
   setTimeout(()=>{const b=document.getElementById('pball'),k=document.getElementById('pkeep');if(!b||!k)return;
     const dx=P.bx-150,dy=P.by-178;b.style.transform=`translate(${dx}px,${dy}px) scale(.8)`;
-    const rot=P.kx<0?-70:P.kx>0?70:0;const hi=P.ky!=null?P.ky===0:P.by<90;const ky=P.kx?(hi?-6:20):(hi?-22:4);k.style.transform=`translate(${P.kx*0.85}px,${ky}px) rotate(${hi?rot*0.75:rot}deg)`;
+    const rot=P.kx<0?-70:P.kx>0?70:0;const hi=P.ky!=null?P.ky===0:P.by<90;const ky=P.kx?(hi?-6:20):(hi?-22:4);k.style.transform=`translate(${P.kx*(P.short?0.5:0.85)}px,${ky}px) rotate(${(hi?rot*0.75:rot)*(P.short?0.6:1)}deg)`;
   },350);
   setTimeout(()=>{const b=document.getElementById('pball'),t=document.getElementById('ptxt');if(!b)return;
     b.setAttribute('fill',P.goal?'#3fd0a0':'#ff5b4d');if(t){t.textContent=P.txt;t.style.color=P.goal?'var(--acc2)':'var(--bad)';}},1000);
@@ -2376,7 +2376,8 @@ penPlan=function(e,m){if(!e.so)return _penPlanSO(e,m);
   if(e.shot!=null){const X=[78,150,222],Y=[62,118];const sc=e.shot%3,sr=Math.floor(e.shot/3),dc=e.dive%3,dr=Math.floor(e.dive/3);
     let bx=X[sc],by=Y[sr];if(e.res==='miss'){if(sr===0){by=14;}else{bx=sc===0?22:sc===2?278:bx;by=sc===1?14:90;}}
     else if(e.res==='save'){bx=X[dc]+(X[sc]-X[dc])*0.3;by=Y[dr]+(Y[sr]-Y[dr])*0.3;}
-    return{bx,by,kx:X[dc]-150,ky:dr,goal:e.res==='goal',txt:e.res==='goal'?'TOR!':e.res==='save'?'GEHALTEN!':'VORBEI!'};}
+    let short=false;if(e.res==='goal'&&sc===dc){short=true;if(sc===0)bx=50;else if(sc===2)bx=250;if(sr===dr)by=sr===0?40:140;}
+    return{bx,by,kx:X[dc]-150,ky:dr,short,goal:e.res==='goal',txt:e.res==='goal'?'TOR!':e.res==='save'?'GEHALTEN!':'VORBEI!'};}
   if(e.t==='pm'){const hv=h32(`${m.h}|${m.a}|${e.m}|so`);if(hv%10<3){const opts=[[22,90],[278,90],[150,16]];const X=[78,150,222];return{bx:opts[(hv>>4)%3][0],by:opts[(hv>>4)%3][1],kx:X[(hv>>7)%3]-150,goal:false,txt:'VORBEI!'};}}
   return _penPlanSO(Object.assign({},e,{x:e.x+'#'}),m);};
 const _drawTickerSO=drawTicker;
@@ -2888,7 +2889,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='51',APP_RV=11;
+const APP_BUILD='52',APP_RV=11;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
