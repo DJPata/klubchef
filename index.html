@@ -3014,7 +3014,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='60',APP_RV=13;
+const APP_BUILD='61',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3050,7 +3050,7 @@ ACT.clubInfo=function(v){ui.clubInfo=ui.clubInfo===v?null:v;render();};
 // ---------- Live-Spiel (Karriere): ~2 Minuten, jederzeit Pause ----------
 let LV=null;
 const LV_MS=1330;
-function lvStartMin(){const ctx=ST.ht.ctx;return ctx.lm||0;}
+function lvStartMin(){const ctx=ST.ht.ctx,b=ST.ht.brk;let m=ctx.lm||0;if(ctx.h2||ctx.s>=6&&!b)m=Math.max(m,45);if(b&&b.m)m=Math.max(m,b.m);if(b&&b.t==='live')m=Math.max(m,Math.floor(Math.max(0,ctx.s-1)*7.5));return Math.min(90,m);}
 function liveTicker(){
   if(!ST||!ST.career||!ST.ht)return;if(LV&&LV.on){lvDraw();return;}
   if(TK&&TK.iv)clearInterval(TK.iv);TK=null;
@@ -3060,7 +3060,7 @@ function liveTicker(){
   document.getElementById('ov').style.display='flex';lvDraw();lvRun();
 }
 function lvRun(){clearInterval(LV.iv);LV.iv=setInterval(lvTick,Math.round(LV_MS/LV.speed));}
-function lvStop(st){clearInterval(LV.iv);LV.iv=null;LV.state=st;LV.ctx.lm=LV.min;lvDraw();}
+function lvStop(st){clearInterval(LV.iv);LV.iv=null;LV.state=st;LV.ctx.lm=LV.min;try{saveCareer();}catch(e){}lvDraw();}
 async function lvTick(){
   if(!LV||LV.busy||LV.state==='paused')return;
   if(LV.min<LV.target){LV.min++;lvDraw();return;}
