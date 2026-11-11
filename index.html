@@ -2689,6 +2689,7 @@ const _homeE3=ACT.home;ACT.home=function(){ui.startPg='';ui.logoD=null;return _h
 const MUS={ctx:null,on:LS.get('kc:music',{on:true,vol:0.6}),timer:null,step:0,next:0,bar:0,master:null,delay:null,noise:null};
 function musInit(){
   if(MUS.ctx)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
   const c=new AC();MUS.ctx=c;
   const comp=c.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(c.destination);
   MUS.master=c.createGain();MUS.master.gain.value=0.22*MUS.on.vol;MUS.master.connect(comp);
@@ -2722,12 +2723,15 @@ function musStep(t){
   // Breakdown-Arp
   if(sec===4&&s%2===0){const n=PROG[ch][(s/2)%3]+12;const g=musTone(t,n,sp*1.4,'triangle',0.12,3000,null);if(MUS.delay)g.connect(MUS.delay);}
 }
-function musTick(){const c=MUS.ctx;const sp=60/118/4;while(MUS.next<c.currentTime+0.12){musStep(MUS.next);MUS.next+=sp;MUS.step++;if(MUS.step%16===0)MUS.bar++;}}
+function musTick(){const c=MUS.ctx;if(!c||c.state!=='running')return;const sp=60/118/4;if(MUS.next<c.currentTime-0.2)MUS.next=c.currentTime+0.05;while(MUS.next<c.currentTime+0.12){musStep(MUS.next);MUS.next+=sp;MUS.step++;if(MUS.step%16===0)MUS.bar++;}}
 function musStart(){if(!MUS.on.on)return;musInit();if(!MUS.ctx)return;if(MUS.ctx.state==='suspended')MUS.ctx.resume();if(MUS.timer)return;MUS.next=MUS.ctx.currentTime+0.05;MUS.timer=setInterval(musTick,25);
   MUS.master.gain.cancelScheduledValues(MUS.ctx.currentTime);MUS.master.gain.setValueAtTime(0.0001,MUS.ctx.currentTime);MUS.master.gain.linearRampToValueAtTime(0.22*MUS.on.vol,MUS.ctx.currentTime+1.5);}
 function musStop(){if(MUS.timer){clearInterval(MUS.timer);MUS.timer=null;}if(MUS.ctx&&MUS.ctx.state==='running')MUS.ctx.suspend();}
 function musSave(){LS.set('kc:music',MUS.on);if(MUS.master&&MUS.ctx)MUS.master.gain.setTargetAtTime(0.22*MUS.on.vol,MUS.ctx.currentTime,0.1);}
-document.addEventListener('pointerdown',()=>{if(MUS.on.on&&!MUS.timer&&document.visibilityState==='visible')musStart();},true);
+function musUnlock(){if(!MUS.on.on||document.visibilityState!=='visible')return;musInit();const c=MUS.ctx;if(!c)return;
+  if(c.state!=='running'){c.resume();try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0);}catch(e){}}
+  if(!MUS.timer)musStart();else if(MUS.next<c.currentTime)MUS.next=c.currentTime+0.05;}
+['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,musUnlock,true));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')musStop();else if(MUS.on.on&&MUS.ctx)musStart();});
 ACT.musToggle=function(){MUS.on.on=!MUS.on.on;musSave();if(MUS.on.on)musStart();else musStop();render();};
 ACT.musVol=function(v){MUS.on.vol=+v;musSave();render();};
