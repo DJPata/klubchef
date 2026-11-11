@@ -213,7 +213,7 @@ function value(p){if(CAREER_VAL){const af=p.age<=21?1.3:p.age<=25?1.15:p.age<=29
 function salary(p){if(p.sal!=null)return p.sal;return calcSal(p);}
 function calcSal(p){if(CAREER_VAL)return Math.max(0.005,Math.round(value(p)*0.15*1000)/1000);return Math.max(0.1,r2(value(p)*0.12));}
 function ext8(st){return !!st.career||st.rv>=8;}
-function effRat(c,p){return c&&c.cond&&p.fr!=null?p.rat*(1-0.05*(1-p.fr/100)):p.rat;}
+function effRat(c,p){let r=c&&c.cond&&p.fr!=null?p.rat*(1-0.05*(1-p.fr/100)):p.rat;if(p.mood!=null&&p.mood<30)r*=0.97;return r;}
 function condUpdate(c,full,half){if(!c.cond)return;const rec=has(c,'fit')?40:30;for(const p of c.squad){if(p.fr==null)p.fr=100;if(full.has(p.id))p.fr-=10;else if(half.has(p.id))p.fr-=5;else p.fr+=rec;p.fr=Math.max(0,Math.min(100,p.fr));}}
 function xiIds(c){const X=pickXI(c,c.form);const s=new Set();for(const k of ['G','D','M','A'])for(const x of X[k])if(x.p)s.add(x.p.id);return s;}
 function applyStyle(c,a){const L=a.logo||{};const SH=['shield','circle','diamond','pennant'],PAT=['none','vs','hs','split','band'];
@@ -1235,7 +1235,7 @@ function careerCupFinish(st,ctx,P,fat){
   const m=mFinish(st,ctx,r,{cup:true,cupName:P.name,inj,sus,noInj:'me'});m.ht=true;m.from=90;
   for(const [p,n] of inj)p.inj=Math.max(p.inj||0,n);
   if(ctx.li)for(const l of ctx.li){const p=me.squad.find(x=>x.id===l.id);if(p)p.inj=Math.max(p.inj||0,l.n);}
-  if(ctx.ysus)for(const id of ctx.ysus)sus.push(id);matchNotes(st,m,ctx,fat,r);
+  if(ctx.ysus)for(const id of ctx.ysus)sus.push(id);matchNotes(st,m,ctx,fat,r);moodUpdate(st,fat);
   applySus(st,sus);if(fat)condUpdate(me,fat.full,fat.half);
   st.last={season:st.season,md:P.md+0.5,results:[m],other:[],cards:{}};
   if(P.key==='eurog'){m.pens=null;m.w=m.gh>m.ga?m.h:m.ga>m.gh?m.a:null;euroTab(st.euro,m);if(m.w==='me')money(me,1);else if(!m.w)money(me,0.3);
@@ -1286,6 +1286,16 @@ function matchNotes(st,m,ctx,fat,r){
   out.sort((a,b)=>a.note-b.note);m.notes=out;m.potm=out[0];
 }
 function seasonElf(c){const out=[];for(const [k,n] of [['G',1],['D',4],['M',4],['A',2]]){const ps=c.squad.filter(p=>p.pos===k&&(p.nn||0)>=4).map(p=>({n:p.name,pos:k,id:p.id,avg:p.nts/p.nn})).sort((a,b)=>a.avg-b.avg).slice(0,n);out.push(...ps);}return out;}
+// Zufriedenheit: wer spielt, ist zufrieden – wer draußen sitzt, nicht
+function r3(x){return Math.round(x*1000)/1000;}
+function moodUpdate(st,fat){
+  const me=st.clubs.me;if(!fat)return;const played=new Set([...fat.full,...fat.half]);
+  const sorted=me.squad.filter(p=>!p.loan).slice().sort((a,b)=>b.rat-a.rat);const starter=new Set(sorted.slice(0,13).map(p=>p.id));
+  for(const p of me.squad){if(p.loan)continue;const m0=p.mood==null?70:p.mood;let m=m0;
+    if(played.has(p.id))m+=fat.full.has(p.id)?3:2;else if(!(p.inj>0)&&!(p.sus>0))m-=starter.has(p.id)?6:3;
+    m=Math.max(0,Math.min(100,m));p.mood=m;
+    if(m0>=30&&m<30)feed(st,`😠 ${p.name} ist unzufrieden mit seiner Einsatzzeit – das kostet Leistung und erschwert Verhandlungen.`,'me');}
+}
 function liveSubs(st){const me=st.clubs.me;const x1=new Set(st.ht.xi1||[]);return [...xiIds(me)].filter(i=>!x1.has(i)).length;}
 function liveInj(st,ctx,r){
   const me=st.clubs.me;const side=ctx.h==='me'?'h':'a';const R=side==='h'?ctx.RH:ctx.RA;if(!R||!R.xi)return null;
@@ -1327,6 +1337,7 @@ function careerResolve(st,myCtx,fat){
   for(const [p,n] of inj)p.inj=Math.max(p.inj||0,n);
   if(myCtx&&myCtx.li)for(const l of myCtx.li){const p=me.squad.find(x=>x.id===l.id);if(p)p.inj=Math.max(p.inj||0,l.n);}
   if(myCtx&&myCtx.ysus)for(const id of myCtx.ysus)sus.push(id);
+  if(myCtx)moodUpdate(st,fat);
   {const mm=results.find(m=>(m.h==='me'||m.a==='me')&&!m.cup);if(mm&&myCtx)matchNotes(st,mm,myCtx,fat,r);if(mm&&mm.h==='me'&&me.tp&&me.tp!==1)me.fans=Math.max(100,Math.round(me.fans*(1+({0.8:0.006,1.2:-0.004,1.5:-0.01}[me.tp]||0))));}
   applySus(st,sus);
   const F=SPON[me.lg];const card=r.wpick(CCARDS);const data=card.prep?card.prep(me,r,st,F):{};
@@ -1400,7 +1411,7 @@ function careerNext(st){
   st.season++;
   for(const x of me.staff){x.ct=(x.ct==null?1:x.ct)-1;if(x.ct<=0){x.ct=0;x.exp=true;const f=STAFFF[me.lg];x.newSal=r2(1.6*f);x.bonus=r2(f);feed(st,`📝 Vertrag von ${x.name} (${STAFF[x.type].n}) ist ausgelaufen – im Büro › Staff verlängern oder gehen lassen.`,'me');}}
   if(me.lent&&me.lent.length){for(const x of me.lent){x.p.apps=Math.max(x.p.apps||0,15);me.squad.push(x.p);}feed(st,`Zurück von der Leihe: ${me.lent.map(x=>x.p.name).join(', ')}.`,'me');me.lent=[];}
-  for(const p of me.squad){p.yc=0;p.nts=0;p.nn=0;}
+  for(const p of me.squad){p.yc=0;p.nts=0;p.nn=0;p.negN=0;if(p.mood!=null)p.mood=Math.min(100,p.mood+15);}
   devHuman(st,me,r);
   nlzSeason(st,r,me);
   if(me.lg<oldLg)me.fans=Math.round(me.fans*1.5);else if(me.lg>oldLg)me.fans=Math.round(me.fans*0.75);
@@ -1455,6 +1466,20 @@ const CH={
   COND(st,a){const c=st.clubs.me;c.cond=!!a.on;for(const p of c.squad){if(c.cond){if(p.fr==null)p.fr=100;}else delete p.fr;}},
   PEN_KICK(st,a){penKick(st,a.zone);},
   STEP(st){liveStep(st);},
+  EXT_OFFER(st,a){const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler.');if(p.ct==null||p.ct>2)rej('Vertrag läuft noch lange.');
+    if((p.negN||0)>=3)rej(`${p.name} will diese Saison nicht mehr verhandeln.`);
+    const y=clamp(+a.years||1,1,3),pct=[0.8,0.9,1,1.1].includes(+a.pct)?+a.pct:1;const dem=r3(extDemand(p,y)*(p.ask||1));const mood=p.mood==null?70:p.mood;
+    const pr=Math.max(0.05,Math.min(pct>=1.1?1:0.95,0.25+(pct-0.8)*3.4+(mood-60)/120));const r=CR(st);
+    if(r.chance(pr)){p.sal=r3(dem*pct);p.ct+=y;delete p.ask;p.negN=0;p.mood=Math.min(100,mood+10);feed(st,`✍️ ${p.name} verlängert um ${y} Jahr${y>1?'e':''} für ${fm(p.sal)} pro Saison.`,'me');return;}
+    p.negN=(p.negN||0)+1;p.ask=r3((p.ask||1)*1.05);p.mood=Math.max(0,mood-5);
+    feed(st,`❌ ${p.name} lehnt ab – sein Berater will jetzt 5 % mehr.${p.negN>=3?' Für diese Saison ist er raus aus den Gesprächen.':''}`,'me');},
+  PREP(st,a){if(st.phase!=='offseason'||st.winter)rej('Nur in der Sommerpause.');const c=st.clubs.me;if(c.prepS===st.season)rej('Die Vorbereitung ist schon geplant.');
+    const r=CR(st);const k=a.k;const cost=r2(SPON[c.lg]*0.15);
+    if(k==='lager'){if(c.cash<cost)rej('Nicht genug Geld.');money(c,-cost);c.moral=Math.min(5,c.moral+1);const yg=r.shuffle(c.squad.filter(p=>p.age<=24&&p.rat<p.pot)).slice(0,2);for(const p of yg)p.rat++;for(const p of c.squad){if(c.cond)p.fr=100;p.mood=Math.min(100,(p.mood==null?70:p.mood)+10);}
+      c.prepT=`🏕️ Trainingslager: Moral +1, alle zufrieden${yg.length?', '+yg.map(p=>p.name).join(' und ')+' +1 Stärke':''}.`;}
+    else if(k==='test'){const x=r2(SPON[c.lg]*0.06);money(c,x);c.fans=Math.round(c.fans*1.03);for(const p of c.squad)p.mood=Math.min(100,(p.mood==null?70:p.mood)+5);c.prepT=`⚽ Testspiele: +${fm(x)} Einnahmen, 3 % mehr Fans, Ersatzspieler bekommen Spielzeit.`;}
+    else if(k==='ruhe'){for(const p of c.squad){if(c.cond)p.fr=100;}c.prepT='🌴 Ruhige Vorbereitung: alle gehen ausgeruht in die Saison.';}
+    else rej('?');c.prepS=st.season;feed(st,c.prepT,'me');},
   TPRICE(st,a){const v=+a.v;if(![0.8,1,1.2,1.5].includes(v))rej('?');st.clubs.me.tp=v;},
   READY(st,a){const c=st.clubs.me;
     if(st.phase==='offseason'&&st.winter){if(c.cash<0)rej('Kontostand negativ – verkaufe Spieler oder nimm einen Kredit auf.');st.winter=false;c.offers=[];c.bid=null;st.phase='matchday';feed(st,`Die Rückrunde beginnt!`);return;}
@@ -1753,7 +1778,7 @@ cleague(){
 },
 coffice(){
   const c=myC();const off=ST.phase==='offseason'&&!ST.winter;
-  const subs=off?[['sponsor','Sponsor'],['vorstand','Vorstand'],['bericht','Bericht'],['staff','Staff'],['ausbau','Ausbau'],['finanzen','Finanzen']]:[['vorstand','Vorstand'],['finanzen','Finanzen'],['sponsor','Sponsor'],['staff','Staff'],['ausbau','Ausbau']];
+  const subs=off?[['sponsor','Sponsor'],['vorb','Vorbereitung'+(c.prepS===ST.season?'':' ❗')],['vorstand','Vorstand'],['bericht','Bericht'],['staff','Staff'],['ausbau','Ausbau'],['finanzen','Finanzen']]:[['vorstand','Vorstand'],['finanzen','Finanzen'],['sponsor','Sponsor'],['staff','Staff'],['ausbau','Ausbau']];
   let h=subChips(subs);
   if(ui.sub==='staff'){return h+careerStaffView(c,off);}
   if(ui.sub==='vorstand')return h+boardPage(c);
@@ -2079,7 +2104,7 @@ function crestBase(c,sz){sz=sz||28;const col=c.color||'#888';const ini=esc(initi
 function dot(c){return `<span class="dot" style="background:${c.color}"></span>`;}
 function ticons(p,mk){let s='';if(p.sold)s+=' <span class="tag" title="verkauft">🔜</span>';if(p.tr&&TRAITS[p.tr])s+=` <span title="${esc(TRAITS[p.tr].n)}">${TRAITS[p.tr].i}</span>`;if(p.inj>0)s+=` <span class="tag inj">🚑${p.inj}</span>`;if(p.sus>0)s+=' <span class="tag inj">🟥</span>';if(p.loan)s+=' <span class="tag">Leihe</span>';if(p.ct===1&&!mk)s+=' <span class="tag" style="color:var(--gold);border-color:#f5c54255">📝</span>';return s;}
 function crow(p,o){o=o||{};
-  return `<div class="pl" ${o.tap?`data-a="pl" data-v="${p.id}" style="cursor:pointer"`:''}><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${ticons(p,o.mk)}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${o.sub||`${p.age} J.${p.ct!=null?` · Vertrag ${p.ct} J.`:''}${p.fr!=null&&ST&&myC()&&myC().cond?' · '+frTag(p):''}${p.nn?' · Ø '+noteF(p.nts/p.nn):''}${p.yc?' · 🟨'+p.yc:''}`}</span></div>${o.right||(o.tap?'<span class="mut">›</span>':'')}</div>`;}
+  return `<div class="pl" ${o.tap?`data-a="pl" data-v="${p.id}" style="cursor:pointer"`:''}><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${ticons(p,o.mk)}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${o.sub||`${p.age} J.${p.ct!=null?` · Vertrag ${p.ct} J.`:''}${p.fr!=null&&ST&&myC()&&myC().cond?' · '+frTag(p):''}${p.nn?' · Ø '+noteF(p.nts/p.nn):''}${p.yc?' · 🟨'+p.yc:''}${ST&&ST.career&&p.mood!=null&&!p.loan?' · '+moodI(p.mood):''}`}</span></div>${o.right||(o.tap?'<span class="mut">›</span>':'')}</div>`;}
 
 // ---------- Spielfeld ----------
 function pitchSvg(c,form){
@@ -2149,7 +2174,7 @@ function playerPage(p,c,ctx){
   <div class="kpi"><span>Saison ⚽/🅰️</span><b>${p.gs||0} / ${p.as||0}</b></div><div class="kpi"><span>Gesamt ⚽/🅰️</span><b>${p.gc||0} / ${p.ac||0}</b></div></div>
   ${p.inj>0?`<p class="small" style="color:var(--bad)">🚑 Verletzt – fällt noch ${p.inj} Spiel${p.inj>1?'e':''} aus.</p>`:''}${p.sus>0?'<p class="small" style="color:var(--bad)">🟥 Gesperrt für das nächste Spiel.</p>':''}</div>`;
   if(own&&feat(ST)&&p.ct!=null&&p.ct<=2&&!p.loan){
-    h+=`<div class="card"><h3>Vertrag verlängern</h3><p class="small mut">${p.ct===1?'Der Vertrag läuft nach dieser Saison aus – dann geht er ablösefrei!':'Noch '+p.ct+' Jahre Vertrag.'} Seine Gehaltsforderung:</p>${[1,2,3].map(y=>`<div class="pl"><div class="pn"><b>+${y} Jahr${y>1?'e':''}</b><span>${fm(extDemand(p,y))} pro Saison (bisher ${fm(salary(p))})</span></div><button class="btn sm ok" data-a="extend" data-v="${p.id}|${y}">${cl('ext'+p.id+y,'Verlängern')}</button></div>`).join('')}</div>`;
+    if(ST.career)h+=negCard(p);else h+=`<div class="card"><h3>Vertrag verlängern</h3><p class="small mut">${p.ct===1?'Der Vertrag läuft nach dieser Saison aus – dann geht er ablösefrei!':'Noch '+p.ct+' Jahre Vertrag.'} Seine Gehaltsforderung:</p>${[1,2,3].map(y=>`<div class="pl"><div class="pn"><b>+${y} Jahr${y>1?'e':''}</b><span>${fm(extDemand(p,y))} pro Saison (bisher ${fm(salary(p))})</span></div><button class="btn sm ok" data-a="extend" data-v="${p.id}|${y}">${cl('ext'+p.id+y,'Verlängern')}</button></div>`).join('')}</div>`;
   }
   if(own&&off&&!p.loan&&ST.career)h+=`<button class="btn block" style="margin-bottom:8px" data-a="lendOut" data-v="${p.id}">${cl('lend'+p.id,'🔁 Bis Saisonende verleihen','Wirklich verleihen? Er spart dir Gehalt und sammelt Spielpraxis.')}</button>`;
   if(own&&off&&!p.loan)h+=`<button class="btn bad block" data-a="sell" data-v="${p.id}">${cl('sell'+p.id,'Verkaufen für '+fm(sellPrice(c,p)),'Wirklich für '+fm(sellPrice(c,p))+' verkaufen?')}</button>`;
@@ -2980,7 +3005,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='57',APP_RV=13;
+const APP_BUILD='58',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3166,6 +3191,23 @@ function tpCard(c){const tp=c.tp||1;const L=[[0.8,'Günstig','Volles Haus, mehr 
   const est=v=>{const o=c.tp;c.tp=v;const x=careerEcon(ST,c).ticket;c.tp=o;return x;};
   return `<div class="card"><h3>🎟️ Ticketpreis</h3><div class="chips">${L.map(([v,l])=>`<span class="chip ${tp===v?'on':''}" data-a="tpSet" data-v="${v}">${l}</span>`).join('')}</div><p class="small" style="margin:6px 0 0">Pro Heimspiel ca. <b>${fm(est(tp))}</b>${L.find(x=>x[0]===tp)[2]?' · '+L.find(x=>x[0]===tp)[2]:''}</p></div>`;}
 ACT.tpSet=function(v){send('TPRICE',{v:+v});};
+
+// ---------- Zufriedenheit, Verhandlung, Vorbereitung ----------
+function moodI(m){return m>=70?'😃':m>=45?'🙂':m>=30?'😐':'😠';}
+function negCard(p){const pct=ui.negPct||1;const mood=p.mood==null?70:p.mood;const ask=p.ask||1;
+  const chance=pc=>Math.round(Math.max(0.05,Math.min(pc>=1.1?1:0.95,0.25+(pc-0.8)*3.4+(mood-60)/120))*100);
+  return `<div class="card"><h3>Vertrag verhandeln</h3><p class="small mut" style="margin-top:0">${p.ct===1?'Der Vertrag läuft nach dieser Saison aus – dann geht er ablösefrei!':'Noch '+p.ct+' Jahre Vertrag.'} Stimmung: ${moodI(mood)} ${mood}/100${ask>1?` · Berater fordert +${Math.round((ask-1)*100)} %`:''}</p>
+  <div class="row small" style="gap:6px;flex-wrap:wrap"><span class="mut">Dein Angebot:</span>${[[0.8,'80 %'],[0.9,'90 %'],[1,'100 %'],[1.1,'110 %']].map(([v,l])=>`<span class="chip ${pct===v?'on':''}" style="padding:5px 9px;font-size:12px" data-a="negPct" data-v="${v}">${l}</span>`).join('')}</div>
+  <p class="tiny mut" style="margin:4px 0 6px">Zusage-Chance bei ${Math.round(pct*100)} %: ca. ${chance(pct)} %${(p.negN||0)?` · Versuche diese Saison: ${p.negN}/3`:''}</p>
+  ${[1,2,3].map(y=>{const d=extDemand(p,y)*ask;return `<div class="pl"><div class="pn"><b>+${y} Jahr${y>1?'e':''}</b><span>Forderung ${fm(d)} · dein Angebot <b>${fm(d*pct)}</b> (bisher ${fm(salary(p))})</span></div><button class="btn sm ok" data-a="negGo" data-v="${p.id}|${y}" ${(p.negN||0)>=3?'disabled':''}>Anbieten</button></div>`;}).join('')}</div>`;}
+ACT.negPct=function(v){ui.negPct=+v;render();};
+ACT.negGo=function(v){const [id,y]=String(v).split('|');send('EXT_OFFER',{player:id,years:+y,pct:ui.negPct||1});};
+function prepCard(c){const done=c.prepS===ST.season;const cost=Math.round(SPON[c.lg]*0.15*1000)/1000;
+  if(done)return `<div class="card"><h3>Saisonvorbereitung</h3><p class="small">${esc(c.prepT||'Erledigt.')}</p></div>`;
+  const O=[['lager','🏕️ Trainingslager',`Kostet ${fm(cost)} · Moral +1, alle Spieler zufriedener, 2 junge Spieler können +1 Stärke machen`],['test','⚽ Testspiele','Bringt etwas Geld und Fans, Ersatzspieler bekommen Spielzeit'],['ruhe','🌴 Ruhige Vorbereitung','Kostenlos · alle gehen ausgeruht in die Saison']];
+  return `<div class="card"><h3>Saisonvorbereitung</h3><p class="small mut" style="margin-top:0">Einmal pro Sommerpause – wähle eine Variante:</p>${O.map(([k,t,d])=>`<div class="tac" data-a="prepGo" data-v="${k}"><b>${t}</b><span class="small">${d}</span></div>`).join('')}</div>`;}
+ACT.prepGo=function(v){send('PREP',{k:v});};
+const _cofficePrep=VIEWS.coffice;VIEWS.coffice=function(){const c=myC();let h=_cofficePrep.apply(this,arguments);if(ui.sub==='vorb')h+=prepCard(c);return h;};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
