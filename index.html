@@ -214,6 +214,13 @@ function sellPrice(c,p){let v=value(p)*0.8;if(has(c,'sd'))v*=1.15;return r2(v);}
 function visible(c,p){return (p.tier||1)<=c.up.scouting+1;}
 function money(c,x){c.cash=r2(c.cash+x);}
 function newId(st){return 'p'+(st.nextId++);}
+// Legenden-Nachnamen (ab rv9 bzw. Karriere): ehemalige Profis mit anderem Vornamen
+const LEGS=['Ballack','Scholl','Effenberg','Matthäus','Klinsmann','Völler','Kahn','Lehmann','Klose','Podolski','Schweinsteiger','Lahm','Mertesacker','Frings','Häßler','Sammer','Möller','Basler','Bierhoff','Kuranyi','Kießling','Kuntz','Brehme','Littbarski','Rummenigge','Beckenbauer','Neuville','Jancker','Elber','Lizarazu','Zidane','Henry','Pirès','Vieira','Figo','Maldini','Baresi','Totti','Del Piero','Pirlo','Nesta','Cannavaro','Schewtschenko','Nedvěd','Rosický','Larsson','Bergkamp','Kluivert','Seedorf','Davids','Gullit','Rijkaard','Owen','Gerrard','Lampard','Scholes','Beckham','Shearer','Hierro','Puyol','Iniesta','Butragueño','Hagi','Stoichkov','Šuker','Litmanen','Laudrup','Schmeichel','Batistuta','Riquelme','Crespo','Zanetti','Drogba','Okocha','Yeboah','Weah','Makaay','Pizarro','Hargreaves','Deisler','Ricken','Chapuisat','Sforza','Herzog','Polster'];
+const LEGM=['Ronaldinho','Rivaldo','Kaká','Romário','Bebeto','Cafu','Dunga','Juninho','Adriano','Ailton','Raúl','Xavi','Guti','Dedê','Marcelinho','Amoroso','Zé Roberto','Lúcio','Élber'];
+function legOk(st){return !!st&&(st.career||st.rv>=9);}
+function applyLeg(st,r,p){if(!legOk(st)||!r.chance(0.07))return;
+  if(r.chance(0.25)){p.name=r.pick(LEGM);}else{let f=r.pick(FIRST);p.name=f+' '+r.pick(LEGS);}
+  p.leg=1;p.rat=Math.min(90,p.rat+2);p.pot=Math.max(p.pot,p.rat);}
 function pname(r){return r.pick(FIRST)+' '+r.pick(LAST);}
 function tierOf(r,p){let t=p.rat>=80?5:p.rat>=75?4:p.rat>=70?3:p.rat>=62?2:1;if(p.age<=21&&p.pot>=80)t++;t+=r.int(-1,0);return clamp(t,1,5);}
 
@@ -271,7 +278,7 @@ function genMarket(st,r,n){
   const out=[];
   for(let i=0;i<n;i++){
     const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;
-    const p=genPlayer(st,r,pos,67,8,18,33);p.tier=tierOf(r,p);out.push(p);
+    const p=genPlayer(st,r,pos,67,8,18,33);if(st.rv>=9)applyLeg(st,r,p);p.tier=tierOf(r,p);out.push(p);
   }
   return out;
 }
@@ -312,7 +319,7 @@ function newHumanClub(p){
 function drafterAt(st,p){const d=st.draft,n=d.order.length;const rd=Math.floor(p/n),i=p%n;if(d.board)return d.order[(rd+i)%n];return d.order[rd%2?n-1-i:i];}
 function drafter(st){return drafterAt(st,st.draft.pick);}
 const BOARD=10;
-function boardPlayer(st,r,pos){if(!pos)pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:5},{v:'A',w:3}]).v;return genPlayer(st,r,pos,64,8,18,33);}
+function boardPlayer(st,r,pos){if(!pos)pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:5},{v:'A',w:3}]).v;const p=genPlayer(st,r,pos,64,8,18,33);if(st.rv>=9)applyLeg(st,r,p);return p;}
 function fillBoard(st){
   const d=st.draft;const r=RNG(st.seed,'board'+d.pick);
   while(d.board.length<BOARD)d.board.push(boardPlayer(st,r));
@@ -781,7 +788,7 @@ const H={
     }
     const n=st.players.length,pool=[];
     const extra={G:2,D:3,M:3,A:3};
-    for(const pos of ['G','D','M','A'])for(let i=0;i<QUOTA[pos]*n+extra[pos];i++)pool.push(genPlayer(st,r,pos,64,8,18,33));
+    for(const pos of ['G','D','M','A'])for(let i=0;i<QUOTA[pos]*n+extra[pos];i++){const p=genPlayer(st,r,pos,64,8,18,33);if(st.rv>=9)applyLeg(st,r,p);pool.push(p);}
     st.draft={pool,order:r.shuffle(st.players.map(p=>p.pid)),pick:0,total:n*15};
     st.phase='draft';
     feed(st,'Der Draft beginnt! Jeder Manager stellt 15 Spieler zusammen.');
@@ -905,14 +912,45 @@ function CR(st){return RNG(st.seed,'c'+(st.rc++));}
 function mktRate(c){return Math.round(SPON[c.lg]*0.6/18*1000)/1000;}
 function careerEcon(st,c){const t=c.lg;return{ticket:r2(Math.min(c.fans,CCAP[c.up.stadium])*TPRICE[t]/1e6),win:WINB[t]};}
 function clubName(r,used){for(let i=0;i<200;i++){const n=r.pick(PREF)+' '+r.pick(TOWNS);if(!used.has(n)){used.add(n);return n;}}return 'SV '+used.size;}
+// ---------- Regionen (Karriere) ----------
+const REG={
+ bw:{n:'Baden-Württemberg',a:'Baden',s:['Schriesheim','Ladenburg','Weinheim','Hemsbach','Dossenheim','Leimen','Wiesloch','Walldorf','Sandhausen','Hockenheim','Schwetzingen','Eppelheim','Edingen','Ilvesheim','Brühl','Ketsch','Nußloch','Sinsheim','Eberbach','Neckargemünd','Bruchsal','Bretten','Kronau','Östringen','Mosbach','Buchen','Bad Rappenau','Eppingen'],b:['Mannheim','Heidelberg','Karlsruhe','Stuttgart','Freiburg','Heilbronn','Pforzheim','Ulm']},
+ by:{n:'Bayern',a:'Bayern',s:['Dachau','Freising','Erding','Ebersberg','Starnberg','Germering','Fürstenfeldbruck','Moosburg','Landsberg','Weilheim','Penzberg','Rosenheim','Traunstein','Altötting','Mühldorf','Kelheim','Neumarkt','Schwabach','Roth','Lauf','Forchheim','Herzogenaurach','Ansbach','Dinkelsbühl','Kitzingen','Haßfurt'],b:['Nürnberg','Augsburg','Regensburg','Würzburg','Ingolstadt','Fürth','Erlangen','Bamberg']},
+ be:{n:'Berlin',a:'Preußen',s:['Spandau','Tegel','Reinickendorf','Pankow','Weißensee','Lichtenberg','Marzahn','Hellersdorf','Köpenick','Treptow','Neukölln','Britz','Rudow','Tempelhof','Mariendorf','Lichtenrade','Steglitz','Zehlendorf','Wannsee','Charlottenburg','Wilmersdorf','Schöneberg','Kreuzberg','Friedrichshain','Wedding','Moabit'],b:['Berlin','Potsdam','Cottbus','Frankfurt (Oder)','Brandenburg','Magdeburg']},
+ bb:{n:'Brandenburg',a:'Brandenburg',s:['Oranienburg','Bernau','Eberswalde','Strausberg','Fürstenwalde','Königs Wusterhausen','Luckenwalde','Jüterbog','Zossen','Ludwigsfelde','Teltow','Werder','Nauen','Falkensee','Rathenow','Neuruppin','Wittstock','Prenzlau','Schwedt','Angermünde','Lübben','Finsterwalde','Senftenberg','Guben','Spremberg'],b:['Potsdam','Cottbus','Brandenburg','Frankfurt (Oder)','Berlin','Magdeburg']},
+ hb:{n:'Bremen',a:'Hanse',s:['Vegesack','Blumenthal','Burglesum','Gröpelingen','Walle','Findorff','Schwachhausen','Horn','Oberneuland','Hemelingen','Osterholz','Huchting','Habenhausen','Arsten','Delmenhorst','Achim','Stuhr','Weyhe','Syke','Lilienthal','Ritterhude','Osterholz-Scharmbeck','Verden','Bremerhaven'],b:['Bremen','Bremerhaven','Oldenburg','Osnabrück','Hamburg','Hannover']},
+ hh:{n:'Hamburg',a:'Hanse',s:['Altona','Eimsbüttel','Barmbek','Wandsbek','Bergedorf','Harburg','Blankenese','Eppendorf','Ottensen','Bahrenfeld','Lurup','Niendorf','Langenhorn','Bramfeld','Rahlstedt','Billstedt','Wilhelmsburg','Finkenwerder','Norderstedt','Pinneberg','Wedel','Ahrensburg','Reinbek','Buxtehude','Stade'],b:['Hamburg','Lübeck','Kiel','Bremen','Lüneburg','Hannover']},
+ he:{n:'Hessen',a:'Hessen',s:['Bensheim','Heppenheim','Lampertheim','Viernheim','Bürstadt','Lorsch','Groß-Gerau','Rüsselsheim','Dreieich','Langen','Dietzenbach','Rodgau','Hanau','Maintal','Bad Vilbel','Oberursel','Bad Homburg','Friedberg','Butzbach','Wetzlar','Marburg','Limburg','Fulda','Bad Hersfeld','Eschwege','Korbach'],b:['Frankfurt','Wiesbaden','Kassel','Darmstadt','Offenbach','Gießen','Mainz','Mannheim']},
+ mv:{n:'Mecklenburg-Vorpommern',a:'Pommern',s:['Wismar','Güstrow','Bad Doberan','Kühlungsborn','Warnemünde','Ribnitz','Stralsund','Bergen','Sassnitz','Greifswald','Wolgast','Anklam','Pasewalk','Ueckermünde','Demmin','Waren','Malchow','Teterow','Parchim','Ludwigslust','Hagenow','Grevesmühlen','Neustrelitz','Plau'],b:['Rostock','Schwerin','Neubrandenburg','Stralsund','Greifswald','Lübeck']},
+ ni:{n:'Niedersachsen',a:'Sachsen',s:['Celle','Peine','Gifhorn','Wolfenbüttel','Salzgitter','Goslar','Hameln','Hildesheim','Nienburg','Verden','Rotenburg','Cuxhaven','Stade','Buxtehude','Lüneburg','Uelzen','Soltau','Vechta','Cloppenburg','Lingen','Meppen','Papenburg','Leer','Aurich','Emden','Nordhorn'],b:['Hannover','Braunschweig','Osnabrück','Oldenburg','Göttingen','Wolfsburg','Bremen']},
+ nw:{n:'Nordrhein-Westfalen',a:'Westfalen',s:['Hamm','Unna','Kamen','Lünen','Castrop','Herne','Witten','Hattingen','Velbert','Mettmann','Ratingen','Hilden','Langenfeld','Monheim','Dormagen','Neuss','Kaarst','Viersen','Kempen','Moers','Dinslaken','Bottrop','Gladbeck','Marl','Recklinghausen','Iserlohn','Lüdenscheid','Siegen','Paderborn','Gütersloh'],b:['Köln','Düsseldorf','Essen','Bochum','Duisburg','Wuppertal','Gelsenkirchen','Münster','Bielefeld','Bonn','Aachen','Krefeld','Dortmund']},
+ rp:{n:'Rheinland-Pfalz',a:'Pfalz',s:['Speyer','Frankenthal','Worms','Neustadt','Bad Dürkheim','Grünstadt','Landau','Germersheim','Wörth','Haßloch','Schifferstadt','Bingen','Alzey','Ingelheim','Bad Kreuznach','Idar-Oberstein','Pirmasens','Zweibrücken','Kusel','Bad Ems','Neuwied','Andernach','Mayen','Bitburg','Wittlich'],b:['Mainz','Kaiserslautern','Ludwigshafen','Koblenz','Trier','Mannheim','Saarbrücken']},
+ sl:{n:'Saarland',a:'Saar',s:['Völklingen','Saarlouis','Dillingen','Merzig','Lebach','Neunkirchen','Homburg','St. Ingbert','Blieskastel','Sulzbach','Friedrichsthal','Püttlingen','Heusweiler','Riegelsberg','Quierschied','Illingen','Ottweiler','St. Wendel','Wadern','Losheim','Mettlach','Beckingen','Schmelz','Bexbach'],b:['Saarbrücken','Kaiserslautern','Trier','Homburg','Mainz','Ludwigshafen']},
+ sn:{n:'Sachsen',a:'Sachsen',s:['Meißen','Radebeul','Pirna','Freital','Riesa','Großenhain','Bautzen','Görlitz','Zittau','Löbau','Kamenz','Hoyerswerda','Freiberg','Döbeln','Mittweida','Plauen','Zwickau','Reichenbach','Aue','Annaberg','Glauchau','Grimma','Torgau','Delitzsch','Markkleeberg'],b:['Dresden','Leipzig','Chemnitz','Zwickau','Plauen','Halle']},
+ st:{n:'Sachsen-Anhalt',a:'Anhalt',s:['Stendal','Salzwedel','Gardelegen','Burg','Genthin','Schönebeck','Staßfurt','Bernburg','Köthen','Aschersleben','Quedlinburg','Halberstadt','Wernigerode','Blankenburg','Sangerhausen','Eisleben','Hettstedt','Merseburg','Naumburg','Weißenfels','Zeitz','Bitterfeld','Wittenberg','Zerbst'],b:['Magdeburg','Halle','Dessau','Leipzig','Halberstadt','Braunschweig']},
+ sh:{n:'Schleswig-Holstein',a:'Holstein',s:['Husum','Heide','Itzehoe','Elmshorn','Pinneberg','Wedel','Bad Segeberg','Bad Oldesloe','Ahrensburg','Mölln','Ratzeburg','Eutin','Plön','Preetz','Eckernförde','Rendsburg','Schleswig','Kappeln','Neumünster','Bad Bramstedt','Kaltenkirchen','Geesthacht','Norderstedt','Niebüll'],b:['Kiel','Lübeck','Flensburg','Neumünster','Hamburg','Rostock']},
+ th:{n:'Thüringen',a:'Thüringen',s:['Gotha','Eisenach','Arnstadt','Ilmenau','Suhl','Meiningen','Sonneberg','Hildburghausen','Saalfeld','Rudolstadt','Pößneck','Schleiz','Greiz','Altenburg','Apolda','Sömmerda','Mühlhausen','Nordhausen','Sondershausen','Bad Langensalza','Heiligenstadt','Leinefelde','Schmalkalden','Zella-Mehlis'],b:['Erfurt','Jena','Gera','Weimar','Gotha','Halle']}
+};
+const BIGC=['München','Berlin','Hamburg','Köln','Frankfurt','Stuttgart','Düsseldorf','Leipzig','Dortmund','Essen','Bremen','Dresden','Hannover','Nürnberg','Duisburg','Bochum','Wuppertal','Bielefeld','Bonn','Münster','Mannheim','Karlsruhe','Augsburg','Wiesbaden','Mönchengladbach','Gelsenkirchen','Aachen','Braunschweig','Kiel','Chemnitz','Halle','Magdeburg','Freiburg','Krefeld','Mainz','Lübeck','Erfurt','Rostock','Kassel','Saarbrücken'];
+const BIGP=['Borussia','Eintracht','Fortuna','Hertha','Werder','Hansa','Arminia','Alemannia','Union','Kickers','Rot-Weiß','Preußen','Dynamo','Viktoria','Germania','Concordia','Teutonia','Lokomotive'];
+const STATEP={Bayern:['Nürnberg','Augsburg','Würzburg','Regensburg','Ingolstadt'],Franken:['Nürnberg','Fürth','Würzburg','Bamberg','Erlangen'],Schwaben:['Augsburg','Ulm','Stuttgart','Reutlingen'],Baden:['Karlsruhe','Mannheim','Freiburg','Heidelberg','Pforzheim'],Württemberg:['Stuttgart','Heilbronn','Ulm','Esslingen'],Westfalia:['Bochum','Dortmund','Gelsenkirchen','Münster','Bielefeld','Hamm'],Hessen:['Frankfurt','Wiesbaden','Darmstadt','Offenbach','Gießen'],Sachsen:['Dresden','Chemnitz','Zwickau','Plauen'],Saxonia:['Leipzig','Halle','Magdeburg'],Holstein:['Lübeck','Flensburg','Neumünster'],Rheinland:['Köln','Bonn','Koblenz','Düsseldorf'],Pfalz:['Kaiserslautern','Ludwigshafen','Mainz'],Thüringen:['Erfurt','Jena','Gera'],Hanse:['Hamburg','Bremen','Rostock','Lübeck'],Niedersachsen:['Hannover','Braunschweig','Osnabrück','Oldenburg'],Saar:['Saarbrücken','Homburg']};
+const BIGX=new Set(['Bayern München','Borussia Dortmund','Borussia Mönchengladbach','Eintracht Frankfurt','Eintracht Braunschweig','Fortuna Düsseldorf','Fortuna Köln','Hertha Berlin','Werder Bremen','Hansa Rostock','Arminia Bielefeld','Alemannia Aachen','Union Berlin','Rot-Weiß Essen','Rot-Weiß Erfurt','Preußen Münster','Dynamo Dresden','Holstein Kiel','Sachsen Leipzig','Hessen Kassel','Viktoria Köln','Viktoria Berlin','Lokomotive Leipzig','Dynamo Berlin','Kickers Offenbach','Teutonia Ottensen','Kickers Stuttgart']);
+function regOf(st){return REG[st.region]||null;}
+function regTowns(st){const g=regOf(st);return g?g.s:TOWNS;}
+function bigName(r,used){for(let i=0;i<300;i++){let n;if(r.chance(0.5)){const k=r.pick(Object.keys(STATEP));n=k+' '+r.pick(STATEP[k]);}else n=r.pick(BIGP)+' '+r.pick(BIGC);if(!BIGX.has(n)&&!used.has(n)&&![...used].some(u=>u.endsWith(' '+n.split(' ').slice(1).join(' ')))){used.add(n);return n;}}return clubName(r,used);}
+function townName(r,used,list){const pool=list.filter(t=>![...used].some(u=>u.endsWith(' '+t)));const t=pool.length?r.pick(pool):r.pick(list);for(let i=0;i<50;i++){const n=r.pick(PREF)+' '+t;if(!used.has(n)){used.add(n);return n;}}return clubName(r,used);}
+function regClubName(st,r,used,L){const g=regOf(st);if(!g)return clubName(r,used);
+  if(L===1)return bigName(r,used);
+  if(L===2){const own=g.b.filter(x=>![...used].some(u=>u.endsWith(' '+x)));if(own.length&&r.chance(0.6)){const t=r.pick(own);const n=(r.chance(0.35)?g.a:r.pick(PREF))+' '+t;if(!used.has(n)&&!BIGX.has(n)){used.add(n);return n;}}return townName(r,used,BIGC.slice(10));}
+  return townName(r,used,g.s);}
 function lgClubs(st,L){return st.order[L];}
 function careerTable(st,L){return st.order[L].map(id=>({id,...st.tables[L][id]})).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf||(a.id<b.id?-1:1));}
 
-function newCareer(name,club,color){
+function newCareer(name,club,color,region){
   const seed=Math.random().toString(36).slice(2);
   const st={v:1,rv:5,career:true,code:'KARRIERE',seed,rc:0,host:'me',local:false,phase:'offseason',settings:{seasons:0,double:true,draft:'auto'},
     players:[{pid:'me',name,club,color}],clubs:{},order:{},tables:{},sched:{},nextId:1,season:1,md:0,schedule:[],cupMds:[],cup:null,
-    market:[],staffPool:[],ready:{},last:null,feed:[],history:[],offFirst:true,cups:{},spOffers:null,cl:null};
+    market:[],staffPool:[],ready:{},last:null,feed:[],history:[],offFirst:true,cups:{},spOffers:null,cl:null,region:REG[region]?region:null};
   const r=CR(st);const used=new Set([club]);
   const c=newHumanClub({pid:'me',name,club,color});
   c.lg=4;c.cash=0.3;c.fans=800;c.spon=null;c.trophies=[];
@@ -921,7 +959,7 @@ function newCareer(name,club,color){
   let k=0;
   for(let L=1;L<=4;L++){st.order[L]=[];
     for(let i=0;i<(L===4?9:10);i++){const id='n'+(k++);const b=TMEAN[L]+r.int(-3,3);
-      st.clubs[id]={id,human:false,lg:L,name:clubName(r,used),color:NPC_COL[k%NPC_COL.length],A:b+r.int(-3,3),M:b+r.int(-3,3),D:b+r.int(-3,3)};st.order[L].push(id);}
+      st.clubs[id]={id,human:false,lg:L,name:regClubName(st,r,used,L),color:NPC_COL[k%NPC_COL.length],A:b+r.int(-3,3),M:b+r.int(-3,3),D:b+r.int(-3,3)};st.order[L].push(id);}
   }
   st.order[4].push('me');
   careerSetupSeason(st);careerOffseason(st,true);
@@ -942,15 +980,15 @@ function careerSetupSeason(st){
 }
 function careerOffseason(st,first){
   const r=CR(st);const c=st.clubs.me;const t=c.lg;
-  st.market=[];for(let i=0;i<18;i++){const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;const p=genPlayer(st,r,pos,TMEAN[t]+4,7,18,33);p.tier=tierOf(r,p);st.market.push(p);}
+  st.market=[];for(let i=0;i<18;i++){const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;const p=genPlayer(st,r,pos,TMEAN[t]+4,7,18,33);applyLeg(st,r,p);p.tier=tierOf(r,p);st.market.push(p);}
   const f=STAFFF[t];
   st.staffPool=r.shuffle(Object.keys(STAFF)).slice(0,6).map(ty=>({id:'s'+(st.nextId++),type:ty,name:pname(r),fee:r2(r.int(20,40)/10*f),sal:r2(r.int(10,20)/10*f),ct:r.int(2,3)}));
   const ff=Math.sqrt(clamp(c.fans/EXPFANS[t],0.5,2.5));const base=r2(SPON[t]*ff*(0.9+r.f()*0.2));
   const goal=t===1?'Top 3':'Aufstieg';
   st.spOffers=[
-    {id:'a',n:r.pick(SPONSN)+' '+r.pick(TOWNS),type:'fix',amount:base,d:`${fm(base)} fest für die Saison.`},
-    {id:'b',n:r.pick(SPONSN)+' '+r.pick(TOWNS),type:'win',amount:r2(base*0.55),perWin:r2(base*0.06),d:`${fm(base*0.55)} fest + ${fm(base*0.06)} pro Ligasieg.`},
-    {id:'c',n:r.pick(SPONSN)+' '+r.pick(TOWNS),type:'goal',amount:r2(base*0.45),goal,bonus:r2(base*1.3),d:`${fm(base*0.45)} fest + ${fm(base*1.3)} Bonus bei ${goal}.`}
+    {id:'a',n:r.pick(SPONSN)+' '+r.pick(regTowns(st)),type:'fix',amount:base,d:`${fm(base)} fest für die Saison.`},
+    {id:'b',n:r.pick(SPONSN)+' '+r.pick(regTowns(st)),type:'win',amount:r2(base*0.55),perWin:r2(base*0.06),d:`${fm(base*0.55)} fest + ${fm(base*0.06)} pro Ligasieg.`},
+    {id:'c',n:r.pick(SPONSN)+' '+r.pick(regTowns(st)),type:'goal',amount:r2(base*0.45),goal,bonus:r2(base*1.3),d:`${fm(base*0.45)} fest + ${fm(base*1.3)} Bonus bei ${goal}.`}
   ];
   if(st.freeAg){for(const p of st.freeAg){p.tier=1;st.market.push(p);}st.freeAg=null;}
   c.spon=null;c.buys=0;c.hires=0;c.camp=null;c.bid=null;
@@ -1045,7 +1083,7 @@ function careerWindow(st,r,winter){
 function careerWinter(st){
   const r=CR(st);const me=st.clubs.me;const t=me.lg;
   st.winter=true;me.buys=3;me.offers=[];me.bid=null;
-  st.market=[];for(let i=0;i<10;i++){const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;const p=genPlayer(st,r,pos,TMEAN[t]+4,7,18,33);p.tier=tierOf(r,p);st.market.push(p);}
+  st.market=[];for(let i=0;i<10;i++){const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;const p=genPlayer(st,r,pos,TMEAN[t]+4,7,18,33);applyLeg(st,r,p);p.tier=tierOf(r,p);st.market.push(p);}
   careerWindow(st,r,true);
   if(me.cond)for(const p of me.squad)p.fr=Math.min(100,(p.fr==null?100:p.fr)+30);
   ensureAll(st);
@@ -1346,7 +1384,7 @@ async function openGame(code,create){
     if(!snap.metadata.fromCache)clearTimeout(NET.timer);
     recompute();
   },err=>{clearTimeout(NET.timer);ui.loadMsg='Verbindung unterbrochen ('+(err&&err.code||'?')+'). Öffne das Spiel bitte neu.';render();});
-  if(create)await send('CREATE',{seed:rid(12),code,rv:8,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});
+  if(create)await send('CREATE',{seed:rid(12),code,rv:9,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});
 }
 async function loadOpen(){
   if(!NET.db)return;
@@ -1389,7 +1427,7 @@ function vStart(){
   }
   const car=LS.get('kc:career',null);
   h+=`<div class="card"><h3>⚽ Karriere</h3><p class="small mut">Allein gegen den Computer: Starte mit einem Dorfverein in der Kreisliga und arbeite dich durch 4 Ligen hoch – mit Auf- und Abstieg, Kreis- und Landespokal.</p>${car?`<div class="small" style="margin-bottom:8px">Gespeichert: <b>${esc(car.clubs.me.name)}</b> · Saison ${car.season} · ${LNAME[car.clubs.me.lg]}</div><button class="btn pri block" data-a="contCareer">Karriere fortsetzen</button>`:''}
-  ${ui.newCar||!car?`<div style="margin-top:10px"><label class="small mut">Dein Name</label><input type="text" id="cName" maxlength="20" placeholder="z. B. Patrick"><label class="small mut">Vereinsname</label><input type="text" id="cClub" maxlength="24" placeholder="z. B. SV Schriesheim"><div class="chips">${COLORS.map(c=>`<span class="chip ${ui.jColor===c?'on':''}" data-a="color" data-v="${c}" style="padding:7px 9px"><span class="dot" style="background:${c}"></span></span>`).join('')}</div><button class="btn ok block" style="margin-top:12px" data-a="newCareer">${car?cl('newCareer','Neue Karriere starten','Alte Karriere überschreiben?'):'Karriere starten'}</button></div>`:`<button class="btn block" style="margin-top:8px" data-a="showNewCar">Neue Karriere…</button>`}</div>`;
+  ${ui.newCar||!car?`<div style="margin-top:10px"><label class="small mut">Dein Name</label><input type="text" id="cName" maxlength="20" placeholder="z. B. Patrick"><label class="small mut">Vereinsname</label><input type="text" id="cClub" maxlength="24" placeholder="z. B. SV Schriesheim"><label class="small mut">Region (Gegner &amp; Sponsoren)</label><select id="cReg" style="width:100%;padding:11px;border-radius:10px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-size:16px;margin:4px 0 10px">${Object.entries(REG).map(([k,g])=>`<option value="${k}" ${(LS.get('kc:reg','bw'))===k?'selected':''}>${g.n}</option>`).join('')}</select><div class="chips">${COLORS.map(c=>`<span class="chip ${ui.jColor===c?'on':''}" data-a="color" data-v="${c}" style="padding:7px 9px"><span class="dot" style="background:${c}"></span></span>`).join('')}</div><button class="btn ok block" style="margin-top:12px" data-a="newCareer">${car?cl('newCareer','Neue Karriere starten','Alte Karriere überschreiben?'):'Karriere starten'}</button></div>`:`<button class="btn block" style="margin-top:8px" data-a="showNewCar">Neue Karriere…</button>`}</div>`;
   const loc=LS.get('kc:local',null);
   h+=`<div class="card"><h3>Ein Gerät</h3><p class="small mut">Alle Manager teilen sich ein Handy und wechseln oben den aktiven Manager.</p><div class="row">${loc?'<button class="btn" data-a="contLocal">Fortsetzen</button>':''}<button class="btn" data-a="newLocal">${loc?cl('newLocal','Neues lokales Spiel','Altes überschreiben?'):'Lokales Spiel starten'}</button></div></div>`;
   return h+rulesCard();
@@ -1431,7 +1469,7 @@ function claimCard(spect){
 }
 function prow(p,o){
   o=o||{};
-  return `<div class="pl"><span class="pos ${p.pos}">${POSL[p.pos]}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${p.inj>0?`<span class="tag inj">🚑 ${p.inj}</span>`:''}${p.loan?'<span class="tag">Leihe</span>':''}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${p.age} J. · Pot. ${o.pot?p.pot:'?'} · ${fm(value(p))}${o.sal?' · Gehalt '+fm(salary(p)):''}${o.apps?' · '+(p.apps||0)+' Einsätze':''}${o.st?` · ⚽ ${p.gs||0} · 🅰️ ${p.as||0}`:''}</span></div>${o.right||''}</div>`;
+  return `<div class="pl"><span class="pos ${p.pos}">${POSL[p.pos]}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${p.inj>0?`<span class="tag inj">🚑 ${p.inj}</span>`:''}${p.loan?'<span class="tag">Leihe</span>':''}${p.leg?'<span class="tag" style="color:var(--gold)">⭐ Legende</span>':''}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${p.age} J. · Pot. ${o.pot?p.pot:'?'} · ${fm(value(p))}${o.sal?' · Gehalt '+fm(salary(p)):''}${o.apps?' · '+(p.apps||0)+' Einsätze':''}${o.st?` · ⚽ ${p.gs||0} · 🅰️ ${p.as||0}`:''}</span></div>${o.right||''}</div>`;
 }
 function posChips(){return `<div class="chips" style="margin:8px 0">${[['all','Alle'],['G','TW'],['D','AB'],['M','MF'],['A','ST']].map(([k,l])=>`<span class="chip ${ui.pos===k?'on':''}" data-a="pos" data-v="${k}">${l}</span>`).join('')}</div>`;}
 function subChips(list){if(!list.find(s=>s[0]===ui.sub))ui.sub=list[0][0];return `<div class="chips" style="margin:12px 0 0">${list.map(([k,l])=>`<span class="chip ${ui.sub===k?'on':''}" data-a="sub" data-v="${k}">${l}</span>`).join('')}</div>`;}
@@ -1798,7 +1836,7 @@ const ACT={
   openGame(v){openGame(v,false);},
   forgetGame(v){if(!conf('fg'+v))return;LS.set('kc:mine',LS.get('kc:mine',[]).filter(x=>x.code!==v));toast('Spiel aus der Liste entfernt.',true);if(typeof frBeat==='function')frBeat();render();},
   refreshOpen(){ui.openList=null;render();loadOpen();},
-  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:8,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});},
+  newLocal(){if(LS.get('kc:local',null)&&!conf('newLocal'))return;cleanup();NET.mode='local';NET.raw=[];ui.seat=null;ui.view='game';LS.set('kc:local',{raw:[]});send('CREATE',{seed:rid(12),code:'LOKAL',local:true,rv:9,settings:{seasons:0,double:false,draft:'manual',diff:'normal',cond:false}});},
   contLocal(){cleanup();NET.mode='local';const d=LS.get('kc:local',{raw:[]});NET.raw=d.raw||[];ui.seat=null;ui.view='game';recompute();},
   copy(){const c=ST.code;if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(()=>toast('Code kopiert: '+c,true)).catch(()=>toast('Code: '+c,true));else toast('Code: '+c,true);},
   color(v){ui.jColor=v;render();},
@@ -1831,7 +1869,7 @@ const ACT={
   showNewCar(){ui.newCar=true;render();},
   newCareer(){const name=val('cName'),club=val('cClub');if(!name||!club){toast('Bitte Name und Vereinsname eingeben.');return;}
     if(LS.get('kc:career',null)&&!conf('newCareer'))return;
-    cleanup();NET.mode='career';CAREER_VAL=true;ST=newCareer(name,club,ui.jColor);ui.view='game';ui.lastPhase=ST.phase;ui.newCar=false;saveCareer();render();scrollTo(0,0);},
+    cleanup();NET.mode='career';CAREER_VAL=true;const reg=val('cReg')||'bw';LS.set('kc:reg',reg);ST=newCareer(name,club,ui.jColor,reg);ui.view='game';ui.lastPhase=ST.phase;ui.newCar=false;saveCareer();render();scrollTo(0,0);},
   contCareer(){const d=LS.get('kc:career',null);if(!d)return;cleanup();NET.mode='career';CAREER_VAL=true;ST=d;try{if(ST.clubs.me.cond===undefined){ST.clubs.me.cond=true;for(const p of ST.clubs.me.squad)p.fr=100;}const mig=ST.clubs.me.squad.filter(p=>p.ct==null&&!p.loan);ensureAll(ST);for(const p of mig)p.ct=Math.max(p.ct,2);careerEnsurePrep(ST);if(!ST.clubs.me.offers)ST.clubs.me.offers=[];saveCareer();}catch(e){}ui.view='game';ui.lastPhase=ST.phase;render();scrollTo(0,0);},
   sponsor(v){send('SPONSOR',{offer:v});},
   lgv(v){ui.lgv=+v;render();},
