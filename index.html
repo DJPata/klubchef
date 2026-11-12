@@ -2254,7 +2254,7 @@ function pitchSvg(c,form){
     const nm=x.p?esc(x.p.name.split(' ').slice(-1)[0]):'Amateur';const r=x.p?Math.round(x.r):35;
     const ed=xiEditable()&&x.p;const sel=ed&&ui.xiSel&&ui.xiSel.id===x.p.id;
     pl+=`<g transform="translate(${cx},${y})" ${ed?`data-a="xiTap" data-v="${k}|${x.p.id}" data-drag="${k}|${x.p.id}" style="cursor:pointer;touch-action:none"`:''}>${sel?'<circle r="7.2" fill="none" stroke="#d8f24a" stroke-width="1.2"/>':''}${rv?`<text x="6.5" y="-3" font-size="4" fill="#d8f24a">${rv>0?'▲':'▼'}</text>`:''}${x.slot&&k!=='G'?`<text y="-6.6" text-anchor="middle" font-size="2.9" font-weight="700" fill="${x.sw?'#ff9a3d':'rgba(255,255,255,.75)'}">${x.slot}${x.sw?' −'+x.sw:''}</text>`:''}<circle r="5.2" fill="${x.oop?'#ff9a3d':c.color}" stroke="${x.sw?'#ff9a3d':'#fff'}" stroke-width=".7"/><text y="1.6" text-anchor="middle" font-size="4.2" font-weight="700" fill="${c.color==='#f0f0f0'||c.color==='#f5c542'?'#13210f':'#fff'}">${r}</text><text y="10" text-anchor="middle" font-size="3.6" fill="#eef3e8">${nm}${x.p&&(x.p.tr==='fue'||x.p.tr==='elf')?(x.p.tr==='fue'?' ©️':' ⚽'):''}</text>${x.p&&c.cond?frBarSvg(x.p.fr):''}</g>`;});}
-  const fchips=xiEditable()?`<div class="row" style="margin:0 0 8px;gap:6px;flex-wrap:wrap"><select id="formSel" style="flex:1;min-width:130px">${formsFor(ST).map(f=>`<option value="${f}" ${f===form?'selected':''}>${fname(f)}</option>`).join('')}</select>${ST.career&&ST.phase==='matchday'?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--acc2)" data-a="fitXI">🔋 Fitte Elf</span>':''}${curLu(c)?'<span class="chip" style="padding:5px 9px;font-size:13px" data-a="luAuto">↺ Auto-Elf</span>':''}</div><div class="chips" style="margin:0 0 8px;gap:4px">${Object.keys(TAC).map(t=>`<span class="chip ${t===(ui.tac||c.tac)?'on':''}" style="padding:5px 9px;font-size:13px" data-a="tac" data-v="${t}">${esc(TAC[t].n)}</span>`).join('')}</div><div class="tiny mut" style="margin:-4px 0 8px">${esc(TAC[ui.tac||c.tac].d)}</div>`:'';
+  const fchips=xiEditable()?`<div class="row" style="margin:0 0 8px;gap:6px;flex-wrap:wrap"><select id="formSel" style="flex:1;min-width:130px">${formsFor(ST).map(f=>`<option value="${f}" ${f===form?'selected':''}>${fname(f)}</option>`).join('')}</select>${ST.career&&ST.phase==='matchday'?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--acc2)" data-a="fitXI">🔋 Fitte Elf</span><span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--gold)" data-a="bestXI">💪 Stärkste Elf</span>':''}${curLu(c)?'<span class="chip" style="padding:5px 9px;font-size:13px" data-a="luAuto">↺ Auto-Elf</span>':''}</div><div class="chips" style="margin:0 0 8px;gap:4px">${Object.keys(TAC).map(t=>`<span class="chip ${t===(ui.tac||c.tac)?'on':''}" style="padding:5px 9px;font-size:13px" data-a="tac" data-v="${t}">${esc(TAC[t].n)}</span>`).join('')}</div><div class="tiny mut" style="margin:-4px 0 8px">${esc(TAC[ui.tac||c.tac].d)}</div>`:'';
   const strength=(ST.phase==='matchday'||ST.phase==='halftime')&&myC()===c?xiStrength(c,form)+xiWarn(c,form,X):'';
   return fchips+strength+`<svg id="xipitch" viewBox="0 0 100 100" style="width:100%;display:block;border-radius:12px;background:repeating-linear-gradient(180deg,#1d6b3a 0 10%,#1a6135 10% 20%)"><rect x="3" y="3" width="94" height="94" fill="none" stroke="rgba(255,255,255,.5)" stroke-width=".6"/><line x1="3" y1="50" x2="97" y2="50" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><circle cx="50" cy="50" r="9" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><rect x="30" y="80" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="30" y="3" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/>${pl}</svg><p class="tiny mut" style="margin:6px 0 0">Orange = auf fremder Position${subOn()?' (z. B. IV als AV: −3, ZM außen: −2, ST als Flügel: −2)':''}.${xiEditable()?' Ziehe Spieler aufeinander zum Tauschen – oder tippe einen an.':''}</p>${xiEditable()?xiBench(c,X)+xiSwapCard(c,form,X):''}`;
 }
@@ -3147,7 +3147,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='81',APP_RV=13;
+const APP_BUILD='82',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3820,17 +3820,17 @@ ACT.facil=function(v){ui.facil=v;ui.card=null;ui.confirm=null;render();};
 // ---------- Formation als Auswahlliste + „Fitte Elf“ vom Co-Trainer ----------
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='formSel'&&!e.target.disabled)ACT.form(e.target.value);});
 const FIT_MIN=70;
-function fitXI(c,form){const S=SLOTS[form]||SLOTS['4-4-2'];const used=new Set();const lu={G:[],D:[],M:[],A:[]};let low=0,oop=0;
-  const fr=p=>p.fr==null||!c.cond?100:p.fr;const avail=c.squad.filter(p=>!(p.inj>0)&&!(p.sus>0)&&!p.sent);
+function fitXI(c,form,best){const S=SLOTS[form]||SLOTS['4-4-2'];const used=new Set();const lu={G:[],D:[],M:[],A:[]};let low=0,oop=0;
+  const fr=p=>best||p.fr==null||!c.cond?100:p.fr;const avail=c.squad.filter(p=>!(p.inj>0)&&!(p.sus>0)&&!p.sent);
   const fits=(p,k)=>k==='G'?p.pos==='G':p.pos!=='G'&&(p.pos===k||knownSp(p).some(x=>SPLINE[x]===k));
-  const pick=(k,slot)=>{const cand=avail.filter(p=>!used.has(p.id));const sc=p=>effRat(c,p)-(k!=='G'&&slot?spPenP(p,slot):0);
+  const pick=(k,slot)=>{const cand=avail.filter(p=>!used.has(p.id));const sc=p=>(best?p.rat:effRat(c,p))-(k!=='G'&&slot?spPenP(p,slot):0);
     let pool=cand.filter(p=>fits(p,k)&&fr(p)>=FIT_MIN).sort((a,b)=>sc(b)-sc(a));
     if(!pool.length){pool=cand.filter(p=>fits(p,k)).sort((a,b)=>fr(b)-fr(a)||sc(b)-sc(a));if(pool.length)low++;}
     if(!pool.length){pool=cand.filter(p=>k==='G'||p.pos!=='G').sort((a,b)=>fr(b)-fr(a));if(pool.length)oop++;}
     const p=pool[0];if(p){used.add(p.id);lu[k].push(p.id);}};
   pick('G','TW');for(const k of ['D','M','A'])for(const sl of S[k])pick(k,sl);return {lu,low,oop};}
-function fitPlan(c){const o=xiOpp(c);if(!o)return null;const ot=predTac(c,o.opp)||'bal';let best=null;
-  for(const f of formsFor(ST)){const X=fitXI(c,f);const cc=Object.assign({},c,{lineup:X.lu});const O0=null;
+function fitPlan(c,strong){const o=xiOpp(c);if(!o)return null;const ot=predTac(c,o.opp)||'bal';let best=null;
+  for(const f of formsFor(ST)){const X=fitXI(c,f,strong);const cc=Object.assign({},c,{lineup:X.lu},strong?{cond:false}:{});const O0=null;
     for(const t of Object.keys(TAC)){const R=teamRat(cc,f,t,ot,o.home);const O=teamRat(o.opp,o.opp.human?o.opp.form:'4-4-2',ot,t,!o.home);
       const sc=(R.A-O.D)+(R.D-O.A)+0.8*(R.M-O.M)-X.oop*12-X.low*8;if(!best||sc>best.sc)best={f,t,sc,X};}}
   return best;}
@@ -3841,6 +3841,10 @@ ACT.fitXI=function(){const c=myC();if(!c||!xiEditable())return;const b=fitPlan(c
 const _tipCardFit=tipCard;tipCard=function(c,opp,home,form,tac){const h=_tipCardFit(c,opp,home,form,tac);if(!h||!ST.career||ST.phase!=='matchday')return h;
   const i=h.lastIndexOf('</div>');return h.slice(0,i)+`<div class="tiny mut" style="margin-top:8px">Oder lieber durchrotieren? <u data-a="fitXIgo" style="cursor:pointer">🔋 Fitte Elf aufstellen ›</u></div>`+h.slice(i);};
 ACT.fitXIgo=function(){ACT.fitXI();ACT.goXI();};
+
+ACT.bestXI=function(){const c=myC();if(!c||!xiEditable())return;const b=fitPlan(c,true);if(!b)return;ui.form=b.f;ui.tac=b.t;ui.lu=b.X.lu;ui.xiSel=null;
+  const tired=c.cond?Object.values(b.X.lu).flat().map(id=>c.squad.find(p=>p.id===id)).filter(p=>p&&p.fr!=null&&p.fr<FIT_MIN).length:0;
+  toast(`🧑‍🏫 Co-Trainer: ${fname(b.f)} mit ${TACS[b.t]} – die stärksten Spieler auf ihren Positionen${tired?` · Achtung: ${tired} davon unter ${FIT_MIN} % Frische`:''}.`,true);render();};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
