@@ -1503,6 +1503,7 @@ const CH={
   COND(st,a){const c=st.clubs.me;c.cond=!!a.on;for(const p of c.squad){if(c.cond){if(p.fr==null)p.fr=100;}else delete p.fr;}},
   PEN_KICK(st,a){penKick(st,a.zone);},
   STEP(st){liveStep(st);},
+  REST(st,a){needPhase(st,'matchday');const c=st.clubs.me;if(!c.cond)rej('Kondition ist aus.');const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');const n=Math.round(+a.n||0);if(n<1)rej('Mindestens 1 %.');if(!c.rest||c.rest.md!==st.md||c.rest.s!==st.season)c.rest={md:st.md,s:st.season,used:0};if(c.rest.used+n>10)rej('Nur noch '+(10-c.rest.used)+' % übrig.');if(p.fr==null)p.fr=100;if(p.fr>=100)rej('Schon topfit.');const add=Math.min(n,100-p.fr);p.fr=Math.min(100,p.fr+add);c.rest.used+=add;},
   MERCH(st,a){const c=st.clubs.me;const m=MERCH.find(x=>x[0]===a.k);if(!m)rej('?');c.merch=c.merch||[];if(c.merch.includes(m[0]))rej('Gibt es schon im Fanshop.');const i=MERCH.indexOf(m);if(i>0&&!c.merch.includes(MERCH[i-1][0]))rej('Erst den vorherigen Artikel ins Sortiment nehmen.');if(c.cash<m[3])rej('Nicht genug Geld.');money(c,-m[3]);c.merch.push(m[0]);feed(st,`🛍️ Neu im Fanshop: ${m[2]}.`,'me');},
   EXT_OFFER(st,a){const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler.');if(p.ct==null||p.ct>2)rej('Vertrag läuft noch lange.');
     if((p.negN||0)>=3)rej(`${p.name} will diese Saison nicht mehr verhandeln.`);
@@ -3043,7 +3044,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='64',APP_RV=13;
+const APP_BUILD='65',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3251,7 +3252,8 @@ const _cofficePrep=VIEWS.coffice;VIEWS.coffice=function(){const c=myC();let h=_c
 const _trainPageP=trainPage;
 trainPage=function(c){
   const mode=ui.trnMode||'rat';
-  const chips=`<div class="chips" style="margin:8px 0 0">${[['rat','💪 Stärke'],['pos','🎓 Position lernen']].map(([k,l])=>`<span class="chip ${mode===k?'on':''}" data-a="trnMode" data-v="${k}">${l}</span>`).join('')}</div>`;
+  const chips=`<div class="chips" style="margin:8px 0 0">${[['rat','💪 Stärke'],['pos','🎓 Position lernen'],['rest','🧘 Erholung']].map(([k,l])=>`<span class="chip ${mode===k?'on':''}" data-a="trnMode" data-v="${k}">${l}</span>`).join('')}</div>`;
+  if(mode==='rest')return chips+restPage(c);
   if(mode!=='pos')return chips+_trainPageP(c);
   const slots=c.up.training||1;const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;const ids=used?c.trn.ids:[];const can=ST.phase==='matchday';
   let h=chips+`<div class="card" style="padding:10px 14px"><div class="row"><b>🎓 Positionstraining</b><span class="sp"></span><span class="pill">Plätze ${used}/${slots}</span></div><p class="tiny mut" style="margin:6px 0 0">Nutzt dieselben Trainingsplätze und kostet 5 % Frische. Nach <b>5 erfolgreichen</b> Einheiten beherrscht der Spieler die neue Position ohne Abzug – auch in einem anderen Mannschaftsteil (z. B. ZM als IV).</p>${c.lastTrain?`<div class="small" style="margin-top:6px;color:${c.lastTrain.ok?'var(--acc2)':'var(--mut)'}">${esc(c.lastTrain.t)}</div>`:''}</div>`;
@@ -3274,6 +3276,16 @@ function merchCard(c){const own=c.merch||[];const inc=merchIncome(c);const next=
     return `<div class="pl" style="${has||can?'':'opacity:.45'}"><span style="font-size:22px;width:34px;text-align:center">${i}</span><div class="pn"><b>${n}</b><span>${has?'Im Sortiment':`Kostet ${fm(cost)} · bringt ca. +${fm(add)} pro Heimspiel`}</span></div>${has?'<span style="color:var(--acc2)">✓</span>':can?`<button class="btn sm ok" data-a="merchBuy" data-v="${k}" ${c.cash<cost?'disabled':''}>Kaufen</button>`:'<span class="mut">🔒</span>'}</div>`;}).join('')}</div>`;}
 ACT.merchBuy=function(v){send('MERCH',{k:v});};
 const _cofficeMerch=VIEWS.coffice;VIEWS.coffice=function(){const c=myC();let h=_cofficeMerch.apply(this,arguments);if(ui.sub==='ausbau')h+=merchCard(c);return h;};
+
+// ---------- Erholung: 10 % Frische pro Spieltag verteilen ----------
+function restPage(c){const can=ST.phase==='matchday'&&c.cond;const used=c.rest&&c.rest.md===ST.md&&c.rest.s===ST.season?c.rest.used:0;const left=10-used;
+  let h=`<div class="card" style="padding:10px 14px"><div class="row"><b>🧘 Erholung</b><span class="sp"></span><span class="pill">${left} % übrig</span></div><p class="tiny mut" style="margin:6px 0 0">Pro Spieltag kannst du <b>10 % Frische</b> verteilen – alles auf einen Spieler oder aufgeteilt (mindestens 1 % pro Spieler). Zählt nicht als Trainingsplatz.</p></div>`;
+  if(!c.cond)return h+'<div class="card small mut">Kondition ist ausgeschaltet.</div>';
+  const ps=c.squad.filter(p=>!p.loan).slice().sort((a,b)=>(a.fr==null?100:a.fr)-(b.fr==null?100:b.fr));
+  h+=`<div class="card" style="padding:8px 14px">${ps.map(p=>{const fr=p.fr==null?100:Math.round(p.fr);const full=fr>=100;
+    return `<div class="pl"><span class="pos ${p.pos}">${posL(p)}</span><div class="pn"><b>${esc(p.name)}</b><span>${frTag(p)}</span></div>${[1,5,10].map(n=>`<button class="btn sm ${!can||full||n>left?'':'ok'}" style="margin-left:4px;padding:6px 8px;min-height:32px" data-a="restGo" data-v="${p.id}|${n}" ${!can||full||n>left?'disabled':''}>+${n}</button>`).join('')}</div>`;}).join('')}</div>`;
+  return h;}
+ACT.restGo=function(v){const [id,n]=String(v).split('|');send('REST',{player:id,n:+n});};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
