@@ -1304,6 +1304,7 @@ function liveStep(st){
 function liveFinish(st){
   const me=st.clubs.me;const ctx=st.ht.ctx;if(!ctx.RH)rateCtx(st,ctx);
   const x1=new Set(st.ht.xi1||[]),x2=xiIds(me);
+  try{const X=pickXI(me,me.form);for(const k of ['D','M','A'])for(const x of X[k]){const p=x.p;if(p&&x.slot&&p.pos!=='G'&&x1.has(p.id)&&!knownSp(p).includes(x.slot))posPlay(st,p,x.slot);}}catch(e){}
   for(const p of me.squad){delete p.sent;delete p.liveInj;delete p.red;}
   const cupP=st.ht.cup;st.ht=null;st.phase='matchday';ctx.seg0=90;
   const full=new Set([...x1].filter(i=>x2.has(i))),half=new Set([...x1,...x2].filter(i=>!(x1.has(i)&&x2.has(i))));
@@ -1550,7 +1551,7 @@ const CH={
     if(c.trn.n>=slots)rej('Alle Trainingsplätze sind belegt.');if(c.trn.ids.includes(p.id))rej('Hat heute schon trainiert.');
     if(c.cond){if(p.fr==null)p.fr=100;if(p.fr<20)rej('Zu müde zum Trainieren (unter 20 %).');p.fr=Math.max(0,p.fr-5);}
     c.trn.n++;c.trn.ids.push(p.id);
-    if(a.pos){const t=a.pos;if(!SPLINE[t]||t==='TW'||p.pos==='G'||knownSp(p).includes(t))rej('Diese Position kann er schon.');if(p.ptg!==t){p.ptg=t;p.ptp=0;}
+    if(a.pos){const t=a.pos;if(!SPLINE[t]||t==='TW'||p.pos==='G'||knownSp(p).includes(t))rej('Diese Position kann er schon.');if(p.ptg!==t){p.pxm=p.pxm||{};if(p.ptg)p.pxm[p.ptg]=p.ptp||0;p.ptg=t;p.ptp=p.pxm[t]||0;delete p.pxm[t];}
       if(CR(st).chance(posChance(p,c))){p.ptp=(p.ptp||0)+1;if(p.ptp>=5){p.xsp=(p.xsp||[]).concat([t]);delete p.ptg;delete p.ptp;c.lastTrain={id:p.id,ok:1,t:`🎓 ${p.name} beherrscht jetzt auch ${t}!`};feed(st,`🎓 ${p.name} hat die Position ${t} gelernt.`,'me');}
         else c.lastTrain={id:p.id,ok:1,t:`${p.name}: ${t}-Training ${p.ptp}/5 ✓`};}
       else c.lastTrain={id:p.id,ok:0,t:`${p.name}: ${t}-Training ohne Fortschritt (${p.ptp||0}/5)`};return;}
@@ -1634,6 +1635,13 @@ function offerUp(st,a){const c=st.clubs.me;const o=(c.offers||[]).find(x=>x.id==
 // ---------- Potenzial-Spanne je nach Scouting ----------
 function potRange(c,p){if(!c||c.squad.includes(p)||(c.nlz||[]).includes(p))return [p.pot,p.pot];const l=c.up.scouting||1;if(l>=3)return [p.pot,p.pot];const half=l>=2?4:8;const w=half*2;const off=h32(p.id+'pr')%(w+1);
   let lo=p.pot-off,hi=lo+w;if(lo<p.rat){hi+=p.rat-lo;lo=p.rat;}return [lo,Math.min(99,hi)];}
+
+// ---------- Positionslernen durch Spielpraxis: 5 Spiele auf fremder Position = 1 Trainingseinheit ----------
+function posProg(p,s){return (p.ptg===s?p.ptp:(p.pxm&&p.pxm[s]))||0;}
+function posPlay(st,p,s){p.pgm=p.pgm||{};p.pgm[s]=(p.pgm[s]||0)+1;if(p.pgm[s]<5)return;p.pgm[s]=0;
+  if(!p.ptg){p.ptg=s;p.ptp=0;}let n;if(p.ptg===s){p.ptp=(p.ptp||0)+1;n=p.ptp;}else{p.pxm=p.pxm||{};p.pxm[s]=(p.pxm[s]||0)+1;n=p.pxm[s];}
+  if(n>=5){p.xsp=(p.xsp||[]).concat([s]);if(p.ptg===s){delete p.ptg;delete p.ptp;}else delete p.pxm[s];delete p.pgm[s];feed(st,`🎓 ${p.name} hat durch Spielpraxis die Position ${s} gelernt!`,'me');}
+  else feed(st,`🎓 ${p.name} hat 5× als ${s} gespielt – +1 Trainingseinheit (${n}/5).`,'me');}
 
 </script>
 <script>
@@ -3155,7 +3163,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='84',APP_RV=13;
+const APP_BUILD='85',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3374,9 +3382,9 @@ trainPage=function(c){
   let h=chips+`<div class="card" style="padding:10px 14px"><div class="row"><b>🎓 Positionstraining</b><span class="sp"></span><span class="pill">Plätze ${used}/${slots}</span></div><p class="tiny mut" style="margin:6px 0 0">Nutzt dieselben Trainingsplätze und kostet 5 % Frische. Nach <b>5 erfolgreichen</b> Einheiten beherrscht der Spieler die neue Position ohne Abzug – auch in einem anderen Mannschaftsteil (z. B. ZM als IV).</p>${c.lastTrain?`<div class="small" style="margin-top:6px;color:${c.lastTrain.ok?'var(--acc2)':'var(--mut)'}">${esc(c.lastTrain.t)}</div>`:''}</div>`;
   const ps=c.squad.filter(p=>!p.loan&&p.pos!=='G');
   h+=`<div class="card" style="padding:8px 14px">${ps.map(p=>{const kn=knownSp(p);const opts=['IV','AV','ZM','LM','RM','ST','FL'].filter(x=>!kn.includes(x));const tgt=(ui.ptg&&ui.ptg[p.id])||p.ptg||opts[0];
-    const done=ids.includes(p.id);const tired=c.cond&&p.fr!=null&&p.fr<20;const dis=!can||done||used>=slots||tired||!tgt;const prog=p.ptg===tgt?(p.ptp||0):0;
+    const done=ids.includes(p.id);const tired=c.cond&&p.fr!=null&&p.fr<20;const dis=!can||done||used>=slots||tired||!tgt;const prog=posProg(p,tgt);
     return `<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row"><span class="pos ${p.pos}">${posL(p)}</span><div class="pn" style="margin-left:8px;cursor:pointer" data-a="card" data-v="${p.id}"><b>${esc(p.name)}</b><span>kann: ${kn.join(', ')} · ${p.age} J. · Chance ${Math.round(posChance(p,c)*100)} %</span></div><span class="sp"></span><b style="margin-right:8px">${prog}/5</b><button class="btn sm ${dis?'':'ok'}" data-a="ptrain" data-v="${p.id}|${tgt}" ${dis?'disabled':''}>${done?'✓':tired?'müde':'🎓'}</button></div>
-    <div class="chips" style="margin:6px 0 0 0;gap:4px">${opts.map(o=>`<span class="chip ${o===tgt?'on':''}" style="padding:3px 8px;font-size:11px" data-a="ptgSet" data-v="${p.id}|${o}">${o}${p.ptg===o&&p.ptp?' '+p.ptp+'/5':''}</span>`).join('')}</div></div>`;}).join('')}</div>`;
+    <div class="chips" style="margin:6px 0 0 0;gap:4px">${opts.map(o=>`<span class="chip ${o===tgt?'on':''}" style="padding:3px 8px;font-size:11px" data-a="ptgSet" data-v="${p.id}|${o}">${o}${posProg(p,o)?' '+posProg(p,o)+'/5':''}${p.pgm&&p.pgm[o]?' ⚽'+p.pgm[o]:''}</span>`).join('')}</div></div>`;}).join('')}</div>`;
   return h;
 };
 ACT.trnMode=function(v){ui.trnMode=v;render();};
@@ -3449,7 +3457,7 @@ function cardHtml(){
   h+=`<div class="grid2">${kpi('Laufzeit',p.loan?'Leihe':p.ct!=null?p.ct+' J.'+(p.ct===1?' 📝':''):'–',p.ct===1&&!p.loan?'var(--gold)':'')}${kpi('Gehalt/Saison',fm(salary(p)))}${kpi('Marktwert',fm(value(p)))}${kpi('Verkaufserlös',p.loan?'–':fm(sellPrice(c,p)))}</div>`;
   if(!p.loan){
     h+=sec('Entwicklung');
-    h+=`<div class="grid2">${kpi('Trainingschance',Math.round(trainChance(p,c)*100)+' %')}${kpi('Lernt Position',p.pos==='G'?'–':p.ptg?p.ptg+' · '+(p.ptp||0)+'/5':'keine')}</div>`;
+    h+=`<div class="grid2">${kpi('Trainingschance',Math.round(trainChance(p,c)*100)+' %')}${kpi('Lernt Position',p.pos==='G'?'–':p.ptg?p.ptg+' · '+(p.ptp||0)+'/5':'keine')}</div>${posPracHtml(p)}<div class="grid2" style="display:none">${''}</div>`;
   }
   if(feat(ST)&&p.ct!=null&&p.ct<=2&&!p.loan)h+=`<div id="negc" style="margin-top:10px">${negCard(p)}</div>`;
   if(off&&!p.loan)h+=`<button class="btn block" style="margin:10px 0 8px" data-a="lendOut" data-v="${p.id}">${cl('lend'+p.id,'🔁 Bis Saisonende verleihen','Wirklich verleihen? Er spart dir Gehalt und sammelt Spielpraxis.')}</button><button class="btn bad block" data-a="sell" data-v="${p.id}">${cl('sell'+p.id,'Verkaufen für '+fm(sellPrice(c,p)),'Wirklich für '+fm(sellPrice(c,p))+' verkaufen?')}</button>`;
@@ -3870,6 +3878,10 @@ function leaveCard(c){
 const _cseasonLC=VIEWS.cseason;VIEWS.cseason=function(){const h=_cseasonLC.apply(this,arguments);try{const c=myC();if(!ST.career||!c)return h;const lc=leaveCard(c);if(!lc)return h;const i=h.indexOf('<div class="card"><h3>Abrechnung</h3>');return i<0?h+lc:h.slice(0,i)+lc+h.slice(i);}catch(e){return h;}};
 
 ACT.cardNeg=function(v){ACT.card(v);setTimeout(()=>{const e=document.getElementById('negc');if(e)e.scrollIntoView({block:'start',behavior:'smooth'});},40);};
+
+function posPracHtml(p){if(p.pos==='G')return '';const L=[];const keys=new Set([...Object.keys(p.pgm||{}),...Object.keys(p.pxm||{})]);if(p.ptg)keys.add(p.ptg);
+  for(const k of keys){const u=posProg(p,k),g=(p.pgm&&p.pgm[k])||0;if(!u&&!g)continue;L.push(`<b>${k}</b> ${u}/5 Einheiten${g?` · ${g}/5 Spiele`:''}`);}
+  return L.length?`<div class="small" style="margin-top:6px">🎓 Fortschritt: ${L.join(' &nbsp;·&nbsp; ')}</div><div class="tiny mut">5 Spiele auf einer fremden Position zählen als 1 Trainingseinheit.</div>`:`<div class="tiny mut" style="margin-top:6px">Tipp: 5 Spiele auf einer fremden Position zählen als 1 Trainingseinheit für diese Position.</div>`;}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
