@@ -96,7 +96,19 @@ nav button.on{color:var(--acc)}
 #sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 8px}
 #sheet .card{background:var(--panel2)}#sheet .kpi{padding:7px 10px;background:rgba(255,255,255,.04)}#sheet .kpi b{font-size:17px}#sheet .grid2{gap:6px}
 .todo{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}.todo:first-of-type{border-top:0}.todo i{font-style:normal;font-size:18px;width:24px;text-align:center}.todo div{flex:1;min-width:0}.todo b{display:block;font-size:14px}.todo span{font-size:12px;color:var(--mut)}
-nav button{position:relative}.brk{overflow-x:auto;padding:4px 14px 2px;scrollbar-width:none}.brk::-webkit-scrollbar{display:none}.brw{display:flex;gap:14px;width:max-content}.brcol{width:142px;flex:none}.brh{font-size:11px;font-weight:700;text-align:center;margin-bottom:6px;color:var(--mut)}.brh span{font-weight:400;font-size:10px}.brcol.cur .brh{color:var(--acc)}.brm{display:flex;flex-direction:column;justify-content:space-around}.bm{background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:11.5px}.bm.mine{border-color:var(--acc)}.bm.win{padding:10px 8px;text-align:center;font-weight:800;color:var(--gold);border-color:var(--gold)}.bt{display:flex;align-items:center;gap:4px;padding:4px 7px}.bt+.bt{border-top:1px solid var(--line)}.bt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt b{font-size:12px}.bt b small{font-weight:400;color:var(--mut);margin-left:2px}.bt.w{font-weight:800}.bt.l{opacity:.5}.bt.me span{color:var(--acc)}
+nav button{position:relative}
+body.land #app{max-width:none;padding:0 12px 90px calc(80px + env(safe-area-inset-left))}
+body.land nav{left:0;right:auto;top:0;bottom:0;width:calc(68px + env(safe-area-inset-left));flex-direction:column;justify-content:center;border-top:0;border-right:1px solid var(--line);padding:8px 4px 8px calc(4px + env(safe-area-inset-left))}
+body.land nav .in{flex-direction:column;max-width:none;gap:4px}body.land nav button{flex:none;padding:8px 2px;font-size:10px}
+body.land header{display:flex;align-items:center;gap:14px;padding:6px 12px}body.land header .top{flex:1;min-width:0}body.land header .clubbar{margin-top:0;flex:none}body.land .ttl{font-size:20px}
+body.land .readybar{left:auto;right:calc(10px + env(safe-area-inset-right));bottom:10px;width:250px;justify-content:flex-end}body.land .readybar .in{width:100%;padding:6px}body.land .readybar .btn{min-height:40px;padding:8px 10px;font-size:14px}
+body.land .l3{display:grid;grid-template-columns:minmax(150px,1fr) minmax(240px,auto) minmax(200px,1.1fr);gap:12px;align-items:start}
+body.land .l3b #xipitch{width:auto!important;height:calc(100vh - 150px);max-height:420px;margin:0 auto}
+body.land .l3c select{width:100%}body.land .l3c .card{margin:0 0 8px}
+body.land #ov .box{max-width:min(940px,96vw);max-height:94vh}
+body.land .lvg{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}body.land .lvg .lvr{margin-top:0!important;max-height:84vh!important}
+body.land #sheet{align-items:stretch;justify-content:flex-end}body.land #sheet .shb{max-width:440px;max-height:100vh;height:100vh;border-radius:18px 0 0 18px;border-bottom:1px solid var(--line)}
+.brk{overflow-x:auto;padding:4px 14px 2px;scrollbar-width:none}.brk::-webkit-scrollbar{display:none}.brw{display:flex;gap:14px;width:max-content}.brcol{width:142px;flex:none}.brh{font-size:11px;font-weight:700;text-align:center;margin-bottom:6px;color:var(--mut)}.brh span{font-weight:400;font-size:10px}.brcol.cur .brh{color:var(--acc)}.brm{display:flex;flex-direction:column;justify-content:space-around}.bm{background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:11.5px}.bm.mine{border-color:var(--acc)}.bm.win{padding:10px 8px;text-align:center;font-weight:800;color:var(--gold);border-color:var(--gold)}.bt{display:flex;align-items:center;gap:4px;padding:4px 7px}.bt+.bt{border-top:1px solid var(--line)}.bt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt b{font-size:12px}.bt b small{font-weight:400;color:var(--mut);margin-left:2px}.bt.w{font-weight:800}.bt.l{opacity:.5}.bt.me span{color:var(--acc)}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal .cw{text-align:center;font-size:10px;color:var(--mut);padding-bottom:2px}.cd{aspect-ratio:1/1.2;border-radius:7px;background:var(--panel2);padding:2px 3px;font-size:10px;position:relative;overflow:hidden;cursor:pointer;border:1px solid transparent}.cd.ps{background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 4px,transparent 4px 8px)}.cd.td{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}.cd.sel{background:rgba(216,243,78,.12)}.cd .n{color:var(--mut);font-size:10px;line-height:1}.cd .ce{font-weight:800;font-size:9.5px;border-radius:4px;padding:1px 0;color:#0b1a13;text-align:center;margin-top:2px;letter-spacing:.3px}.cd .cr{text-align:center;font-weight:700;font-size:10.5px;margin-top:1px}.cd .cx{position:absolute;top:1px;right:3px;font-style:normal;font-size:9px;color:var(--gold)}.cd .cm{text-align:center;font-size:14px;margin-top:4px}
 nav .nd{position:absolute;top:2px;left:50%;margin-left:10px;width:8px;height:8px;border-radius:4px;background:var(--bad)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -2310,9 +2322,9 @@ function pitchSvg(c,form){
     const nm=x.p?esc(x.p.name.split(' ').slice(-1)[0]):'Amateur';const r=x.p?Math.round(x.r):35;
     const ed=xiEditable()&&x.p;const sel=ed&&ui.xiSel&&ui.xiSel.id===x.p.id;
     pl+=`<g transform="translate(${cx},${y})" ${ed?`data-a="xiTap" data-v="${k}|${x.p.id}" data-drag="${k}|${x.p.id}" style="cursor:pointer;touch-action:none"`:''}>${sel?'<circle r="7.2" fill="none" stroke="#d8f24a" stroke-width="1.2"/>':''}${rv?`<text x="6.5" y="-3" font-size="4" fill="#d8f24a">${rv>0?'▲':'▼'}</text>`:''}${x.slot&&k!=='G'?`<text y="-6.6" text-anchor="middle" font-size="2.9" font-weight="700" fill="${x.sw?'#ff9a3d':'rgba(255,255,255,.75)'}">${x.slot}${x.sw?' −'+x.sw:''}</text>`:''}${x.p&&x.p.fire>0?'<circle r="6.6" fill="none" stroke="#ff7a1a" stroke-width="1.3" opacity=".9"><animate attributeName="r" values="6.3;7.1;6.3" dur="1.2s" repeatCount="indefinite"/></circle><text x="4.2" y="-3.4" font-size="4.2">🔥</text>':''}<circle r="5.2" fill="${x.oop?'#ff9a3d':c.color}" stroke="${x.sw?'#ff9a3d':'#fff'}" stroke-width=".7"/><text y="1.6" text-anchor="middle" font-size="4.2" font-weight="700" fill="${c.color==='#f0f0f0'||c.color==='#f5c542'?'#13210f':'#fff'}">${r}</text><text y="10" text-anchor="middle" font-size="3.6" fill="#eef3e8">${nm}${x.p&&(x.p.tr==='fue'||x.p.tr==='elf')?(x.p.tr==='fue'?' ©️':' ⚽'):''}</text>${x.p&&c.cond?frBarSvg(x.p.fr):''}</g>`;});}
-  const fchips=xiEditable()?`<div class="row" style="margin:0 0 8px;gap:6px;flex-wrap:wrap"><select id="formSel" style="flex:1;min-width:130px">${formsFor(ST).map(f=>`<option value="${f}" ${f===form?'selected':''}>${fname(f)}</option>`).join('')}</select>${ST.career&&ST.phase==='matchday'?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--acc2)" data-a="fitXI">🔋 Fitte Elf</span><span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--gold)" data-a="bestXI">💪 Stärkste Elf</span>':''}${curLu(c)?'<span class="chip" style="padding:5px 9px;font-size:13px" data-a="luAuto">↺ Auto-Elf</span>':''}</div><div class="chips" style="margin:0 0 8px;gap:4px">${Object.keys(TAC).map(t=>`<span class="chip ${t===(ui.tac||c.tac)?'on':''}" style="padding:5px 9px;font-size:13px" data-a="tac" data-v="${t}">${esc(TAC[t].n)}</span>`).join('')}</div><div class="tiny mut" style="margin:-4px 0 8px">${esc(TAC[ui.tac||c.tac].d)}</div>${ST.career?tkChips(c):''}`:'';
+  const fchips=xiEditable()?`<div class="row" style="margin:0 0 8px;gap:6px;flex-wrap:wrap"><select id="formSel" style="flex:1;min-width:130px">${formsFor(ST).map(f=>`<option value="${f}" ${f===form?'selected':''}>${fname(f)}</option>`).join('')}</select>${ST.career&&ST.phase==='matchday'?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--acc2)" data-a="fitXI">🔋 Fitte Elf</span><span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--gold)" data-a="bestXI">💪 Stärkste Elf</span>':''}${curLu(c)?'<span class="chip" style="padding:5px 9px;font-size:13px" data-a="luAuto">↺ Auto-Elf</span>':''}</div><!--F--><div class="chips" style="margin:0 0 8px;gap:4px">${Object.keys(TAC).map(t=>`<span class="chip ${t===(ui.tac||c.tac)?'on':''}" style="padding:5px 9px;font-size:13px" data-a="tac" data-v="${t}">${esc(TAC[t].n)}</span>`).join('')}</div><div class="tiny mut" style="margin:-4px 0 8px">${esc(TAC[ui.tac||c.tac].d)}</div><!--T-->${ST.career?tkChips(c):''}`:'';
   const strength=(ST.phase==='matchday'||ST.phase==='halftime')&&myC()===c?xiStrength(c,form)+xiWarn(c,form,X):'';
-  return fchips+strength+`<svg id="xipitch" viewBox="0 0 100 100" style="width:100%;display:block;border-radius:12px;background:repeating-linear-gradient(180deg,#1d6b3a 0 10%,#1a6135 10% 20%)"><rect x="3" y="3" width="94" height="94" fill="none" stroke="rgba(255,255,255,.5)" stroke-width=".6"/><line x1="3" y1="50" x2="97" y2="50" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><circle cx="50" cy="50" r="9" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><rect x="30" y="80" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="30" y="3" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/>${pl}</svg><p class="tiny mut" style="margin:6px 0 0">Orange = auf fremder Position${subOn()?' (z. B. IV als AV: −3, ZM außen: −2, ST als Flügel: −2)':''}.${xiEditable()?' Ziehe Spieler aufeinander zum Tauschen, oder zieh einen in eine andere Reihe (Abwehr/Mittelfeld/Sturm), um die Formation zu ändern.':''}</p>${xiEditable()?xiBench(c,X)+xiSwapCard(c,form,X):''}`;
+  return fchips+'<!--S-->'+strength+`<svg id="xipitch" viewBox="0 0 100 100" style="width:100%;display:block;border-radius:12px;background:repeating-linear-gradient(180deg,#1d6b3a 0 10%,#1a6135 10% 20%)"><rect x="3" y="3" width="94" height="94" fill="none" stroke="rgba(255,255,255,.5)" stroke-width=".6"/><line x1="3" y1="50" x2="97" y2="50" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><circle cx="50" cy="50" r="9" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><rect x="30" y="80" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="30" y="3" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/>${pl}</svg><p class="tiny mut" style="margin:6px 0 0">Orange = auf fremder Position${subOn()?' (z. B. IV als AV: −3, ZM außen: −2, ST als Flügel: −2)':''}.${xiEditable()?' Ziehe Spieler aufeinander zum Tauschen, oder zieh einen in eine andere Reihe (Abwehr/Mittelfeld/Sturm), um die Formation zu ändern.':''}</p>${xiEditable()?xiBench(c,X)+xiSwapCard(c,form,X):''}`;
 }
 function xiEditable(){return !!(ST&&(ST.career||ST.rv>=5)&&['matchday','halftime'].includes(ST.phase)&&!ST.ready[me()]&&myC());}
 function xiSwapCard(c,form,X){
@@ -2474,6 +2486,7 @@ VIEWS.cmatch=function(){return matchPage(myC());};
 // ---------- Halbzeit (Karriere) ----------
 VIEWS.cht=function(){
   const c=myC();const ctx=ST.ht.ctx;const H=ST.clubs[ctx.h],A=ST.clubs[ctx.a];const form=ui.form||c.form,tac=ui.tac||c.tac;
+  if(isLand())return chtLand(c,ctx,H,A,form);
   let h=subNav('cht',[['l','Lage'],['t','Taktik'],['e','Elf']]);const s=sub('cht');
   if(s==='l'){
     const myRed=ctx.red?ctx.red[ctx.h==='me'?'h':'a']:0;
@@ -3207,7 +3220,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='96',APP_RV=13;
+const APP_BUILD='97',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3285,13 +3298,13 @@ function lvDraw(){
   else if(st==='paused'){clock='⏸ Pause · '+LV.min+'′';bottom='<div class="row" style="gap:8px;margin-top:12px"><button class="btn pri" style="flex:1" data-lv="sub">🔄 Wechsel / Taktik</button><button class="btn ok" style="flex:1" data-lv="resume">▶ Weiter</button></div>';}
   else bottom=LV.min>=90?'':ctl;
   const pill=LV.cup?esc(LV.cup):'Liga · Spieltag '+(LV.md+1);
-  box.innerHTML=`<div class="row"><span class="pill">${pill}</span><span class="sp"></span></div>
+  box.innerHTML=`<div class="lvg"><div><div class="row"><span class="pill">${pill}</span><span class="sp"></span></div>
   <div class="score"><div class="tm">${crest(H,34)}<br>${esc(H.name)}</div><div class="sc">${gh}:${ga}</div><div class="tm">${crest(A,34)}<br>${esc(A.name)}</div></div>
   <div class="clock" style="margin-top:6px">${clock}</div>
   ${lvStr(c)}${LV.min>=90&&!ST.ht?lvStatsHtml():''}${st==='paused'&&LV.redMsg?`<div class="evc bad" style="padding:8px 12px;margin:8px 0 0"><div class="small">${esc(LV.redMsg)}</div></div>`:''}
   ${LV.pen?penSvg(LV.pen,{h:c.h,a:c.a}):''}
-  ${bottom}
-  <div style="margin-top:10px;min-height:120px;max-height:38vh;overflow:auto">${ev.slice().reverse().map(evLine).join('')||'<div class="mut small" style="text-align:center;padding-top:30px">Anpfiff…</div>'}</div>`;
+  ${bottom}</div>
+  <div class="lvr" style="margin-top:10px;min-height:120px;max-height:38vh;overflow:auto">${ev.slice().reverse().map(evLine).join('')||'<div class="mut small" style="text-align:center;padding-top:30px">Anpfiff…</div>'}</div></div>`;
 }
 document.getElementById('ov').addEventListener('click',async e=>{
   const b=e.target.closest('[data-lv]');if(!b||!LV)return;e.stopPropagation();const a=b.dataset.lv;
@@ -3957,6 +3970,24 @@ function xiLineDrop(e){try{if(!XD.k||!['D','M','A'].includes(XD.k))return false;
 const TKS={soft:['🕊️ Vorsichtig','Halb so viele Karten, deutlich seltener Rot – Abwehr −2.'],'':['⚖️ Normal','Normales Zweikampfverhalten.'],hard:['🪓 Hart','Abwehr +1,5, Mittelfeld +1 – aber 60 % mehr Gelbe und fast doppelt so oft Rot.']};
 function tkChips(c){const cur=c.tk||'';return `<div class="row small" style="gap:6px;flex-wrap:wrap;margin:0 0 4px"><span class="mut">Zweikampf:</span>${Object.keys(TKS).map(k=>`<span class="chip ${cur===k?'on':''}" style="padding:4px 9px;font-size:12px" data-a="tkSet" data-v="${k}">${TKS[k][0]}</span>`).join('')}</div><div class="tiny mut" style="margin:0 0 8px">${TKS[cur][1]}</div>`;}
 ACT.tkSet=function(v){send('TK',{v});};
+
+// ================= Querformat =================
+const LANDQ=window.matchMedia?window.matchMedia('(orientation: landscape) and (max-height: 560px)'):null;
+function isLand(){return !!(LANDQ&&LANDQ.matches);}
+function landApply(){document.body.classList.toggle('land',isLand());}
+landApply();if(LANDQ){const f=()=>{landApply();try{render();}catch(e){}};if(LANDQ.addEventListener)LANDQ.addEventListener('change',f);else if(LANDQ.addListener)LANDQ.addListener(f);}
+const _pitchSvgLand=pitchSvg;pitchSvg=function(c,form){const h=_pitchSvgLand(c,form);if(!isLand())return h;
+  const i=h.indexOf('<svg id="xipitch"');if(i<0)return h;const top=h.slice(0,i),bot=h.slice(i);
+  const f=top.indexOf('<!--F-->'),t=top.indexOf('<!--T-->'),sx=top.indexOf('<!--S-->');
+  const fsel=f>=0?top.slice(0,f):'',tac=f>=0&&t>=0?top.slice(f,t):'',tk=t>=0&&sx>=0?top.slice(t,sx):'',str=sx>=0?top.slice(sx):top;
+  return `<div class="l3"><div class="l3a">${ui.l3left||''}${tk}</div><div class="l3b">${bot}</div><div class="l3c">${fsel}${tac}${str}</div></div>`;};
+function chtLand(c,ctx,H,A,form){const brk=ST.ht.brk;const myRed=ctx.red?ctx.red[ctx.h==='me'?'h':'a']:0;const n=ST.ht.xi1?htSubs(c,curLu(c),form):0;
+  let left=`<div class="card" style="padding:8px 10px;text-align:center;margin:0 0 8px"><div class="tiny mut">${brk?(brk.t==='inj'?'🚑 Unterbrechung · '+brk.m+'′':brk.t==='pen'?'⚽ Elfmeter · '+brk.m+'′':'⏸ Pause · '+(ctx.lm||0)+'′'):'Halbzeit'}</div><div class="row" style="justify-content:center;gap:8px;margin:4px 0">${crest(H,22)}<b style="font-size:22px">${ctx.gh}:${ctx.ga}</b>${crest(A,22)}</div><div class="tiny mut">${esc(H.name)} – ${esc(A.name)}</div>${myRed?`<div class="tiny" style="color:var(--bad);margin-top:4px">🟥 Unterzahl</div>`:''}<div class="small" style="margin-top:6px"><b>Wechsel ${n}/3</b></div></div>`;
+  const ev=ctx.ev.slice().sort((a,b)=>b.m-a.m).slice(0,4);if(ev.length)left+=`<div class="card" style="padding:6px 10px;margin:0 0 8px">${ev.map(evLine).join('')}</div>`;
+  let h='';if(brk&&brk.t==='inj')h+=`<div class="card" style="border:1px solid var(--bad);padding:8px 12px;margin-top:8px"><span class="small">${injSubTxt(c,form)}</span></div>`;
+  if(brk&&brk.t==='pen')h+=`<div class="card" style="border:1px solid var(--acc);padding:8px 12px;margin-top:8px"><b>⚽ Elfmeter · ${brk.m}′</b> <button class="btn pri sm" style="margin-left:8px" data-a="penOpen">Zum Elfmeter</button></div>`;
+  ui.l3left=left;const p=pitchSvg(c,form);ui.l3left='';return h+`<div class="card" style="margin-top:8px">${p}</div>`;}
+const _squadLand=VIEWS.squad;VIEWS.squad=function(){if(isLand()&&sub('squad')==='xi'&&ST.career){const c=myC();if(c){ui.l3left='';}}return _squadLand.apply(this,arguments);};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
