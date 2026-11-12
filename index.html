@@ -204,7 +204,7 @@ const UPCOST=[0,3,5,8,12];
 const CAP=[0,15000,22000,32000,45000,60000];
 const TICKET=50; // Euro
 const QUOTA={G:2,D:5,M:5,A:3};
-const SQUAD_MAX=22,SQUAD_MIN=12,LEAGUE=8,MAXH=6;
+let SQUAD_MAX=22;const SQUAD_MIN=12,LEAGUE=8,MAXH=6;
 const PLACE_FAME=[10,7,5,4,3,2,1,0];
 const CATCHUP=[0,1,2,3,3.5,4,4.5,5];
 const CL_CLUBS=['Real Castilla CF','AC Lombardia','Olympique Riviera','Royal Thames FC','Sporting Atlântico','FC Amstel','Inter Partenope','Athletic Bravura','Dynamo Baltika','Galatasaray Bosporus'];
@@ -842,7 +842,7 @@ const H={
   AUTODRAFT(st,a){needPhase(st,'draft');if(!isHost(st,a))rej('Nur der Host.');while(st.draft&&st.draft.pick<st.draft.total)autoPick(st);},
   BUY(st,a){needPhase(st,'offseason');const c=myClub(st,a);if(st.ready[a.by])rej('Du bist schon bereit.');
     const p=st.market.find(x=>x.id===a.player);if(!p)rej('Der Spieler ist schon vergeben.');if(!visible(c,p))rej('Dein Scouting kennt diesen Spieler nicht.');
-    if(st.rv>=2&&(c.buys||0)>=buyMax(st))rej(`Maximal ${buyMax(st)} Transfers pro Sommerpause.`);if(c.squad.length>=SQUAD_MAX)rej('Kader voll (max. 22).');const price=buyPrice(c,p);if(c.cash<price)rej('Nicht genug Geld.');
+    if(st.rv>=2&&(c.buys||0)>=buyMax(st))rej(`Maximal ${buyMax(st)} Transfers pro Sommerpause.`);if(c.squad.length>=SQUAD_MAX)rej(`Kader voll (max. ${SQUAD_MAX}).`);const price=buyPrice(c,p);if(c.cash<price)rej('Nicht genug Geld.');
     if(!feat(st)){st.market=st.market.filter(x=>x!==p);delete p.tier;p.inj=0;c.squad.push(p);money(c,-price);if(st.rv>=2)c.buys=(c.buys||0)+1;
       feed(st,`${c.name} holt ${p.name} (${POSL[p.pos]}, ${p.rat}) für ${price.toFixed(1).replace('.',',')} Mio.`,c.id);return;}
     {if(c.bid)rej('Erst das laufende Wettbieten entscheiden.');const r=RNG(st.seed,'bid'+a.id);const thr=st.career?TMEAN[c.lg]+3:70;
@@ -892,7 +892,7 @@ const H={
       kids.push({id:newId(st),name:pname(r),pos,age:r.int(16,19),rat,pot:Math.min(94,rat+r.int(0,26)),inj:0});}
     money(c,-cost);c.campSeason=st.season;c.camp={kids};feed(st,`${c.name} veranstaltet ein ${big?'großes':'kleines'} Sichtungscamp.`,c.id);},
   CAMP_SIGN(st,a){const c=myClub(st,a);if(!c.camp)rej('Kein Camp offen.');const p=c.camp.kids.find(x=>x.id===a.player);if(!p)rej('Unbekannt.');
-    if(c.squad.length>=SQUAD_MAX)rej('Kader voll (max. 22).');c.squad.push(Object.assign({},p));c.camp=null;feed(st,`${c.name} nimmt Talent ${p.name} (${p.age}, ${POSL[p.pos]}, ${p.rat}) aus dem Camp unter Vertrag.`,c.id);},
+    if(c.squad.length>=SQUAD_MAX)rej(`Kader voll (max. ${SQUAD_MAX}).`);c.squad.push(Object.assign({},p));c.camp=null;feed(st,`${c.name} nimmt Talent ${p.name} (${p.age}, ${POSL[p.pos]}, ${p.rat}) aus dem Camp unter Vertrag.`,c.id);},
   CAMP_SKIP(st,a){const c=myClub(st,a);c.camp=null;},
   UNREADY(st,a){myClub(st,a);if(st.ready[a.by])st.ready[a.by]=false;},
   FORCE(st,a){if(!isHost(st,a))rej('Nur der Host.');needPhase(st,'offseason','matchday','seasonEnd');const c=st.clubs[a.target];if(!c||!c.human)rej('?');
@@ -996,6 +996,7 @@ function lgClubs(st,L){return st.order[L];}
 function careerTable(st,L){return st.order[L].map(id=>({id,...st.tables[L][id]})).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf||(a.id<b.id?-1:1));}
 
 function newCareer(name,club,color,region){
+  SQUAD_MAX=25;
   const seed=Math.random().toString(36).slice(2);
   const st={v:1,rv:5,career:true,code:'KARRIERE',seed,rc:0,host:'me',local:false,phase:'offseason',settings:{seasons:0,double:true,draft:'auto'},
     players:[{pid:'me',name,club,color}],clubs:{},order:{},tables:{},sched:{},nextId:1,season:1,md:0,schedule:[],cupMds:[],cup:null,
@@ -1217,6 +1218,7 @@ function careerMigrate5(st){
   st.nl5=1;feed(st,'🆕 Neu: Die Regionalliga zwischen 2. Liga und Verbandsliga – jetzt sind es 5 Ligen bis ganz nach oben!','me');
 }
 function careerEnsurePrep(st){
+  SQUAD_MAX=25;
   if(!st.nl5&&st.phase!=='seasonEnd'&&st.order&&st.order[4]&&!st.order[5])careerMigrate5(st);
   if(st.clubs.me&&!st.clubs.me.sp)st.clubs.me.sp=true;
   try{frCatchUp(st);}catch(e){}
@@ -1524,7 +1526,7 @@ const CH={
     if(c.cash<x.bonus)rej('Nicht genug Geld für das Handgeld.');money(c,-x.bonus);x.sal=x.newSal;x.ct=yrs;delete x.exp;delete x.newSal;delete x.bonus;feed(st,`${c.name} verlängert mit ${x.name} (${STAFF[x.type].n}) um ${yrs} Jahre.`,c.id);},
   STAFF_GO(st,a){needPhase(st,'offseason');const c=st.clubs.me;const x=c.staff.find(y=>y.id===a.staff);if(!x)rej('?');c.staff=c.staff.filter(y=>y!==x);feed(st,`${x.name} (${STAFF[x.type].n}) verlässt ${c.name}.`,c.id);},
   SO_KICK(st,a){soKick(st,a.zone);},
-  NLZ_UP(st,a){if(st.phase==='halftime')rej('Nicht in der Halbzeit.');const c=st.clubs.me;const p=(c.nlz||[]).find(x=>x.id===a.player);if(!p)rej('?');if(c.squad.length>=SQUAD_MAX)rej('Kader voll (max. 22).');const fee=nlzFee(p);if(c.cash<fee)rej('Nicht genug Geld.');
+  NLZ_UP(st,a){if(st.phase==='halftime')rej('Nicht in der Halbzeit.');const c=st.clubs.me;const p=(c.nlz||[]).find(x=>x.id===a.player);if(!p)rej('?');if(c.squad.length>=SQUAD_MAX)rej(`Kader voll (max. ${SQUAD_MAX}).`);const fee=nlzFee(p);if(c.cash<fee)rej('Nicht genug Geld.');
     money(c,-fee);c.nlz=c.nlz.filter(x=>x!==p);p.ct=3;if(c.cond)p.fr=100;c.squad.push(p);if(c.poach&&c.poach.id===p.id)c.poach=null;feed(st,`🎓 ${p.name} (${POSL[p.pos]}, ${p.rat}) wird aus dem NLZ zu den Profis hochgezogen.`,'me');},
   POACH_LET(st,a){const c=st.clubs.me;if(!c.poach)rej('?');const p=(c.nlz||[]).find(x=>x.id===c.poach.id);if(p){c.nlz=c.nlz.filter(x=>x!==p);money(c,c.poach.comp);feed(st,`${p.name} wechselt zu ${c.poach.club} – Entschädigung ${fm(c.poach.comp)}.`,'me');}c.poach=null;},
   STYLE(st,a){applyStyle(st.clubs.me,a);},
@@ -1607,11 +1609,11 @@ function offerCalc(c,p,pct,s){const price=buyPrice(c,p);const sv=s?swapVal(p,s):
 function buyPrecheck(st,c,p){needPhase(st,'offseason');if(!p)rej('Der Spieler ist schon vergeben.');if(!visible(c,p))rej('Dein Scouting kennt diesen Spieler nicht.');if(p.free)rej('Ablösefreie Spieler kosten nur Handgeld – da gibt es nichts zu verhandeln.');
   if((c.buys||0)>=buyMax(st))rej(`Maximal ${buyMax(st)} Transfers in diesem Fenster.`);if(c.bid)rej('Erst das laufende Wettbieten entscheiden.');}
 function doSwapBuy(st,c,p,pay,s,a){if(s){c.squad=c.squad.filter(x=>x!==s);c.offers=(c.offers||[]).filter(o=>o.pid!==s.id);feed(st,`🔁 ${s.name} wechselt im Tausch für ${p.name}.`,'me');}
-  if(c.squad.length>=SQUAD_MAX)rej('Kader voll (max. 22).');delete p.counter;completeBuy(st,c,p,pay,a);}
+  if(c.squad.length>=SQUAD_MAX)rej(`Kader voll (max. ${SQUAD_MAX}).`);delete p.counter;completeBuy(st,c,p,pay,a);}
 function buyOffer(st,a){const c=st.clubs.me;const p=st.market.find(x=>x.id===a.player);buyPrecheck(st,c,p);
   if(p.counter)rej('Es liegt ein Gegenangebot vor – nimm es an oder lass es.');if((p.negB||0)>=3)rej('Der Verein verhandelt nicht mehr – nur noch Kauf zum vollen Preis.');
   const pct=clamp(Math.round((+a.pct||1)*100)/100,0.7,1.1);let s=null;if(a.swap){s=c.squad.find(x=>x.id===a.swap);const e=swapOk(c,s);if(e)rej(e);}
-  const O=offerCalc(c,p,pct,s);if(c.cash<O.pay)rej('Nicht genug Geld für die Zuzahlung.');if(!s&&c.squad.length>=SQUAD_MAX)rej('Kader voll (max. 22).');
+  const O=offerCalc(c,p,pct,s);if(c.cash<O.pay)rej('Nicht genug Geld für die Zuzahlung.');if(!s&&c.squad.length>=SQUAD_MAX)rej(`Kader voll (max. ${SQUAD_MAX}).`);
   p.negB=(p.negB||0)+1;const r=RNG(st.seed,'bo'+p.id+':'+p.negB);
   if(r.f()<O.ch){c.lastNeg={ok:true,t:`✅ Einigung! ${p.name} kommt${s?' im Tausch gegen '+s.name:''}${O.pay?' für '+fm(O.pay):''}.`};doSwapBuy(st,c,p,O.pay,s,a);return;}
   if(O.ratio>=0.75&&r.f()<0.6){const cr=Math.min(1.1,Math.ceil(((O.ratio+1)/2)*20)/20);p.counter={pct:cr,swap:s?s.id:null};c.lastNeg={ok:false,t:`↩️ Gegenangebot: Der Verein will ${Math.round(cr*100)} %${s?' (mit Tausch)':''}.`};return;}
@@ -1619,7 +1621,7 @@ function buyOffer(st,a){const c=st.clubs.me;const p=st.market.find(x=>x.id===a.p
 function buyCounter(st,a){const c=st.clubs.me;const p=st.market.find(x=>x.id===a.player);buyPrecheck(st,c,p);if(!p.counter)rej('Kein Gegenangebot offen.');
   if(a.no){delete p.counter;p.pup=r2((p.pup||1)*1.05);c.lastNeg={ok:false,t:'Gegenangebot abgelehnt – der Preis steigt um 5 %.'};return;}
   let s=null;if(p.counter.swap){s=c.squad.find(x=>x.id===p.counter.swap);const e=swapOk(c,s);if(e)rej(e);}
-  const O=offerCalc(c,p,p.counter.pct,s);if(c.cash<O.pay)rej('Nicht genug Geld.');if(!s&&c.squad.length>=SQUAD_MAX)rej('Kader voll (max. 22).');
+  const O=offerCalc(c,p,p.counter.pct,s);if(c.cash<O.pay)rej('Nicht genug Geld.');if(!s&&c.squad.length>=SQUAD_MAX)rej(`Kader voll (max. ${SQUAD_MAX}).`);
   c.lastNeg={ok:true,t:`✅ ${p.name} kommt${s?' im Tausch gegen '+s.name:''}${O.pay?' für '+fm(O.pay):''}.`};doSwapBuy(st,c,p,O.pay,s,a);}
 function offerUp(st,a){const c=st.clubs.me;const o=(c.offers||[]).find(x=>x.id===a.offer);if(!o)rej('Angebot nicht mehr gültig.');if(o.up)rej('Du hast schon nachverhandelt.');
   const pct=+a.pct===1.2?1.2:1.1;const r=RNG(st.seed,'ou'+o.id);o.up=true;
@@ -1696,7 +1698,7 @@ async function writeMeta(){
 function saveCareer(){if(ST&&ST.career)LS.set('kc:career',ST);}
 function rememberGame(code){const l=LS.get('kc:mine',[]).filter(x=>x.code!==code);l.unshift({code,t:Date.now(),club:''});LS.set('kc:mine',l.slice(0,8));}
 function updateMine(){if(NET.mode!=='online')return;const c=myC();if(!c)return;const l=LS.get('kc:mine',[]);const e=l.find(x=>x.code===ST.code);if(e&&e.club!==c.name){e.club=c.name;LS.set('kc:mine',l);}}
-function cleanup(){ui.lastPhase=null;CAREER_VAL=false;if(NET.unsub){try{NET.unsub();}catch(e){}}NET.unsub=null;clearTimeout(NET.timer);ST=null;applied=[];NET.raw=[];NET.lastMeta='';ui.tab=null;ui.sub=null;ui.form=null;ui.tac=null;ui.lu=undefined;ui.loadMsg='';}
+function cleanup(){SQUAD_MAX=22;ui.lastPhase=null;CAREER_VAL=false;if(NET.unsub){try{NET.unsub();}catch(e){}}NET.unsub=null;clearTimeout(NET.timer);ST=null;applied=[];NET.raw=[];NET.lastMeta='';ui.tab=null;ui.sub=null;ui.form=null;ui.tac=null;ui.lu=undefined;ui.loadMsg='';}
 async function openGame(code,create){
   cleanup();NET.mode='online';NET.code=code;ui.view='game';
   const pids=LS.get('kc:pids',{});NET.pid=pids[code]||('m'+rid(8));pids[code]=NET.pid;LS.set('kc:pids',pids);
@@ -3145,7 +3147,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='78',APP_RV=13;
+const APP_BUILD='79',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
