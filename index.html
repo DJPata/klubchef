@@ -1300,7 +1300,7 @@ function careerKickoff(st){
   liveSetup(st,ctx,null);
 }
 function careerCupKick(st){const P=st.cupPend;const r=CR(st);const ctx=mStart(st,P.h,P.a,r);liveSetup(st,ctx,P);}
-function liveSetup(st,ctx,cupP){const me=st.clubs.me;st.ht={ctx,xi1:[...xiIds(me)],brk:{t:'live'},cup:cupP||null};ctx.onAt={};ctx.pm={};for(const id of st.ht.xi1)ctx.onAt[id]=0;ctx.seg0=0;ctx.lm=0;st.phase='halftime';}
+function liveSetup(st,ctx,cupP){const me=st.clubs.me;st.ht={ctx,xi1:[...xiIds(me)],brk:{t:'live'},cup:cupP||null};me.pre={lineup:me.lineup?JSON.parse(JSON.stringify(me.lineup)):null,form:me.form,tac:me.tac};ctx.onAt={};ctx.pm={};for(const id of st.ht.xi1)ctx.onAt[id]=0;ctx.seg0=0;ctx.lm=0;st.phase='halftime';}
 // Ein Spielabschnitt (7,5 Min.) live – die App ruft das Schritt für Schritt auf
 function liveStep(st){
   if(st.phase!=='halftime'||!st.ht)rej('Kein Spiel läuft.');const ht=st.ht,ctx=ht.ctx,me=st.clubs.me;
@@ -1325,6 +1325,7 @@ function liveFinish(st){
   try{const X=pickXI(me,me.form);for(const k of ['D','M','A'])for(const x of X[k]){const p=x.p;if(p&&x.slot&&p.pos!=='G'&&x1.has(p.id)&&!knownSp(p).includes(x.slot))posPlay(st,p,x.slot);}}catch(e){}
   for(const p of me.squad){delete p.sent;delete p.liveInj;delete p.red;}
   const cupP=st.ht.cup;st.ht=null;st.phase='matchday';ctx.seg0=90;
+  if(me.pre){me.lineup=me.pre.lineup;me.form=me.pre.form;me.tac=me.pre.tac;delete me.pre;}
   const full=new Set([...x1].filter(i=>x2.has(i))),half=new Set([...x1,...x2].filter(i=>!(x1.has(i)&&x2.has(i))));
   if(cupP)careerCupFinish(st,ctx,cupP,{full,half,mins});else careerResolve(st,ctx,{full,half,mins});
 }
@@ -3220,7 +3221,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='97',APP_RV=13;
+const APP_BUILD='98',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
