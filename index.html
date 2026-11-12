@@ -1678,7 +1678,7 @@ function npcGrow(st,r,winter){let n=0;for(let L=1;L<=NL;L++)for(const id of st.o
 function fireCheck(st,m){if(!m||!m.ev)return;const me=st.clubs.me;const side=m.h==='me'?'h':m.a==='me'?'a':null;if(!side)return;
   for(const p of me.squad)if(p.fire>0)p.fire--;
   const cnt={};for(const e of m.ev){if(e.s!==side)continue;if(e.t==='g'||e.t==='p'){const n=String(e.x).split(' – ')[0];cnt[n]=(cnt[n]||0)+1;}if(e.t==='g'&&e.as)cnt[e.as]=(cnt[e.as]||0)+1;}
-  for(const n in cnt)if(cnt[n]>=3){const p=me.squad.find(x=>x.name===n);if(p){p.fire=2;feed(st,`🔥 ${p.name} ist on fire: ${cnt[n]} Scorerpunkte! +3 Stärke für die nächsten 2 Spiele.`,'me');}}}
+  for(const n in cnt)if(cnt[n]>=3){const p=me.squad.find(x=>x.name===n);if(p){p.fire=2;if(p.fr!=null)p.fr=Math.min(100,p.fr+15);feed(st,`🔥 ${p.name} ist on fire: ${cnt[n]} Scorerpunkte! +3 Stärke für die nächsten 2 Spiele und +15 % Frische.`,'me');}}}
 
 // ---------- Sichtungscamp: einmal Hinrunde, einmal Rückrunde ----------
 function campKey(st){return st.season+((st.winter||st.md>=9)?'R':'H');}
@@ -2296,7 +2296,7 @@ function crestLogo(c,sz){sz=sz||28;const L=c.logo,col=c.color||'#888',c2=L.c2||'
 function crestBase(c,sz){sz=sz||28;const col=c.color||'#888';const ini=esc(initials(c.name));
   return `<svg class="crest" width="${sz}" height="${Math.round(sz*1.15)}" viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 34 29 41 20 44 C11 41 3 34 3 22 V8 Z" fill="${col}" stroke="rgba(255,255,255,.55)" stroke-width="2"/><path d="M3 20 H37" stroke="rgba(0,0,0,.18)" stroke-width="7"/><text x="20" y="28" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="17" fill="${col==='#f0f0f0'||col==='#f5c542'?'#13210f':'#fff'}">${ini}</text></svg>`;}
 function dot(c){return `<span class="dot" style="background:${c.color}"></span>`;}
-function ticons(p,mk){let s='';if(p.fire>0)s+=' <span title="on fire: +3 Stärke">🔥</span>';if(p.sold)s+=' <span class="tag" title="verkauft">🔜</span>';if(p.tr&&TRAITS[p.tr])s+=` <span title="${esc(TRAITS[p.tr].n)}">${TRAITS[p.tr].i}</span>`;if(p.inj>0)s+=` <span class="tag inj">🚑${p.inj}</span>`;if(p.sus>0)s+=' <span class="tag inj">🟥</span>';if(p.loan)s+=' <span class="tag">Leihe</span>';if(p.ct===1&&!mk)s+=' <span class="tag" style="color:var(--gold);border-color:#f5c54255">📝</span>';return s;}
+function ticons(p,mk){let s='';if(p.fire>0)s+=' <span title="on fire: +3 Stärke, +15 % Frische">🔥</span>';if(p.sold)s+=' <span class="tag" title="verkauft">🔜</span>';if(p.tr&&TRAITS[p.tr])s+=` <span title="${esc(TRAITS[p.tr].n)}">${TRAITS[p.tr].i}</span>`;if(p.inj>0)s+=` <span class="tag inj">🚑${p.inj}</span>`;if(p.sus>0)s+=' <span class="tag inj">🟥</span>';if(p.loan)s+=' <span class="tag">Leihe</span>';if(p.ct===1&&!mk)s+=' <span class="tag" style="color:var(--gold);border-color:#f5c54255">📝</span>';return s;}
 function crow(p,o){o=o||{};
   return `<div class="pl" ${o.tap?`data-a="pl" data-v="${p.id}" style="cursor:pointer"`:''}><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${ticons(p,o.mk)}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${o.sub||`${p.age} J.${p.ct!=null?` · Vertrag ${p.ct} J.`:''}${p.fr!=null&&ST&&myC()&&myC().cond?' · '+frTag(p):''}${p.nn?' · Ø '+noteF(p.nts/p.nn):''}${p.yc?' · 🟨'+p.yc:''}${ST&&ST.career&&p.mood!=null&&!p.loan?' · '+moodI(p.mood):''}`}</span></div>${o.right||(o.tap?'<span class="mut">›</span>':'')}</div>`;}
 
@@ -3207,7 +3207,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='95',APP_RV=13;
+const APP_BUILD='96',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
