@@ -96,7 +96,8 @@ nav button.on{color:var(--acc)}
 #sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 8px}
 #sheet .card{background:var(--panel2)}#sheet .kpi{padding:7px 10px;background:rgba(255,255,255,.04)}#sheet .kpi b{font-size:17px}#sheet .grid2{gap:6px}
 .todo{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}.todo:first-of-type{border-top:0}.todo i{font-style:normal;font-size:18px;width:24px;text-align:center}.todo div{flex:1;min-width:0}.todo b{display:block;font-size:14px}.todo span{font-size:12px;color:var(--mut)}
-nav button{position:relative}.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal .cw{text-align:center;font-size:10px;color:var(--mut);padding-bottom:2px}.cd{aspect-ratio:1/1.2;border-radius:7px;background:var(--panel2);padding:2px 3px;font-size:10px;position:relative;overflow:hidden;cursor:pointer;border:1px solid transparent}.cd.ps{background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 4px,transparent 4px 8px)}.cd.td{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}.cd.sel{background:rgba(216,243,78,.12)}.cd .n{color:var(--mut);font-size:10px;line-height:1}.cd .ce{font-weight:800;font-size:9.5px;border-radius:4px;padding:1px 0;color:#0b1a13;text-align:center;margin-top:2px;letter-spacing:.3px}.cd .cr{text-align:center;font-weight:700;font-size:10.5px;margin-top:1px}.cd .cx{position:absolute;top:1px;right:3px;font-style:normal;font-size:9px;color:var(--gold)}.cd .cm{text-align:center;font-size:14px;margin-top:4px}
+nav button{position:relative}.brk{overflow-x:auto;padding:4px 14px 2px;scrollbar-width:none}.brk::-webkit-scrollbar{display:none}.brw{display:flex;gap:14px;width:max-content}.brcol{width:142px;flex:none}.brh{font-size:11px;font-weight:700;text-align:center;margin-bottom:6px;color:var(--mut)}.brh span{font-weight:400;font-size:10px}.brcol.cur .brh{color:var(--acc)}.brm{display:flex;flex-direction:column;justify-content:space-around}.bm{background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:11.5px}.bm.mine{border-color:var(--acc)}.bm.win{padding:10px 8px;text-align:center;font-weight:800;color:var(--gold);border-color:var(--gold)}.bt{display:flex;align-items:center;gap:4px;padding:4px 7px}.bt+.bt{border-top:1px solid var(--line)}.bt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt b{font-size:12px}.bt b small{font-weight:400;color:var(--mut);margin-left:2px}.bt.w{font-weight:800}.bt.l{opacity:.5}.bt.me span{color:var(--acc)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal .cw{text-align:center;font-size:10px;color:var(--mut);padding-bottom:2px}.cd{aspect-ratio:1/1.2;border-radius:7px;background:var(--panel2);padding:2px 3px;font-size:10px;position:relative;overflow:hidden;cursor:pointer;border:1px solid transparent}.cd.ps{background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 4px,transparent 4px 8px)}.cd.td{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}.cd.sel{background:rgba(216,243,78,.12)}.cd .n{color:var(--mut);font-size:10px;line-height:1}.cd .ce{font-weight:800;font-size:9.5px;border-radius:4px;padding:1px 0;color:#0b1a13;text-align:center;margin-top:2px;letter-spacing:.3px}.cd .cr{text-align:center;font-weight:700;font-size:10.5px;margin-top:1px}.cd .cx{position:absolute;top:1px;right:3px;font-style:normal;font-size:9px;color:var(--gold)}.cd .cm{text-align:center;font-size:14px;margin-top:4px}
 nav .nd{position:absolute;top:2px;left:50%;margin-left:10px;width:8px;height:8px;border-radius:4px;background:var(--bad)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
@@ -437,6 +438,7 @@ function pickXI(c,form){
   }else if(c.sp){const S=SLOTS[form]||SLOTS['4-4-2'];xi={G:take('G',1),D:[],M:[],A:[]};
     for(const k of ['D','M','A'])for(const sl of S[k]){let b=null,bv=-1e9;for(const p of avail){if(p.pos!==k||used.has(p.id))continue;const v=E(p)-spPenP(p,sl);if(v>bv){bv=v;b=p;}}if(b){used.add(b.id);xi[k].push({p:b,r:E(b)});}}
   }else xi={G:take('G',1),D:take('D',F[0]),M:take('M',F[1]),A:take('A',F[2])};
+  {const reds=c.squad.filter(p=>p.red);for(const p of reds){let k=p.pos==='G'?'D':p.pos;if(c.lineup)for(const kk of ['D','M','A'])if((c.lineup[kk]||[]).includes(p.id))k=kk;const n=k==='D'?F[0]:k==='M'?F[1]:F[2];if(xi[k].length>=n)xi[k].pop();xi[k].push({p:null,r:30,red:true});}}
   for(const [k,n] of [['G',1],['D',F[0]],['M',F[1]],['A',F[2]]]){
     while(xi[k].length<n){
       const p=avail.find(q=>!used.has(q.id)&&(k==='G'||q.pos!=='G'));
@@ -1093,21 +1095,30 @@ const EU_GMD=[1,3,5,7,10,12],EU_KO=[14,16,17];
 const EU_NAMES=['Real Meseta','Racing Garonne','Union Brabant','FK Moldau','SK Donau','Celtic Highland','Dinamo Adria','AS Tiber','Lisboa Atlético','Partizan Sava','Olympique Riviera','Royal Thames FC','FC Amstel','Inter Partenope','Athletic Bravura','Dynamo Baltika','Sporting Atlântico','AC Lombardia'];
 function euroCreate(st,r){
   const names=r.shuffle(EU_NAMES.slice());const ids=[];
-  for(let i=0;i<9;i++){const id='eu'+st.season+'_'+i;const b=r.int(73,81);st.clubs[id]={id,human:false,eu:st.season,lg:0,name:names[i],color:NPC_COL[(i+3)%NPC_COL.length],A:b+r.int(-2,2),M:b+r.int(-2,2),D:b+r.int(-2,2)};ids.push(id);}
-  const grp=['me'].concat(ids.slice(0,3));let rr=roundRobin(r.shuffle(grp));rr=rr.concat(rr.map(m=>m.map(([a,b])=>[b,a])));
-  st.euro={season:st.season,grp,gfix:rr,gtab:{},others:ids.slice(3),res:[]};for(const id of grp)st.euro.gtab[id]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};
-  st.cups.euro={name:'Europapokal',mds:EU_KO,alive:[],log:[],winner:null,rp:1.5,wp:8};
-  feed(st,`🌍 Europapokal! Gruppe mit ${ids.slice(0,3).map(i=>st.clubs[i].name).join(', ')} – die ersten zwei kommen ins Viertelfinale.`,'me');
+  for(let i=0;i<16;i++){const id='eu'+st.season+'_'+i;const b=r.int(72,83);st.clubs[id]={id,human:false,eu:st.season,lg:0,name:names[i],color:NPC_COL[(i+3)%NPC_COL.length],A:b+r.int(-2,2),M:b+r.int(-2,2),D:b+r.int(-2,2)};ids.push(id);}
+  const l1=st.order[1].filter(x=>x!=='me');const str=id=>{const c=st.clubs[id];return c.A+c.M+c.D;};
+  const o2=st.euroO&&l1.includes(st.euroO)?st.euroO:l1.slice().sort((a,b)=>str(b)-str(a))[0];
+  const all=r.shuffle(['me',o2].concat(ids));const N=all.length;const R=[];
+  const gcd=(a,b)=>b?gcd(b,a%b):a;
+  for(const k of [1,3,5]){const flip=r.chance(0.5);const A=[],B=[];const g=gcd(k,N),len=N/g;
+    for(let c=0;c<g;c++)for(let j=0;j<len;j++){const u=(c+k*j)%N,v=(u+k)%N;const pr=flip?[all[v],all[u]]:[all[u],all[v]];(j%2?B:A).push(pr);}
+    R.push(A,B);}
+  st.euro={season:st.season,lp:1,ids:all,gfix:r.shuffle(R),gtab:{},res:[]};for(const id of all)st.euro.gtab[id]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};
+  st.cups.euro={name:'Europapokal',mds:EU_KO,alive:[],log:[],winner:null,rp:1.5,wp:8};st.euroO=null;
+  feed(st,`🌍 Europapokal! Ligaphase mit 18 Teams – du spielst gegen 6 verschiedene Gegner. Die Top 8 erreichen das Viertelfinale.`,'me');
 }
 function euroTab(E,m){const T=E.gtab;for(const [id,gf,ga] of [[m.h,m.gh,m.ga],[m.a,m.ga,m.gh]]){const t=T[id];if(!t)continue;t.p++;t.gf+=gf;t.ga+=ga;if(gf>ga){t.w++;t.pts+=3;}else if(gf===ga){t.d++;t.pts++;}else t.l++;}E.res.push({h:m.h,a:m.a,gh:m.gh,ga:m.ga});}
 function euroTable(E){return Object.keys(E.gtab).map(id=>({id,...E.gtab[id]})).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf||(a.id<b.id?-1:1));}
 function euroGroupDay(st,r,inj,sus){
   const E=st.euro;const gi=EU_GMD.indexOf(st.md);if(gi<0||!E.gfix[gi])return;
   for(const [h,a] of E.gfix[gi]){
-    if(h==='me'||a==='me'){cupQueue(st,{key:'eurog',gi,h,a,md:st.md,name:'Europapokal · Gruppe '+(gi+1)+'/6'});continue;}
+    if(h==='me'||a==='me'){cupQueue(st,{key:'eurog',gi,h,a,md:st.md,name:'Europapokal · '+(E.lp?'Ligaphase ':'Gruppe ')+(gi+1)+'/6'});continue;}
     const m=playMatch(st,h,a,r,{cup:true,cupName:'Europapokal',inj,sus});m.pens=null;euroTab(E,m);}
 }
-function euroBuildKO(st,r){const E=st.euro,K=st.cups.euro;if(K.alive.length)return;const top=euroTable(E).slice(0,2).map(x=>x.id);
+function euroBuildKO(st,r){const E=st.euro,K=st.cups.euro;if(K.alive.length)return;
+  if(E.lp){const t=euroTable(E).map(x=>x.id);const s=t.slice(0,8);K.alive=[s[0],s[7],s[3],s[4],s[1],s[6],s[2],s[5]];
+    const pl=t.indexOf('me')+1;const bon=pl===1?3:pl<=4?2:pl<=8?1.5:pl<=12?0.5:0.25;const me=st.clubs.me;money(me,bon);E.place=pl;
+    feed(st,pl<=8?`🌍 ${me.name} beendet die Ligaphase auf Platz ${pl} – Viertelfinale! Prämie ${fm(bon)}.`:`🌍 ${me.name} wird ${pl}. der Ligaphase und scheidet aus. Prämie ${fm(bon)}.`,'me');return;}const top=euroTable(E).slice(0,2).map(x=>x.id);
   K.alive=r.shuffle(top.concat(E.others));
   feed(st,top.includes('me')?`🌍 ${st.clubs.me.name} steht im Viertelfinale des Europapokals!`:`🌍 ${st.clubs.me.name} scheidet in der Gruppenphase des Europapokals aus.`,'me');}
 function cupWinnerCheck(st,cup){
@@ -1271,7 +1282,7 @@ function liveStep(st){
   if(ctx.s>=12){liveFinish(st);return;}
   const r=CR(st);
   mRun(st,ctx,r,ctx.s+1,{penStop:'me'});
-  for(const id of ctx.sus||[]){const p=me.squad.find(x=>x.id===id);if(p)p.sent=true;}
+  for(const id of ctx.sus||[]){const p=me.squad.find(x=>x.id===id);if(p){p.sent=true;p.red=true;}}
   let hit=null;
   if(ctx.penPend){const P=ctx.penPend;hit={t:'pen',m:P.m,s:P.s,name:P.tkn};}
   else hit=liveInj(st,ctx,r);
@@ -1284,7 +1295,7 @@ function liveStep(st){
 function liveFinish(st){
   const me=st.clubs.me;const ctx=st.ht.ctx;if(!ctx.RH)rateCtx(st,ctx);
   const x1=new Set(st.ht.xi1||[]),x2=xiIds(me);
-  for(const p of me.squad){delete p.sent;delete p.liveInj;}
+  for(const p of me.squad){delete p.sent;delete p.liveInj;delete p.red;}
   const cupP=st.ht.cup;st.ht=null;st.phase='matchday';ctx.seg0=90;
   const full=new Set([...x1].filter(i=>x2.has(i))),half=new Set([...x1,...x2].filter(i=>!(x1.has(i)&&x2.has(i))));
   if(cupP)careerCupFinish(st,ctx,cupP,{full,half});else careerResolve(st,ctx,{full,half});
@@ -1329,7 +1340,7 @@ function penKick(st,zone){
 function liveCards(st,ctx,r){
   const side=ctx.h==='me'?'h':'a',os=side==='h'?'a':'h';const R=side==='h'?ctx.RH:ctx.RA;if(!R||!R.xi)return;const st0=Math.floor((ctx.s-1)*7.5);
   for(const k of ['G','D','M','A'])for(const x of R.xi[k]){const p=x.p;if(!p||p.sent||!r.chance(0.012))continue;const ycm=ctx.ycm||(ctx.ycm={});
-    if(ycm[p.id]){p.sent=true;ctx.red=ctx.red||{h:0,a:0};ctx.red[side]=(ctx.red[side]||0)+1;(ctx.sus=ctx.sus||[]).push(p.id);ctx.ev.push({m:Math.max(ycm[p.id]+1,st0+r.int(1,7)),t:'yr',s:side,x:p.name+' – Gelb-Rot, nächstes Spiel gesperrt!'});continue;}
+    if(ycm[p.id]){p.sent=true;p.red=true;ctx.red=ctx.red||{h:0,a:0};ctx.red[side]=(ctx.red[side]||0)+1;(ctx.sus=ctx.sus||[]).push(p.id);ctx.ev.push({m:Math.max(ycm[p.id]+1,st0+r.int(1,7)),t:'yr',s:side,x:p.name+' – Gelb-Rot, nächstes Spiel gesperrt!'});continue;}
     p.yc=(p.yc||0)+1;const five=p.yc%5===0;const ym=st0+r.int(1,7);ycm[p.id]=ym;
     ctx.ev.push({m:ym,t:'y',s:side,x:p.name+(five?' – 5. Gelbe, nächstes Spiel gesperrt!':'')});if(five)(ctx.ysus=ctx.ysus||[]).push(p.id);}
   if(r.chance(0.13))ctx.ev.push({m:st0+r.int(1,7),t:'y',s:os,x:r.pick(FIRST)[0]+'. '+r.pick(LAST)});
@@ -1454,7 +1465,7 @@ function careerEndSeason(st){
   feed(st,`Saison ${st.season} beendet: ${me.name} wird ${place}. in der ${LNAME[t]} – ${status}!`);
   for(let L=1;L<=NL;L++)feed(st,`🥇 ${st.clubs[champs[L]].name} ist Meister der ${LNAME[L]}.`);
   st.cl=null;
-  if(t===1&&place<=2&&!st.fired){st.euroQ=st.season+1;feed(st,`⭐ ${me.name} hat sich als ${place}. für den Europapokal qualifiziert – nächste Saison mit Gruppenphase!`,'me');}
+  if(t===1&&place<=2&&!st.fired){st.euroQ=st.season+1;st.euroO=tb[1].slice(0,2).map(x=>x.id).find(x=>x!=='me')||null;feed(st,`⭐ ${me.name} hat sich als ${place}. für den Europapokal qualifiziert – nächste Saison in der Ligaphase!`,'me');}
   st.phase='seasonEnd';st.ready={};
 }
 function careerNext(st){
@@ -2403,7 +2414,7 @@ VIEWS.cleague=function(){
   if(s==='cal')return h+calPage(c);
   if(s==='tab'||s==='st')h+=`<div class="chips" style="margin:8px 0 0">${[1,2,3,4,5].map(l=>`<span class="chip ${l===L?'on':''}" data-a="lgv" data-v="${l}" style="padding:5px 9px;font-size:12px">${LNAME[l]}${l===c.lg?' •':''}</span>`).join('')}</div>`;
   if(s==='tab')h+=`<div class="card"><h3>${LNAME[L]}</h3>${ctable(L)}<p class="tiny mut" style="margin:8px 0 0">${L>1?'🟩 1–2 steigen auf. ':''}${L<NL?'🟥 9–10 steigen ab.':''}</p></div>`;
-  if(s==='cup'){h+=euroHtml()+cupHtml(ST.cups.kreis)+cupHtml(ST.cups.land);if(!ST.cups.land)h+='<div class="card small mut">🏆 Landespokal: Der Kreispokalsieger trifft ab Spieltag 12 auf die 1. Liga und fünf Teams der 2. Liga.</div>';}
+  if(s==='cup'){h+=euroHtml()+bracketHtml(ST.cups.kreis)+bracketHtml(ST.cups.land);if(!ST.cups.land)h+='<div class="card small mut">🏆 Landespokal: Der Kreispokalsieger trifft ab Spieltag 12 auf die 1. Liga und fünf Teams der 2. Liga.</div>';}
   if(s==='st'){h+=statsCard(e=>e.lg===L,'Statistik '+LNAME[L]);if(L===c.lg)h+=teamStats(c);}
   if(s==='ch')h+=ST.history.length?`<div class="card"><h3>Vereinschronik</h3>${ST.history.map(x=>`<div class="fin"><span>S${x.season} · ${LNAME[x.lg]}</span><span class="small">Platz ${x.place} · ${esc(x.status)}</span></div>`).join('')}${c.trophies.length?`<h4>Titel</h4><div class="small">🏆 ${esc(c.trophies.join(', '))}</div>`:''}</div>`:'<div class="card empty small">Noch keine abgeschlossene Saison.</div>';
   return h;
@@ -2806,6 +2817,7 @@ function xiOpp(c){
 function xiStrength(c,form){
   const o=xiOpp(c);if(!o)return '';const tac=ui.tac||c.tac;
   const R=teamRat(Object.assign({},c,{lineup:curLu(c)}),form,tac,'bal',o.home);const O=teamRat(o.opp,o.opp.human?o.opp.form:'4-4-2','bal',tac,!o.home);
+  if(ST.phase==='halftime'&&ST.ht&&ST.ht.ctx.red){const ctx=ST.ht.ctx;const ms=ctx.h===c.id?'h':'a';const d1=redPen(ctx.red[ms]||0),d2=redPen(ctx.red[ms==='h'?'a':'h']||0);for(const k of ['A','M','D']){R[k]-=d1;O[k]-=d2;}}
   const prev=ui.xiPrev;const key=JSON.stringify([form,tac,curLu(c)]);
   const d=k=>{if(!prev||prev.key===key)return '';const v=Math.round(R[k])-Math.round(prev[k]);return v?` <b style="color:${v>0?'#3fd0a0':'#ff5b4d'}">(${v>0?'+':''}${v})</b>`:'';};
   if(!prev||prev.key!==key){ui.xiPrevNext={key,A:R.A,M:R.M,D:R.D};}
@@ -2817,7 +2829,7 @@ function xiStrength(c,form){
 function xiWarn(c,form,X){
   const w=[];const man=!!curLu(c);
   if(!X.G[0]||!X.G[0].p)w.push('Kein Torwart verfügbar – es spielt ein Amateur.');else if(X.G[0].oop)w.push('Kein echter Torwart im Tor.');
-  let miss=0,oop=0,tired=0;for(const k of ['D','M','A'])for(const x of X[k]){if(!x.p)miss++;else if(x.oop)oop++;}
+  let miss=0,oop=0,tired=0;for(const k of ['D','M','A'])for(const x of X[k]){if(!x.p){if(!x.red)miss++;}else if(x.oop)oop++;}
   for(const k of ['G','D','M','A'])for(const x of X[k])if(x.p&&c.cond&&x.p.fr!=null&&x.p.fr<40)tired++;
   if(miss)w.push(`${miss} Position${miss>1?'en':''} unbesetzt (Amateure helfen aus).`);
   if(oop&&man)w.push(`${oop} Spieler auf fremder Position.`);
@@ -3081,7 +3093,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='70',APP_RV=13;
+const APP_BUILD='72',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3130,6 +3142,7 @@ function lvRun(){clearInterval(LV.iv);LV.iv=setInterval(lvTick,Math.round(LV_MS/
 function lvStop(st){clearInterval(LV.iv);LV.iv=null;LV.state=st;LV.ctx.lm=LV.min;try{saveCareer();}catch(e){}lvDraw();}
 async function lvTick(){
   if(!LV||LV.busy||LV.state==='paused')return;
+  if(LV.redAt!=null&&LV.min>=LV.redAt){LV.redAt=null;lvStop('paused');return;}
   if(LV.min<LV.target){LV.min++;lvDraw();return;}
   if(!ST.ht||ST.phase!=='halftime'){if(LV.min<90&&LV.fin){LV.target=90;return;}lvEnd();return;}
   const b=ST.ht.brk;
@@ -3138,6 +3151,7 @@ async function lvTick(){
     LV.busy=true;await send('STEP');LV.busy=false;
     if(!ST.ht||ST.phase!=='halftime'){LV.fin=true;LV.target=90;return;}
     const nb=ST.ht.brk,c=LV.ctx;
+    {const side=c.h==='me'?'h':'a';LV.redSeen=LV.redSeen||0;const reds=c.ev.filter(e=>(e.t==='r'||e.t==='yr')&&e.s===side);if(reds.length>LV.redSeen){const e=reds.slice(LV.redSeen).sort((a,b)=>a.m-b.m)[0];LV.redSeen=reds.length;LV.redAt=Math.max(LV.min,e.m);LV.redMsg=`🟥 ${e.t==='yr'?'Gelb-Rot':'Rote Karte'} für ${e.x.split(' – ')[0]} (${e.m}′) – ihr spielt in Unterzahl. Taktik anpassen?`;}}
     LV.target=nb&&(nb.t==='pen'||nb.t==='inj')?Math.max(LV.min,nb.m):Math.min(90,Math.floor(c.s*7.5));
     if(!nb)LV.target=45;
     return;}
@@ -3160,6 +3174,7 @@ function lvDraw(){
   box.innerHTML=`<div class="row"><span class="pill">${pill}</span><span class="sp"></span></div>
   <div class="score"><div class="tm">${crest(H,34)}<br>${esc(H.name)}</div><div class="sc">${gh}:${ga}</div><div class="tm">${crest(A,34)}<br>${esc(A.name)}</div></div>
   <div class="clock" style="margin-top:6px">${clock}</div>
+  ${lvStr(c)}${st==='paused'&&LV.redMsg?`<div class="evc bad" style="padding:8px 12px;margin:8px 0 0"><div class="small">${esc(LV.redMsg)}</div></div>`:''}
   ${LV.pen?penSvg(LV.pen,{h:c.h,a:c.a}):''}
   ${bottom}
   <div style="margin-top:10px;min-height:120px;max-height:38vh;overflow:auto">${ev.slice().reverse().map(evLine).join('')||'<div class="mut small" style="text-align:center;padding-top:30px">Anpfiff…</div>'}</div>`;
@@ -3168,7 +3183,7 @@ document.getElementById('ov').addEventListener('click',async e=>{
   const b=e.target.closest('[data-lv]');if(!b||!LV)return;e.stopPropagation();const a=b.dataset.lv;
   if(a==='pause'){LV.pause=true;if(!LV.busy)lvStop('paused');return;}
   if(a==='spd'){LV.speed=LV.speed>=4?1:LV.speed*2;LS.set('kc:spd',LV.speed);if(LV.iv)lvRun();lvDraw();return;}
-  if(a==='resume'){LV.pause=false;LV.state=null;lvRun();lvDraw();return;}
+  if(a==='resume'){LV.pause=false;LV.state=null;LV.redMsg=null;lvRun();lvDraw();return;}
   if(a==='sub'){const st=LV.state;clearInterval(LV.iv);LV.ctx.lm=LV.min;LV.on=false;LV=null;document.getElementById('ov').style.display='none';ui.tab='cht';ui.subs.cht=st==='ht'?'l':'e';render();scrollTo(0,0);return;}
   if(a==='go'){LV.ctx.lm=LV.min;LV.state=null;LV.busy=true;await send('READY',{form:myC().form,tac:myC().tac,lineup:curLu(myC())||null});LV.busy=false;if(!ST.ht){lvEnd();return;}lvRun();lvDraw();return;}
   if(a==='pk'){if(LV.busy||!ST.ht||!ST.ht.ctx.penPend)return;LV.busy=true;await send('PEN_KICK',{zone:+b.dataset.z});const k=ST.lastPen;
@@ -3181,7 +3196,8 @@ const _checkTickerLV=checkTicker;checkTicker=function(){if(LV&&LV.on)return;retu
 const _readyLV=ACT.ready;ACT.ready=async function(){await _readyLV.apply(this,arguments);if(ST&&ST.career&&ST.phase==='halftime'&&ST.ht&&ST.ht.brk&&ST.ht.brk.t==='live')liveTicker();};
 
 // ---------- Europapokal-Anzeige ----------
-function euroHtml(){const E=ST.euro;if(!E)return ST.euroQ?'<div class="card small">🌍 Du hast dich für den Europapokal qualifiziert – er startet nächste Saison mit der Gruppenphase.</div>':'';
+function euroHtml(){const E=ST.euro;if(!E)return ST.euroQ?'<div class="card small">🌍 Du hast dich für den Europapokal qualifiziert – er startet nächste Saison mit der Ligaphase (18 Teams, 6 Spiele, Top 8 ins Viertelfinale).</div>':'';
+  if(E.lp)return euroLpHtml(E);
   const t=euroTable(E);let h=`<div class="card" style="border-color:var(--gold)"><h3>🌍 Europapokal</h3><h4>Gruppe</h4><table><tr><th class="l">#</th><th class="l">Verein</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr>${t.map((r,i)=>{const c=ST.clubs[r.id];return `<tr class="${r.id==='me'?'me':''}"><td class="l" style="border-left:3px solid ${i<2?'var(--acc2)':'transparent'}">${i+1}</td><td class="l">${esc(c.name)}</td><td>${r.p}</td><td>${r.gf}:${r.ga}</td><td><b>${r.pts}</b></td></tr>`;}).join('')}</table>`;
   const mine=E.res.filter(m=>m.h==='me'||m.a==='me');if(E.res.length)h+=`<h4>Ergebnisse</h4>${E.res.map(resLine).join('')}`;
   const nx=EU_GMD.find((md,i)=>md>=ST.md&&E.gfix[i]&&E.gfix[i].some(f=>f.includes('me'))&&!E.res.some(m=>(m.h==='me'||m.a==='me')&&mine.indexOf(m)>=i));
@@ -3552,6 +3568,49 @@ function calPage(c){
   return h;}
 ACT.calM=function(v){ui.calM=Math.max(0,Math.min(9,(ui.calM||0)+(+v)));ui.calD=null;render();};
 ACT.calD=function(v){ui.calD=ui.calD===+v?null:+v;render();};
+
+// ---------- Live-Stärke inkl. Platzverweise ----------
+function liveRat(ctx){const h=ST.clubs[ctx.h],a=ST.clubs[ctx.a];const RH=teamRat(h,h.form,ctx.th,ctx.ta,true),RA=teamRat(a,a.form,ctx.ta,ctx.th,false);
+  if(ctx.red)for(const [R,n] of [[RH,ctx.red.h],[RA,ctx.red.a]])if(n){const d=redPen(n);R.A-=d;R.M-=d;R.D-=d;}return {RH,RA};}
+function lvStr(ctx){try{if(!ST.ht||ST.ht.ctx!==ctx)return '';const {RH,RA}=liveRat(ctx);const t=R=>Math.round((R.A+R.M+R.D)/3);const h=t(RH),a=t(RA);const w=v=>Math.max(6,Math.min(100,(v-40)/50*100));
+  const rh=ctx.red&&ctx.red.h?' '+'🟥'.repeat(ctx.red.h):'',ra=ctx.red&&ctx.red.a?'🟥'.repeat(ctx.red.a)+' ':'';
+  return `<div class="row small" style="gap:6px;margin-top:8px"><b style="width:44px;text-align:right">${h}${rh}</b><div class="bar" style="flex:1"><i style="width:${w(h)}%;margin-left:auto;background:${ctx.h==='me'?'var(--acc)':'#8a9a92'}"></i></div><span class="tiny mut">Stärke</span><div class="bar" style="flex:1"><i style="width:${w(a)}%;background:${ctx.a==='me'?'var(--acc)':'#8a9a92'}"></i></div><b style="width:44px">${ra}${a}</b></div>`;}catch(e){return '';}}
+
+// ---------- Turnierbaum (Pokale, Europapokal K.-o.) ----------
+const RNAMES={4:['Achtelfinale','Viertelfinale','Halbfinale','Finale'],3:['Viertelfinale','Halbfinale','Finale'],2:['Halbfinale','Finale'],1:['Finale']};
+function bracketHtml(cup,title){
+  if(!cup)return '';const R=cup.mds.length;const rounds=[];let n=Math.pow(2,R);
+  for(let r=0;r<R;r++){let ms;
+    if(r<cup.log.length)ms=cup.log[r].ms.map(m=>Object.assign({},m));
+    else if(r===cup.log.length&&!cup.winner&&cup.alive.length===n){ms=[];for(let i=0;i<cup.alive.length;i+=2)ms.push({h:cup.alive[i],a:cup.alive[i+1],gh:null,ga:null,w:null});}
+    else{ms=[];for(let i=0;i<n/2;i++)ms.push({h:null,a:null,gh:null,ga:null,w:null});}
+    rounds.push(ms);n/=2;}
+  const cur=cup.winner?R:cup.log.length;const H=Math.max(rounds[0].length,1)*62;
+  const nm=id=>{if(!id)return '<span class="mut">?</span>';const c=ST.clubs[id];return c?esc(c.name):'?';};
+  const box=m=>{const mine=m.h==='me'||m.a==='me';const done=m.gh!=null&&m.w!==undefined&&(m.w||m.gh!==m.ga);
+    const row=(id,g,pg)=>`<div class="bt${done&&m.w===id?' w':''}${done&&m.w&&m.w!==id?' l':''}${id==='me'?' me':''}"><span>${nm(id)}</span><b>${g!=null?g:''}${pg!=null?`<small>(${pg})</small>`:''}</b></div>`;
+    return `<div class="bm${mine?' mine':''}">${row(m.h,m.gh,m.pens?m.pens[0]:null)}${row(m.a,m.ga,m.pens?m.pens[1]:null)}</div>`;};
+  const names=RNAMES[R]||rounds.map((_,i)=>'Runde '+(i+1));
+  let h=`<div class="card" style="padding:10px 0 12px"><div class="row" style="padding:0 14px"><h3 style="margin:0">${esc(title||cup.name)}</h3><span class="sp"></span>${cup.winner?`<span class="pill" style="color:var(--gold)">🏆 ${esc(ST.clubs[cup.winner]?ST.clubs[cup.winner].name:'')}</span>`:cup.alive.includes('me')?'<span class="pill" style="color:var(--acc2)">Du bist dabei</span>':''}</div>
+  <div class="brk" data-cur="${Math.min(cur,R-1)}"><div class="brw">${rounds.map((ms,r)=>`<div class="brcol${r===cur?' cur':''}"><div class="brh">${names[r]}<br><span>Spieltag ${cup.mds[r]+1}</span></div><div class="brm" style="height:${H}px">${ms.map(box).join('')}</div></div>`).join('')}${cup.winner?`<div class="brcol"><div class="brh">Sieger<br><span>&nbsp;</span></div><div class="brm" style="height:${H}px"><div class="bm win">🏆 ${nm(cup.winner)}</div></div></div>`:''}</div></div>
+  <p class="tiny mut" style="margin:6px 14px 0">Wische seitlich durch die Runden. Pokalspiele sind mittwochs nach dem Ligaspieltag.</p></div>`;
+  return h;}
+const _renderBrk=render;render=function(){_renderBrk();try{document.querySelectorAll('.brk').forEach(el=>{if(el.dataset.done)return;el.dataset.done=1;const cs=el.querySelectorAll('.brcol');const i=+el.dataset.cur||0;const c=cs[Math.max(0,i-1)];if(c&&i>0)el.scrollLeft=Math.max(0,c.offsetLeft-14);});}catch(e){}};
+
+// ---------- Europapokal: Ligaphase ----------
+function euroLpHtml(E){
+  const t=euroTable(E);const K=ST.cups.euro;
+  let h=`<div class="card" style="border-color:#6fa8ff55"><div class="row"><h3 style="margin:0">🌍 Europapokal · Ligaphase</h3><span class="sp"></span>${E.place?`<span class="pill">Platz ${E.place}</span>`:''}</div>
+  <table style="margin-top:8px"><tr><th class="l">#</th><th class="l">Verein</th><th>Sp</th><th>Diff</th><th>Pkt</th></tr>${t.map((r,i)=>{const c=ST.clubs[r.id];const d=r.gf-r.ga;
+    return `<tr class="${r.id==='me'?'me':''}"><td class="l" style="border-left:3px solid ${i<8?'var(--acc2)':'transparent'}">${i+1}</td><td class="l" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c?esc(c.name):'?'}${c&&c.lg===1&&r.id!=='me'?' <span class="tag">1. Liga</span>':''}</td><td>${r.p}</td><td>${d>0?'+':''}${d}</td><td><b>${r.pts}</b></td></tr>`;}).join('')}</table>
+  <p class="tiny mut" style="margin:6px 0 0">🟩 Platz 1–8: Viertelfinale (1 gegen 8, 2 gegen 7 …) · ab Platz 9 ausgeschieden.</p>`;
+  const mine=[];E.gfix.forEach((rd,gi)=>{const f=rd.find(x=>x.includes('me'));if(!f)return;const r=E.res.find(m=>m.h===f[0]&&m.a===f[1]);mine.push({gi,f,r});});
+  h+=`<h4>Deine 6 Spiele</h4>${mine.map(({gi,f,r})=>{const home=f[0]==='me';const o=ST.clubs[home?f[1]:f[0]];let res='',col='var(--mut)';
+    if(r){const my=home?r.gh:r.ga,ot=home?r.ga:r.gh;res=my+':'+ot;col=my>ot?'#3fd0a0':my<ot?'#ff6b5b':'#93ab9c';}
+    return `<div class="row small" style="padding:6px 0;border-top:1px solid var(--line);gap:8px"><span class="mut" style="width:62px">${calFmt(cupDay(ST,EU_GMD[gi],0))}</span><span style="width:34px" class="mut">${home?'Heim':'Ausw.'}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o?esc(o.name):'?'}</span><b style="color:${col}">${res||'–'}</b></div>`;}).join('')}
+  <p class="tiny mut" style="margin:8px 0 0">Prämien: Sieg ${fm(1)}, Remis ${fm(0.3)} · nach der Ligaphase je nach Platz bis ${fm(3)} · jede gewonnene K.-o.-Runde ${fm(1.5)}, Titel ${fm(8)}.</p></div>`;
+  if(K&&(K.alive.length||K.log.length))h+=bracketHtml(K,'🌍 Europapokal · K.-o.-Runde');
+  return h;}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
