@@ -292,7 +292,7 @@ function ensureAll(st){
   for(const pid of humans(st)){const c=st.clubs[pid];if(c&&c.camp)for(const p of c.camp.kids)ensureP(st,p);}
 }
 function extDemand(p,y){const f=y===1?1.25:y===2?1.15:1.1;return Math.round(calcSal(p)*f*(p.tr==='gie'?1.3:1)*(p.tr==='tre'?0.85:1)*1000)/1000;}
-function buyMax(st){return feat(st)?5:st.career?3:BUY_MAX;}
+function buyMax(st){if(st&&st.career)return st.winter?5:999;return feat(st)?5:BUY_MAX;}
 function npcNames(st,c){const ids=st.career?st.order[Math.max(1,(c.lg||2)-1)].concat(st.order[c.lg||1]):st.league;return ids.filter(id=>!st.clubs[id].human);}
 function makeOffers(st){
   for(const pid of humans(st)){const c=st.clubs[pid];const r=RNG(st.seed,'off'+st.season+pid+(st.rc||0));c.offers=[];
@@ -1197,7 +1197,7 @@ function careerSoldOut(st){const me=st.clubs.me;for(const p of me.squad.filter(x
 function careerWinter(st){
   careerSoldOut(st);
   const r=CR(st);const me=st.clubs.me;const t=me.lg;
-  st.winter=true;me.buys=3;me.offers=[];me.bid=null;
+  st.winter=true;me.buys=0;me.wtr5=st.season;me.offers=[];me.bid=null;
   st.market=[];for(let i=0;i<10;i++){const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;const p=genPlayer(st,r,pos,TMEAN[t]+1,7,18,33);cName(st,r,p);p.tier=tierOf(r,p);st.market.push(p);}
   careerWindow(st,r,true);
   if(me.cond)for(const p of me.squad)p.fr=Math.min(100,(p.fr==null?100:p.fr)+30);
@@ -1227,6 +1227,7 @@ function careerEnsurePrep(st){
   try{frCatchUp(st);}catch(e){}
   try{anaMigrate(st);}catch(e){}
   try{buildCheck(st);}catch(e){}
+  {const me=st.clubs.me;if(me&&st.winter&&st.phase==='offseason'&&me.wtr5!==st.season){me.wtr5=st.season;me.buys=Math.max(0,(me.buys||0)-3);}}
   if(!st.gkFix){st.gkFix=1;for(const c of Object.values(st.clubs))for(const p of (c.squad||[]).concat(c.nlz||[]))if(p.pos==='G'&&p.tr&&p.tr!=='tw')p.tr='tw';for(const p of (st.market||[]))if(p.pos==='G'&&p.tr&&p.tr!=='tw')p.tr='tw';}
   {const me=st.clubs.me;if(me&&!me.nlz){nlzFill(st,CR(st),me);}if(me&&!me.board){boardSet(st);}}
   if(st.phase!=='matchday'||st.md>=18)return;const me=st.clubs.me;
@@ -1953,7 +1954,7 @@ coffice(){
     else if(off)h+=`<div class="card"><h3>Sponsor wählen</h3><p class="small mut">Die Angebote richten sich nach deiner Liga und deinen Fans. Du musst dich vor dem Saisonstart entscheiden.</p>${ST.spOffers.map(o=>`<div class="tac" data-a="sponsor" data-v="${o.id}"><b>${esc(o.n)}</b><span class="small">${esc(o.d)}</span></div>`).join('')}</div>`;
   }
   if(ui.sub==='bericht'){
-    if(ST.offFirst)h+=`<div class="card"><h3>Willkommen in der Kreisliga!</h3><p class="small">Dein Dorfverein hat wenig Geld und einen kleinen Platz. Wähle einen Sponsor, verstärke dich am Markt (max. 2 Transfers pro Sommerpause) und starte die Saison. Die ersten zwei steigen auf.</p></div>`;
+    if(ST.offFirst)h+=`<div class="card"><h3>Willkommen in der Kreisliga!</h3><p class="small">Dein Dorfverein hat wenig Geld und einen kleinen Platz. Wähle einen Sponsor, verstärke dich am Markt und starte die Saison. Die ersten zwei steigen auf.</p></div>`;
     if(c.report){const R=c.report;const tot=R.fin.reduce((s,x)=>s+x[1],0);
       h+=`<div class="card"><h3>Saison ${R.season}: ${esc(R.status)}</h3><div class="mut small">Platz ${R.place} in der ${LNAME[R.lg]}</div>${R.board?`<div class="small" style="margin:6px 0">${R.board.ok?'✅':'❌'} Vorstandsziel „${esc(BGOALS[R.board.goal])}“ ${R.board.ok?'erreicht':'verfehlt'}${R.board.cupOk!=null?` · Pokalziel ${R.board.cupOk?'✅':'❌'}`:''} · Vertrauen ${R.board.d>0?'+':''}${R.board.d}</div>`:''}${R.fired?'<div class="evc bad" style="padding:8px"><b>🚪 Entlassen!</b> Du übernimmst einen neuen, kleineren Verein.</div>':''}${R.fin.map(([l,v])=>`<div class="fin"><span>${esc(l)}</span><span class="${v<0?'neg-p':'pos-p'}">${v>0?'+':''}${fm(v)}</span></div>`).join('')}<div class="fin t"><span>Saldo</span><span>${tot>0?'+':''}${fm(tot)}</span></div></div>`;}
     if(c.devReport){const D=c.devReport;
@@ -2387,7 +2388,7 @@ VIEWS.market=function(){
     return h;
   }
   const vis=ST.market.filter(p=>visible(c,p));const hidden=ST.market.length-vis.length;
-  h+=`<div class="row small mut" style="margin:10px 2px"><span>${ST.winter?`❄️ Wintertransfers ${Math.max(0,(c.buys||0)-3)}/2`:`Transfers ${c.buys||0}/${buyMax(ST)}`} · Kader ${c.squad.length}/${SQUAD_MAX}</span><span class="sp"></span><span>${fm(c.cash)}</span></div>`;
+  h+=`<div class="row small mut" style="margin:10px 2px"><span>${ST.career?(ST.winter?`❄️ Wintertransfers ${c.buys||0}/5`:`Transfers ${c.buys||0} · unbegrenzt`):ST.winter?`❄️ Wintertransfers ${Math.max(0,(c.buys||0)-3)}/2`:`Transfers ${c.buys||0}/${buyMax(ST)}`} · Kader ${c.squad.length}/${SQUAD_MAX}</span><span class="sp"></span><span>${fm(c.cash)}</span></div>`;
   h+=posChips();
   const list=vis.filter(p=>ui.pos==='all'||p.pos===ui.pos).sort((a,b)=>b.rat-a.rat);
   h+=`<div class="card" style="padding:8px 14px">${list.map(p=>{const pr=buyPrice(c,p);return crow(p,{tap:1,mk:1,sub:`${p.age} J.${p.free?' · ablösefrei':''} · Gehalt ${fm(salary(p))}`,right:`<button class="btn sm ok" data-a="buy" data-v="${p.id}" ${rd||lim||c.cash<pr||c.squad.length>=SQUAD_MAX?'disabled':''}>${fm(pr)}</button>`});}).join('')||'<div class="empty">Keine Spieler sichtbar.</div>'}</div>`;
@@ -3153,7 +3154,7 @@ const TUT=[
   {t:'coffice',s:'sponsor',x:'Das Wichtigste zuerst: Unterschreiben Sie hier im Büro bei einem Sponsor. Ohne Sponsor kein Geld – und ohne Geld keine Saison.'},
   {t:'coffice',s:'vorstand',x:'Der Vorstand gibt jede Saison ein Ziel vor. Erreichen Sie es, gibt es eine Prämie. Verfehlen Sie es zu oft, sitzen Sie irgendwann auf der Straße …'},
   {t:'coffice',s:'staff',x:'Unter „Staff“ stellen Sie Spezialisten ein – Co-Trainer, Physio, Videoanalyst und mehr. Maximal drei, und ihre Verträge laufen aus. Unter „Ausbau“ verbessern Sie Training, Scouting, Stadion und Jugend.'},
-  {t:'market',ms:'buy',x:'Im Markt kaufen Sie Spieler – 5 Transfers pro Sommerpause, 2 im Winter. Unter „Leihen“ gibt es Spieler auf Zeit, unter „Transfers“ sehen Sie, was in der Liga los ist.'},
+  {t:'market',ms:'buy',x:'Im Markt kaufen Sie Spieler – im Sommer so viele Sie wollen, im Winter bis zu 5. Unter „Leihen“ gibt es Spieler auf Zeit, unter „Transfers“ sehen Sie, was in der Liga los ist.'},
   {t:'squad',qs:'xi',x:'Ab dem ersten Spieltag stellen Sie hier Ihre Startelf auf: Formation und Taktik oben, Spieler einfach aufeinander ziehen oder antippen. Die Balken zeigen sofort, wie stark Sie gegen den nächsten Gegner sind.'},
   {t:'squad',qs:'tr',x:'Training: An jedem Spieltag können Sie Spieler trainieren lassen – junge, schwächere lernen am schnellsten. Achten Sie auf die Frische ⚡ – müde Spieler verlieren Stärke.'},
   {t:'squad',qs:'nlz',x:'Im NLZ wachsen Ihre Talente heran. Ziehen Sie sie rechtzeitig hoch, bevor andere Vereine sie abwerben. Hier finden Sie auch das Sichtungscamp.'},
@@ -3178,7 +3179,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='90',APP_RV=13;
+const APP_BUILD='91',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
