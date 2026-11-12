@@ -97,10 +97,18 @@ nav button.on{color:var(--acc)}
 #sheet .card{background:var(--panel2)}#sheet .kpi{padding:7px 10px;background:rgba(255,255,255,.04)}#sheet .kpi b{font-size:17px}#sheet .grid2{gap:6px}
 .todo{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}.todo:first-of-type{border-top:0}.todo i{font-style:normal;font-size:18px;width:24px;text-align:center}.todo div{flex:1;min-width:0}.todo b{display:block;font-size:14px}.todo span{font-size:12px;color:var(--mut)}
 nav button{position:relative}
-body.land #app{max-width:none;padding:0 12px 90px calc(80px + env(safe-area-inset-left))}
-body.land nav{left:0;right:auto;top:0;bottom:0;width:calc(68px + env(safe-area-inset-left));flex-direction:column;justify-content:center;border-top:0;border-right:1px solid var(--line);padding:8px 4px 8px calc(4px + env(safe-area-inset-left))}
-body.land nav .in{flex-direction:column;max-width:none;gap:4px}body.land nav button{flex:none;padding:8px 2px;font-size:10px}
-body.land header{display:flex;align-items:center;gap:14px;padding:6px 12px}body.land header .top{flex:1;min-width:0}body.land header .clubbar{margin-top:0;flex:none}body.land .ttl{font-size:20px}
+.fcard{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 2px}.fc{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:6px 8px;text-align:center}.fc span{display:block;font-size:10px;letter-spacing:.8px;color:var(--mut)}.fc b{display:block;font-family:'Bebas Neue',sans-serif;font-size:26px;font-weight:400;line-height:1.1}.fc.on{border-color:var(--acc);background:rgba(216,243,78,.07)}.fc .bar{height:4px;margin-top:3px}
+.lt{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}.lt i{font-style:normal;font-size:10px;font-weight:600;color:var(--mut);background:rgba(255,255,255,.05);border-radius:4px;padding:0 4px}.lt i.on{color:var(--acc)}
+body.land{font-size:13.5px}
+body.land #app{max-width:none;padding:0 12px 90px calc(184px + env(safe-area-inset-left))}
+body.land header{display:none}body.land .subnav{top:0!important}
+body.land nav{left:0;right:auto;top:0;bottom:0;width:calc(172px + env(safe-area-inset-left));flex-direction:column;justify-content:flex-start;align-items:stretch;border-top:0;border-right:1px solid var(--line);padding:8px 8px 8px calc(8px + env(safe-area-inset-left));overflow-y:auto}
+body.land nav .in{flex-direction:column;max-width:none;gap:2px}
+body.land nav button{flex:none;flex-direction:row;justify-content:flex-start;gap:10px;padding:8px 10px;font-size:13px;border-radius:10px}body.land nav button i{font-size:17px}
+body.land nav button.on{background:rgba(216,243,78,.10)}body.land nav .nd{left:22px;top:4px;margin-left:0}
+body.land .sbh{display:flex;flex-direction:column;gap:4px;padding:2px 2px 10px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+body.land .sbh .bdg{position:absolute;top:-4px;right:-4px;background:var(--bad);color:#fff;border-radius:9px;font-size:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px}
+body.land .card{padding:10px 12px;margin:8px 0}body.land h3{font-size:19px}body.land .chip{padding:5px 10px;font-size:12.5px}
 body.land .readybar{left:auto;right:calc(10px + env(safe-area-inset-right));bottom:10px;width:250px;justify-content:flex-end}body.land .readybar .in{width:100%;padding:6px}body.land .readybar .btn{min-height:40px;padding:8px 10px;font-size:14px}
 body.land .l3{display:grid;grid-template-columns:minmax(150px,1fr) minmax(240px,auto) minmax(200px,1.1fr);gap:12px;align-items:start}
 body.land .l3b #xipitch{width:auto!important;height:calc(100vh - 150px);max-height:420px;margin:0 auto}
@@ -232,6 +240,11 @@ function Rej(m){this.m=m;}
 function rej(m){throw new Rej(m);}
 
 let CAREER_VAL=false;
+const LRNG={A:{M:[0.55,0.90],D:[0.30,0.65]},M:{A:[0.50,0.90],D:[0.50,0.90]},D:{A:[0.30,0.60],M:[0.50,0.85]}};
+function lineR(p,k){if(!p)return 0;if(k==='G')return p.pos==='G'?1:0;if(p.pos==='G')return 0.3;if(k===p.pos)return 1;const g=LRNG[p.pos]&&LRNG[p.pos][k];if(!g)return 0.6;
+  const base=g[0]+(h32(String(p.id)+'|lr'+k)%1000)/1000*(g[1]-g[0]);return (p.xsp&&p.xsp.some(x=>SPLINE[x]===k))?Math.max(0.95,base):base;}
+function lineVal(p,k){return Math.round(p.rat*lineR(p,k));}
+function CLM(c){return CAREER_VAL&&c&&c.human;}
 function value(p){if(CAREER_VAL){const af=p.age<=21?1.3:p.age<=25?1.15:p.age<=29?1:p.age<=32?0.7:0.4;return Math.max(0.01,r2(0.05*Math.pow(1.13,p.rat-40)*af));}const x=Math.max(0,(p.rat-40)/10);let v=0.6*x*x*(1+0.1*x);const af=p.age<=21?1.3:p.age<=25?1.15:p.age<=29?1:p.age<=32?0.7:0.4;v*=af;return Math.max(0.2,Math.round(v*10)/10);}
 function salary(p){if(p.sal!=null)return p.sal;return calcSal(p);}
 function calcSal(p){if(CAREER_VAL)return Math.max(0.005,Math.round(value(p)*0.15*1000)/1000);return Math.max(0.1,r2(value(p)*0.12));}
@@ -444,17 +457,17 @@ function pickXI(c,form){
     xi={G:[],D:[],M:[],A:[]};const need={G:1,D:F[0],M:F[1],A:F[2]};
     for(const k of ['G','D','M','A'])for(const id of (c.lineup[k]||[])){
       if(xi[k].length>=need[k])break;const p=avail.find(q=>q.id===id);if(!p||used.has(p.id))continue;
-      used.add(p.id);xi[k].push(p.pos===k||(p.xsp&&p.xsp.some(x=>SPLINE[x]===k))?{p,r:E(p)}:{p,r:E(p)-(k==='G'||p.pos==='G'?25:12),oop:true});
+      used.add(p.id);if(CLM(c)&&k!=='G'&&p.pos!=='G'&&p.pos!==k){const lr=lineR(p,k);xi[k].push(lr>=0.95?{p,r:E(p)*lr}:{p,r:E(p)*lr,oop:true,lr});}else xi[k].push(p.pos===k||(p.xsp&&p.xsp.some(x=>SPLINE[x]===k))?{p,r:E(p)}:{p,r:E(p)-(k==='G'||p.pos==='G'?25:12),oop:true});
     }
     for(const k of ['G','D','M','A'])xi[k]=xi[k].concat(take(k,need[k]-xi[k].length));
   }else if(c.sp){const S=SLOTS[form]||SLOTS['4-4-2'];xi={G:take('G',1),D:[],M:[],A:[]};
-    for(const k of ['D','M','A'])for(const sl of S[k]){let b=null,bv=-1e9;for(const p of avail){if(used.has(p.id)||p.pos==='G'||(p.pos!==k&&!(p.xsp&&p.xsp.some(x=>SPLINE[x]===k))))continue;const v=E(p)-spPenP(p,sl);if(v>bv){bv=v;b=p;}}if(b){used.add(b.id);xi[k].push({p:b,r:E(b)});}}
+    const cl=CLM(c);for(const k of ['D','M','A'])for(const sl of S[k]){let b=null,bv=-1e9;for(const p of avail){if(used.has(p.id)||p.pos==='G')continue;if(cl&&p.pos!==k&&!(p.xsp&&p.xsp.some(x=>SPLINE[x]===k))){const lr=lineR(p,k);const v=E(p)*lr;if(v>bv){bv=v;b=p;}continue;}if(p.pos!==k&&!(p.xsp&&p.xsp.some(x=>SPLINE[x]===k)))continue;const v=E(p)-spPenP(p,sl);if(v>bv){bv=v;b=p;}}if(b){used.add(b.id);if(cl&&b.pos!==k&&!(b.xsp&&b.xsp.some(x=>SPLINE[x]===k))){const lr=lineR(b,k);xi[k].push({p:b,r:E(b)*lr,oop:true,lr});}else xi[k].push({p:b,r:E(b)});}}
   }else xi={G:take('G',1),D:take('D',F[0]),M:take('M',F[1]),A:take('A',F[2])};
   {const reds=c.squad.filter(p=>p.red);for(const p of reds){let k=p.pos==='G'?'D':p.pos;if(c.lineup)for(const kk of ['D','M','A'])if((c.lineup[kk]||[]).includes(p.id))k=kk;const n=k==='D'?F[0]:k==='M'?F[1]:F[2];if(xi[k].length>=n)xi[k].pop();xi[k].push({p:null,r:0,red:true});}}
   for(const [k,n] of [['G',1],['D',F[0]],['M',F[1]],['A',F[2]]]){
     while(xi[k].length<n){
-      const p=avail.find(q=>!used.has(q.id)&&(k==='G'||q.pos!=='G')&&k!=='G'&&q.xsp&&q.xsp.some(x=>SPLINE[x]===k))||avail.find(q=>!used.has(q.id)&&(k==='G'||q.pos!=='G'));
-      if(p){used.add(p.id);const kn=k!=='G'&&p.xsp&&p.xsp.some(x=>SPLINE[x]===k);xi[k].push(kn?{p,r:E(p)}:{p,r:E(p)-(k==='G'?25:12),oop:true});}
+      const p=(CLM(c)&&k!=='G'?avail.filter(q=>!used.has(q.id)&&q.pos!=='G').sort((a,b)=>E(b)*lineR(b,k)-E(a)*lineR(a,k))[0]:null)||avail.find(q=>!used.has(q.id)&&(k==='G'||q.pos!=='G')&&k!=='G'&&q.xsp&&q.xsp.some(x=>SPLINE[x]===k))||avail.find(q=>!used.has(q.id)&&(k==='G'||q.pos!=='G'));
+      if(p){used.add(p.id);const kn=k!=='G'&&p.xsp&&p.xsp.some(x=>SPLINE[x]===k);if(CLM(c)&&k!=='G'&&!kn&&p.pos!==k){const lr=lineR(p,k);xi[k].push({p,r:E(p)*lr,oop:lr<0.95,lr});}else xi[k].push(kn?{p,r:E(p)}:{p,r:E(p)-(k==='G'?25:12),oop:true});}
       else xi[k].push({p:null,r:35});
     }
   }
@@ -3221,7 +3234,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='98',APP_RV=13;
+const APP_BUILD='99',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3989,6 +4002,22 @@ function chtLand(c,ctx,H,A,form){const brk=ST.ht.brk;const myRed=ctx.red?ctx.red
   if(brk&&brk.t==='pen')h+=`<div class="card" style="border:1px solid var(--acc);padding:8px 12px;margin-top:8px"><b>⚽ Elfmeter · ${brk.m}′</b> <button class="btn pri sm" style="margin-left:8px" data-a="penOpen">Zum Elfmeter</button></div>`;
   ui.l3left=left;const p=pitchSvg(c,form);ui.l3left='';return h+`<div class="card" style="margin-top:8px">${p}</div>`;}
 const _squadLand=VIEWS.squad;VIEWS.squad=function(){if(isLand()&&sub('squad')==='xi'&&ST.career){const c=myC();if(c){ui.l3left='';}}return _squadLand.apply(this,arguments);};
+
+// ---------- Spielerkarte im FIFA-Stil: Werte je Mannschaftsteil ----------
+function lineTriple(p,big){if(!ST||!ST.career||!p)return '';if(p.pos==='G')return big?`<div class="fcard"><div class="fc on"><span>TOR</span><b>${p.rat}</b></div></div>`:'';
+  const L=[['A','ANG','Angriff'],['M','MIT','Mittelfeld'],['D','ABW','Abwehr']];
+  if(!big)return `<span class="lt">${L.map(([k,s])=>`<i class="${p.pos===k?'on':''}">${s[0]}${lineVal(p,k)}</i>`).join('')}</span>`;
+  return `<div class="fcard">${L.map(([k,s,n])=>{const v=lineVal(p,k);return `<div class="fc ${p.pos===k?'on':''}"><span>${s}</span><b style="color:${ratCol(v)}">${v}</b><div class="bar"><i style="width:${Math.max(4,Math.min(100,(v-30)/60*100))}%;background:${p.pos===k?'var(--acc)':'#8a9a92'}"></i></div></div>`;}).join('')}</div>`;}
+const _cardHtmlL=cardHtml;cardHtml=function(){const h=_cardHtmlL();if(!h)return h;const c=myC();const p=c&&c.squad.find(x=>x.id===ui.card);if(!p)return h;const m='data-a="sheetX">✕</button></div>';const j=h.indexOf(m);if(j<0)return h;const i=j+m.length;return h.slice(0,i)+lineTriple(p,true)+h.slice(i);};
+const _crowL=crow;crow=function(p,o){const h=_crowL(p,o);if(!ST||!ST.career||p.pos==='G')return h;const i=h.indexOf('</b><span>');if(i<0)return h;return h.slice(0,i)+lineTriple(p,false)+h.slice(i);};
+// ---------- Querformat: Seitenleiste mit Vereinsinfos, kompakter ----------
+function sideHead(){const c=myC();if(!c||!ST)return '';const u=bellUnread();
+  const ph={offseason:ST.winter?'❄️ Winterpause':'☀️ Sommerpause',matchday:ST.cupPend?'🏆 Pokal':`Spieltag ${ST.md+1}/${ST.schedule?ST.schedule.length:18}`,halftime:ST.ht&&ST.ht.brk?'⏸ Unterbrechung':'⏸ Halbzeit',seasonEnd:'🏁 Saisonende'}[ST.phase]||'';
+  return `<div class="sbh"><div class="row" style="gap:6px"><button class="ic" data-a="home">‹</button><span class="sp"></span><button class="ic bellb" data-a="bell" style="position:relative">🔔${u?`<b class="bdg">${u>9?'9+':u}</b>`:''}</button></div>
+  <div class="row" style="gap:8px;margin-top:4px">${crest(c,26)}<b style="font-size:13px;line-height:1.15;min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</b></div>
+  <div class="row small" style="justify-content:space-between"><b class="${c.cash<0?'neg-p':''}">${fm(c.cash)}</b><span class="mut tiny">S${ST.season}</span></div>
+  <div class="tiny mut">${ST.career?esc(LNAME[c.lg]):''}</div><span class="pill" style="align-self:flex-start">${ph}</span></div>`;}
+const _vGameSide=vGame;vGame=function(){let h=_vGameSide();if(!isLand()||!ST)return h;return h.replace('<nav><div class="in">','<nav>'+sideHead()+'<div class="in">');};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
