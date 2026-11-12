@@ -224,7 +224,7 @@ function value(p){if(CAREER_VAL){const af=p.age<=21?1.3:p.age<=25?1.15:p.age<=29
 function salary(p){if(p.sal!=null)return p.sal;return calcSal(p);}
 function calcSal(p){if(CAREER_VAL)return Math.max(0.005,Math.round(value(p)*0.15*1000)/1000);return Math.max(0.1,r2(value(p)*0.12));}
 function ext8(st){return !!st.career||st.rv>=8;}
-function effRat(c,p){let r=c&&c.cond&&p.fr!=null?p.rat*(1-0.05*(1-p.fr/100)):p.rat;if(p.mood!=null&&p.mood<30)r*=0.97;return r;}
+function effRat(c,p){let r=c&&c.cond&&p.fr!=null?p.rat*(1-0.05*(1-p.fr/100)):p.rat;if(p.mood!=null&&p.mood<30)r*=0.97;if(p.fire>0)r+=3;return r;}
 function condUpdate(c,full,half){if(!c.cond)return;const rec=has(c,'fit')?40:30;for(const p of c.squad){if(p.fr==null)p.fr=100;if(full.has(p.id))p.fr-=10;else if(half.has(p.id))p.fr-=5;else p.fr+=rec;p.fr=Math.max(0,Math.min(100,p.fr));}}
 function xiIds(c){const X=pickXI(c,c.form);const s=new Set();for(const k of ['G','D','M','A'])for(const x of X[k])if(x.p)s.add(x.p.id);return s;}
 function applyStyle(c,a){const L=a.logo||{};const SH=['shield','circle','diamond','pennant'],PAT=['none','vs','hs','split','band'];
@@ -1052,8 +1052,8 @@ function frCatchUp(st){const me=st.clubs.me;if(!me||!me.cond)return;const D=next
   if(me.frAt==null||me.frAt>=D){me.frAt=D-1;return;}
   const n=D-1-me.frAt;if(n<=0)return;const add=n*frRate(me);
   for(const p of me.squad){if(p.fr==null)p.fr=100;p.fr=Math.min(100,p.fr+add);}me.frAt=D-1;}
-function careerCond(st,full,half,day){const me=st.clubs.me;if(!me.cond)return;
-  for(const p of me.squad){if(p.fr==null)p.fr=100;if(full.has(p.id))p.fr-=20;else if(half.has(p.id))p.fr-=10;p.fr=Math.max(0,Math.min(100,p.fr));}
+function careerCond(st,full,half,day,mins){const me=st.clubs.me;if(!me.cond)return;
+  for(const p of me.squad){if(p.fr==null)p.fr=100;if(mins){const m=mins[p.id]||0;if(m>0)p.fr=p.fr*(1-0.005*Math.min(90,m));}else if(full.has(p.id))p.fr-=20;else if(half.has(p.id))p.fr-=10;p.fr=Math.max(0,Math.min(100,Math.round(p.fr*10)/10));}
   if(me.frAt==null||day>me.frAt)me.frAt=day;}
 function resLog(st,x){x.s=st.season;st.myRes=(st.myRes||[]).filter(e=>e.s>=st.season-1);st.myRes.push(x);}
 function careerOffseason(st,first){
@@ -1200,7 +1200,7 @@ function careerSoldOut(st){const me=st.clubs.me;for(const p of me.squad.filter(x
 function careerWinter(st){
   careerSoldOut(st);
   const r=CR(st);const me=st.clubs.me;const t=me.lg;
-  st.winter=true;me.buys=0;me.wtr5=st.season;me.offers=[];me.bid=null;
+  st.winter=true;me.buys=0;me.wtr5=st.season;me.offers=[];me.bid=null;npcGrow(st,r,true);
   st.market=[];for(let i=0;i<10;i++){const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;const p=genPlayer(st,r,pos,TMEAN[t]+1,7,18,33);cName(st,r,p);p.tier=tierOf(r,p);st.market.push(p);}
   careerWindow(st,r,true);
   if(me.cond)for(const p of me.squad)p.fr=Math.min(100,(p.fr==null?100:p.fr)+30);
@@ -1249,7 +1249,7 @@ function careerEnsurePrep(st){
 function trnSlots(c){return Math.min(3,(c&&c.up&&c.up.training)||1);}
 function trnMul(c){const l=(c&&c.up&&c.up.training)||1;return l>=5?1.5:l>=4?1.25:1;}
 function posChance(p,c){return Math.min(0.95,Math.max(0.3,Math.min(0.75,0.75-(p.age-18)*0.02))*trnMul(c));}
-function trainChance(p,c){return Math.min(0.9,Math.max(3,Math.min(60,60-(p.age-17)*3.5-(p.rat-40)*0.8))/100*trnMul(c));}
+function trainChance(p,c){return Math.min(0.9,Math.max(5,Math.min(60,60-(p.age-17)*4))/100*trnMul(c));}
 function soKick(st,zone){
   const so=st.so;if(!so)rej('Kein Elfmeterschießen.');const r=CR(st);
   const n=so.kicks.length;const side=n%2===0?'h':'a';const meSide=so.h==='me'?'h':'a';const shooting=side===meSide;
@@ -1288,7 +1288,7 @@ function careerKickoff(st){
   liveSetup(st,ctx,null);
 }
 function careerCupKick(st){const P=st.cupPend;const r=CR(st);const ctx=mStart(st,P.h,P.a,r);liveSetup(st,ctx,P);}
-function liveSetup(st,ctx,cupP){const me=st.clubs.me;st.ht={ctx,xi1:[...xiIds(me)],brk:{t:'live'},cup:cupP||null};ctx.seg0=0;ctx.lm=0;st.phase='halftime';}
+function liveSetup(st,ctx,cupP){const me=st.clubs.me;st.ht={ctx,xi1:[...xiIds(me)],brk:{t:'live'},cup:cupP||null};ctx.onAt={};ctx.pm={};for(const id of st.ht.xi1)ctx.onAt[id]=0;ctx.seg0=0;ctx.lm=0;st.phase='halftime';}
 // Ein Spielabschnitt (7,5 Min.) live – die App ruft das Schritt für Schritt auf
 function liveStep(st){
   if(st.phase!=='halftime'||!st.ht)rej('Kein Spiel läuft.');const ht=st.ht,ctx=ht.ctx,me=st.clubs.me;
@@ -1309,11 +1309,12 @@ function liveStep(st){
 function liveFinish(st){
   const me=st.clubs.me;const ctx=st.ht.ctx;if(!ctx.RH)rateCtx(st,ctx);
   const x1=new Set(st.ht.xi1||[]),x2=xiIds(me);
+  let mins=null;if(ctx.onAt){mins=Object.assign({},ctx.pm||{});for(const id in ctx.onAt)if(x2.has(id)||!me.squad.find(p=>p.id===id&&p.sent))mins[id]=(mins[id]||0)+Math.max(0,90-ctx.onAt[id]);}
   try{const X=pickXI(me,me.form);for(const k of ['D','M','A'])for(const x of X[k]){const p=x.p;if(p&&x.slot&&p.pos!=='G'&&x1.has(p.id)&&!knownSp(p).includes(x.slot))posPlay(st,p,x.slot);}}catch(e){}
   for(const p of me.squad){delete p.sent;delete p.liveInj;delete p.red;}
   const cupP=st.ht.cup;st.ht=null;st.phase='matchday';ctx.seg0=90;
   const full=new Set([...x1].filter(i=>x2.has(i))),half=new Set([...x1,...x2].filter(i=>!(x1.has(i)&&x2.has(i))));
-  if(cupP)careerCupFinish(st,ctx,cupP,{full,half});else careerResolve(st,ctx,{full,half});
+  if(cupP)careerCupFinish(st,ctx,cupP,{full,half,mins});else careerResolve(st,ctx,{full,half,mins});
 }
 function careerCupFinish(st,ctx,P,fat){
   const me=st.clubs.me;const r=CR(st);const cup=st.cups[P.key];const inj=[],sus=[];
@@ -1321,8 +1322,8 @@ function careerCupFinish(st,ctx,P,fat){
   for(const [p,n] of inj)p.inj=Math.max(p.inj||0,n);
   if(ctx.li)for(const l of ctx.li){const p=me.squad.find(x=>x.id===l.id);if(p)p.inj=Math.max(p.inj||0,l.n);}
   if(ctx.ysus)for(const id of ctx.ysus)sus.push(id);matchNotes(st,m,ctx,fat,r);moodUpdate(st,fat);merchPay(st,m);
-  applySus(st,sus);{const k=me.cupWk&&me.cupWk.s===st.season&&me.cupWk.md===P.md?me.cupWk.n:0;const dd=cupDay(st,P.md,k);me.cupWk={s:st.season,md:P.md,n:k+1};if(fat)careerCond(st,fat.full,fat.half,dd);resLog(st,{d:dd,md:P.md,k:P.key,o:P.h==='me'?P.a:P.h,h:P.h==='me',gh:m.gh,ga:m.ga});}
-  m.stats=matchStats(ctx,m);st.last={season:st.season,md:P.md+0.5,results:[m],other:[],cards:{}};
+  applySus(st,sus);{const k=me.cupWk&&me.cupWk.s===st.season&&me.cupWk.md===P.md?me.cupWk.n:0;const dd=cupDay(st,P.md,k);me.cupWk={s:st.season,md:P.md,n:k+1};if(fat)careerCond(st,fat.full,fat.half,dd,fat.mins);resLog(st,{d:dd,md:P.md,k:P.key,o:P.h==='me'?P.a:P.h,h:P.h==='me',gh:m.gh,ga:m.ga});}
+  m.stats=matchStats(ctx,m);fireCheck(st,m);st.last={season:st.season,md:P.md+0.5,results:[m],other:[],cards:{}};
   if(P.key==='eurog'){m.pens=null;m.w=m.gh>m.ga?m.h:m.ga>m.gh?m.a:null;euroTab(st.euro,m);if(m.w==='me')money(me,1);else if(!m.w)money(me,0.3);
     st.cupPend=(st.cupQ&&st.cupQ.shift())||null;if(st.md>=18&&!st.so&&!st.cupPend)careerEndSeason(st);return;}
   const lg=cup.log[cup.log.length-1];
@@ -1399,7 +1400,7 @@ function liveInj(st,ctx,r){
   return null;
 }
 function careerResume(st){
-  const me=st.clubs.me;const ht=st.ht,ctx=ht.ctx;const side=ctx.h==='me'?'h':'a';ctx['t'+side]=me.tac;
+  const me=st.clubs.me;const ht=st.ht,ctx=ht.ctx;minTrack(st);const side=ctx.h==='me'?'h':'a';ctx['t'+side]=me.tac;
   if(!ht.brk||(ctx.s===6&&!ctx.h2)){const r=CR(st);const keep=me.planB;me.planB=null;halftimeSwitch(st,ctx,r);me.planB=keep;ctx['t'+side]=me.tac;ctx.h2=true;}
   ht.brk={t:'live'};
 }
@@ -1431,8 +1432,8 @@ function careerResolve(st,myCtx,fat){
   const cards={};
   if(card.prep&&!data)cards.me={t:'Ruhige Woche',x:'Keine Schlagzeilen.',g:1};
   else{const x=card.run(me,r,st,F,data);cards.me={t:card.t,x,g:card.g};if(card.opts){me.pending={k:card.k,t:card.t,x,opts:card.opts,data,career:true};cards.me.choice=true;}}
-  if(fat)careerCond(st,fat.full,fat.half,mdDay(st,st.md));
-  {const mm=results.find(m=>(m.h==='me'||m.a==='me')&&!m.cup);if(mm&&myCtx)mm.stats=matchStats(myCtx,mm);if(mm)resLog(st,{d:mdDay(st,st.md),md:st.md,k:'L',o:mm.h==='me'?mm.a:mm.h,h:mm.h==='me',gh:mm.gh,ga:mm.ga});}
+  if(fat)careerCond(st,fat.full,fat.half,mdDay(st,st.md),fat.mins);
+  {const mm=results.find(m=>(m.h==='me'||m.a==='me')&&!m.cup);if(mm&&myCtx)mm.stats=matchStats(myCtx,mm);if(mm)fireCheck(st,mm);if(st.md===4||st.md===13)npcGrow(st,r,false);if(mm)resLog(st,{d:mdDay(st,st.md),md:st.md,k:'L',o:mm.h==='me'?mm.a:mm.h,h:mm.h==='me',gh:mm.gh,ga:mm.ga});}
   if(me.poach){const pp=me.nlz&&me.nlz.find(p=>p.id===me.poach.id);if(pp){me.nlz=me.nlz.filter(p=>p!==pp);money(me,me.poach.comp);feed(st,`${pp.name} wechselt zu ${me.poach.club} – Ausbildungsentschädigung ${fm(me.poach.comp)}.`,'me');}me.poach=null;}
   else if(me.nlz&&me.nlz.length&&r.chance(0.06)){const p=me.nlz.slice().sort((a,b)=>b.pot-a.pot)[0];const cl=st.clubs[r.pick(st.order[Math.max(1,me.lg-1)].filter(id=>id!=='me'))];me.poach={id:p.id,club:cl.name,comp:r2(Math.max(0.005,value(p)*0.6))};feed(st,`👀 ${cl.name} will dein NLZ-Talent ${p.name} abwerben! Hochziehen oder ziehen lassen? (Mannschaft › NLZ)`,'me');}
   if(!st.formTab)st.formTab={};
@@ -1662,6 +1663,21 @@ function facBuild(st,k){const c=st.clubs.me;if(!UPSC[k])rej('Unbekannt.');if(st.
 function buildCheck(st){const c=st.clubs.me;if(!c)return;const B=blds(c);const D=nextMyDay(st);
   for(const k of Object.keys(B)){const b=B[k];const fin=(D!=null&&D>=b.done)||(st.phase==='offseason'&&!st.winter&&st.season>b.s);if(!fin)continue;
     c.up[k]=Math.max(c.up[k]||1,b.to);delete B[k];feed(st,`${k==='stadium'?'🏟️':'🏗️'} Ausbau fertig: ${UPSC[k].n} Stufe ${c.up[k]}${k==='stadium'?' – '+CCAP[c.up[k]].toLocaleString('de-DE')+' Plätze':''}!`,'me');}}
+
+// ---------- Spielminuten (für Frische) ----------
+function minTrack(st){const ht=st.ht,ctx=ht&&ht.ctx;if(!ctx||!ctx.onAt)return;const me=st.clubs.me;
+  const M=ht.brk&&ht.brk.m?ht.brk.m:Math.round(Math.min(12,ctx.s)*7.5);const now=xiIds(me);
+  for(const id of Object.keys(ctx.onAt))if(!now.has(id)){ctx.pm[id]=(ctx.pm[id]||0)+Math.max(0,M-ctx.onAt[id]);delete ctx.onAt[id];}
+  for(const id of now)if(ctx.onAt[id]==null)ctx.onAt[id]=M;}
+// ---------- Konkurrenz verstärkt sich im Saisonverlauf (moderat) ----------
+function npcGrow(st,r,winter){let n=0;for(let L=1;L<=NL;L++)for(const id of st.order[L]){if(id==='me')continue;const c=st.clubs[id];if(!c||c.human)continue;
+  for(const k of ['A','M','D']){let d=winter?r.int(0,2):(r.chance(0.35)?1:0);if(winter&&r.chance(0.12)){d+=2;n++;}c[k]=clamp(c[k]+d,40,90);}}
+  if(winter)feed(st,`📈 Die Konkurrenz rüstet in der Winterpause auf – ${n} Vereine haben sich gezielt verstärkt.`,'me');}
+// ---------- 🔥 Lauf: 3+ Scorerpunkte in einem Spiel ----------
+function fireCheck(st,m){if(!m||!m.ev)return;const me=st.clubs.me;const side=m.h==='me'?'h':m.a==='me'?'a':null;if(!side)return;
+  for(const p of me.squad)if(p.fire>0)p.fire--;
+  const cnt={};for(const e of m.ev){if(e.s!==side)continue;if(e.t==='g'||e.t==='p'){const n=String(e.x).split(' – ')[0];cnt[n]=(cnt[n]||0)+1;}if(e.t==='g'&&e.as)cnt[e.as]=(cnt[e.as]||0)+1;}
+  for(const n in cnt)if(cnt[n]>=3){const p=me.squad.find(x=>x.name===n);if(p){p.fire=2;feed(st,`🔥 ${p.name} ist on fire: ${cnt[n]} Scorerpunkte! +3 Stärke für die nächsten 2 Spiele.`,'me');}}}
 
 </script>
 <script>
@@ -2273,7 +2289,7 @@ function crestLogo(c,sz){sz=sz||28;const L=c.logo,col=c.color||'#888',c2=L.c2||'
 function crestBase(c,sz){sz=sz||28;const col=c.color||'#888';const ini=esc(initials(c.name));
   return `<svg class="crest" width="${sz}" height="${Math.round(sz*1.15)}" viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 34 29 41 20 44 C11 41 3 34 3 22 V8 Z" fill="${col}" stroke="rgba(255,255,255,.55)" stroke-width="2"/><path d="M3 20 H37" stroke="rgba(0,0,0,.18)" stroke-width="7"/><text x="20" y="28" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="17" fill="${col==='#f0f0f0'||col==='#f5c542'?'#13210f':'#fff'}">${ini}</text></svg>`;}
 function dot(c){return `<span class="dot" style="background:${c.color}"></span>`;}
-function ticons(p,mk){let s='';if(p.sold)s+=' <span class="tag" title="verkauft">🔜</span>';if(p.tr&&TRAITS[p.tr])s+=` <span title="${esc(TRAITS[p.tr].n)}">${TRAITS[p.tr].i}</span>`;if(p.inj>0)s+=` <span class="tag inj">🚑${p.inj}</span>`;if(p.sus>0)s+=' <span class="tag inj">🟥</span>';if(p.loan)s+=' <span class="tag">Leihe</span>';if(p.ct===1&&!mk)s+=' <span class="tag" style="color:var(--gold);border-color:#f5c54255">📝</span>';return s;}
+function ticons(p,mk){let s='';if(p.fire>0)s+=' <span title="on fire: +3 Stärke">🔥</span>';if(p.sold)s+=' <span class="tag" title="verkauft">🔜</span>';if(p.tr&&TRAITS[p.tr])s+=` <span title="${esc(TRAITS[p.tr].n)}">${TRAITS[p.tr].i}</span>`;if(p.inj>0)s+=` <span class="tag inj">🚑${p.inj}</span>`;if(p.sus>0)s+=' <span class="tag inj">🟥</span>';if(p.loan)s+=' <span class="tag">Leihe</span>';if(p.ct===1&&!mk)s+=' <span class="tag" style="color:var(--gold);border-color:#f5c54255">📝</span>';return s;}
 function crow(p,o){o=o||{};
   return `<div class="pl" ${o.tap?`data-a="pl" data-v="${p.id}" style="cursor:pointer"`:''}><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${ticons(p,o.mk)}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${o.sub||`${p.age} J.${p.ct!=null?` · Vertrag ${p.ct} J.`:''}${p.fr!=null&&ST&&myC()&&myC().cond?' · '+frTag(p):''}${p.nn?' · Ø '+noteF(p.nts/p.nn):''}${p.yc?' · 🟨'+p.yc:''}${ST&&ST.career&&p.mood!=null&&!p.loan?' · '+moodI(p.mood):''}`}</span></div>${o.right||(o.tap?'<span class="mut">›</span>':'')}</div>`;}
 
@@ -2286,7 +2302,7 @@ function pitchSvg(c,form){
     if(x.red){pl+=`<g transform="translate(${cx},${y})"><circle r="5.2" fill="rgba(0,0,0,.35)" stroke="#ff5b4d" stroke-width=".7" stroke-dasharray="1.2 1"/><text y="1.8" text-anchor="middle" font-size="5">🟥</text><text y="10" text-anchor="middle" font-size="3.4" fill="#ff9a8d">Platzverweis</text></g>`;return;}
     const nm=x.p?esc(x.p.name.split(' ').slice(-1)[0]):'Amateur';const r=x.p?Math.round(x.r):35;
     const ed=xiEditable()&&x.p;const sel=ed&&ui.xiSel&&ui.xiSel.id===x.p.id;
-    pl+=`<g transform="translate(${cx},${y})" ${ed?`data-a="xiTap" data-v="${k}|${x.p.id}" data-drag="${k}|${x.p.id}" style="cursor:pointer;touch-action:none"`:''}>${sel?'<circle r="7.2" fill="none" stroke="#d8f24a" stroke-width="1.2"/>':''}${rv?`<text x="6.5" y="-3" font-size="4" fill="#d8f24a">${rv>0?'▲':'▼'}</text>`:''}${x.slot&&k!=='G'?`<text y="-6.6" text-anchor="middle" font-size="2.9" font-weight="700" fill="${x.sw?'#ff9a3d':'rgba(255,255,255,.75)'}">${x.slot}${x.sw?' −'+x.sw:''}</text>`:''}<circle r="5.2" fill="${x.oop?'#ff9a3d':c.color}" stroke="${x.sw?'#ff9a3d':'#fff'}" stroke-width=".7"/><text y="1.6" text-anchor="middle" font-size="4.2" font-weight="700" fill="${c.color==='#f0f0f0'||c.color==='#f5c542'?'#13210f':'#fff'}">${r}</text><text y="10" text-anchor="middle" font-size="3.6" fill="#eef3e8">${nm}${x.p&&(x.p.tr==='fue'||x.p.tr==='elf')?(x.p.tr==='fue'?' ©️':' ⚽'):''}</text>${x.p&&c.cond?frBarSvg(x.p.fr):''}</g>`;});}
+    pl+=`<g transform="translate(${cx},${y})" ${ed?`data-a="xiTap" data-v="${k}|${x.p.id}" data-drag="${k}|${x.p.id}" style="cursor:pointer;touch-action:none"`:''}>${sel?'<circle r="7.2" fill="none" stroke="#d8f24a" stroke-width="1.2"/>':''}${rv?`<text x="6.5" y="-3" font-size="4" fill="#d8f24a">${rv>0?'▲':'▼'}</text>`:''}${x.slot&&k!=='G'?`<text y="-6.6" text-anchor="middle" font-size="2.9" font-weight="700" fill="${x.sw?'#ff9a3d':'rgba(255,255,255,.75)'}">${x.slot}${x.sw?' −'+x.sw:''}</text>`:''}${x.p&&x.p.fire>0?'<circle r="6.6" fill="none" stroke="#ff7a1a" stroke-width="1.3" opacity=".9"><animate attributeName="r" values="6.3;7.1;6.3" dur="1.2s" repeatCount="indefinite"/></circle><text x="4.2" y="-3.4" font-size="4.2">🔥</text>':''}<circle r="5.2" fill="${x.oop?'#ff9a3d':c.color}" stroke="${x.sw?'#ff9a3d':'#fff'}" stroke-width=".7"/><text y="1.6" text-anchor="middle" font-size="4.2" font-weight="700" fill="${c.color==='#f0f0f0'||c.color==='#f5c542'?'#13210f':'#fff'}">${r}</text><text y="10" text-anchor="middle" font-size="3.6" fill="#eef3e8">${nm}${x.p&&(x.p.tr==='fue'||x.p.tr==='elf')?(x.p.tr==='fue'?' ©️':' ⚽'):''}</text>${x.p&&c.cond?frBarSvg(x.p.fr):''}</g>`;});}
   const fchips=xiEditable()?`<div class="row" style="margin:0 0 8px;gap:6px;flex-wrap:wrap"><select id="formSel" style="flex:1;min-width:130px">${formsFor(ST).map(f=>`<option value="${f}" ${f===form?'selected':''}>${fname(f)}</option>`).join('')}</select>${ST.career&&ST.phase==='matchday'?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--acc2)" data-a="fitXI">🔋 Fitte Elf</span><span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--gold)" data-a="bestXI">💪 Stärkste Elf</span>':''}${curLu(c)?'<span class="chip" style="padding:5px 9px;font-size:13px" data-a="luAuto">↺ Auto-Elf</span>':''}</div><div class="chips" style="margin:0 0 8px;gap:4px">${Object.keys(TAC).map(t=>`<span class="chip ${t===(ui.tac||c.tac)?'on':''}" style="padding:5px 9px;font-size:13px" data-a="tac" data-v="${t}">${esc(TAC[t].n)}</span>`).join('')}</div><div class="tiny mut" style="margin:-4px 0 8px">${esc(TAC[ui.tac||c.tac].d)}</div>${ST.career?tkChips(c):''}`:'';
   const strength=(ST.phase==='matchday'||ST.phase==='halftime')&&myC()===c?xiStrength(c,form)+xiWarn(c,form,X):'';
   return fchips+strength+`<svg id="xipitch" viewBox="0 0 100 100" style="width:100%;display:block;border-radius:12px;background:repeating-linear-gradient(180deg,#1d6b3a 0 10%,#1a6135 10% 20%)"><rect x="3" y="3" width="94" height="94" fill="none" stroke="rgba(255,255,255,.5)" stroke-width=".6"/><line x1="3" y1="50" x2="97" y2="50" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><circle cx="50" cy="50" r="9" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><rect x="30" y="80" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="30" y="3" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/>${pl}</svg><p class="tiny mut" style="margin:6px 0 0">Orange = auf fremder Position${subOn()?' (z. B. IV als AV: −3, ZM außen: −2, ST als Flügel: −2)':''}.${xiEditable()?' Ziehe Spieler aufeinander zum Tauschen, oder zieh einen in eine andere Reihe (Abwehr/Mittelfeld/Sturm), um die Formation zu ändern.':''}</p>${xiEditable()?xiBench(c,X)+xiSwapCard(c,form,X):''}`;
@@ -2461,7 +2477,7 @@ VIEWS.cht=function(){
     <p class="small mut">Ändere jetzt Taktik oder Aufstellung (Wechsel) und ${brk?'spiel weiter':'pfeif die 2. Halbzeit an'}.</p>`;
   }
   if(s==='t')h+=tacPicker(c,form,tac,false);
-  if(s==='e'){const n=ST.ht&&ST.ht.xi1?htSubs(c,curLu(c),form):0;if(ST.ht.brk&&ST.ht.brk.t==='inj')h+=`<div class="card" style="border:1px solid var(--bad);padding:10px 14px"><span class="small">${injSubTxt(c,form)}</span></div>`;h+=`<div class="row" style="margin:10px 2px 0"><b>Wechsel ${n}/3</b><span class="sp"></span><span class="tiny mut">Ein- und Ausgewechselte verlieren nur 5 % Frische</span></div><div class="card">${pitchSvg(c,form)}</div>`+luCard(c,form,false);}
+  if(s==='e'){const n=ST.ht&&ST.ht.xi1?htSubs(c,curLu(c),form):0;if(ST.ht.brk&&ST.ht.brk.t==='inj')h+=`<div class="card" style="border:1px solid var(--bad);padding:10px 14px"><span class="small">${injSubTxt(c,form)}</span></div>`;h+=`<div class="row" style="margin:10px 2px 0"><b>Wechsel ${n}/3</b><span class="sp"></span><span class="tiny mut">Frische sinkt pro gespielter Minute um 0,5 %</span></div><div class="card">${pitchSvg(c,form)}</div>`+luCard(c,form,false);}
   return h;
 };
 function evLine(e){return `<div class="tk ${e.s}"><span class="m">${e.m}′</span><span>${evText(e)}</span></div>`;}
@@ -3184,7 +3200,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='93',APP_RV=13;
+const APP_BUILD='94',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3656,7 +3672,7 @@ function calPage(c){
     return `<div style="padding:7px 0;border-top:1px solid var(--line);${ui.calD===d?'background:rgba(216,243,78,.07);margin:0 -14px;padding:7px 14px;':''}" data-a="calD" data-v="${d}"><div class="tiny mut">${calFmt(d,true)}${d===T?' · <b style="color:var(--acc)">nächstes Spiel</b>':''}</div>${evs.map(e=>{const o=ST.clubs[e.o];const col=resCol(e);
       return `<div class="row small" style="gap:8px;margin-top:3px"><span style="width:8px;height:8px;border-radius:2px;background:${CAL_COL[e.k]};flex:none"></span><span class="mut" style="min-width:76px">${CAL_N[e.k]}${e.k==='L'?' '+(e.md+1)+'.':''}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.h?'vs':'@'} <b>${esc(o?o.name:'offen')}</b></span><b style="color:${col||'var(--mut)'}">${e.gh!=null?scoreTxt(e)+(e.k!=='L'&&e.k!=='eurog'&&e.gh===e.ga?' n.E.':''):e.done?'–':e.h?'Heim':'Ausw.'}</b></div>`;}).join('')}${mk.map(t=>`<div class="small" style="margin-top:3px">${esc(t)}</div>`).join('')}</div>`;}).join('')}</div>`;}
   else h+=`<div class="card small mut">${first>s1?'Sommerpause – die neue Saison startet im August.':'In diesem Monat keine Spiele (Winterpause).'}</div>`;
-  if(c.cond)h+=`<p class="tiny mut" style="margin:0 2px 8px">Frische: ein volles Spiel kostet 20 %, ein Teileinsatz 10 %. Pro freiem Tag erholen sich alle um ${frRate(c)} %${has(c,'fit')?' (mit Fitnesstrainer)':' – mit Fitnesstrainer 2 %'}.</p>`;
+  if(c.cond)h+=`<p class="tiny mut" style="margin:0 2px 8px">Frische: pro gespielter Minute −0,5 % der Start-Frische (90 Min. = −45 %). Pro freiem Tag erholen sich alle um ${frRate(c)} %${has(c,'fit')?' (mit Fitnesstrainer)':' – mit Fitnesstrainer 2 %'}.</p>`;
   return h;}
 ACT.calM=function(v){ui.calM=Math.max(0,Math.min(9,(ui.calM||0)+(+v)));ui.calD=null;render();};
 ACT.calD=function(v){ui.calD=ui.calD===+v?null:+v;render();};
