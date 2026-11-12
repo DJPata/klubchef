@@ -500,7 +500,7 @@ function teamRat(c,form,tac,oppTac,home){
 }
 function npcTac(r){return r.wpick([{v:'bal',w:3},{v:'off',w:2},{v:'def',w:2},{v:'konter',w:1},{v:'press',w:1}]).v;}
 function scorer(c,R,r){
-  if(!c.human)return r.pick(FIRST)[0]+'. '+r.pick(LAST);
+  if(!c.human)return npcPN(c,r);
   const pool=[];for(const [k,w] of [['A',6],['M',3],['D',1]])for(const x of R.xi[k])if(x.p)pool.push({v:x.p.name,w});
   return pool.length?r.wpick(pool).v:'Eigentor';
 }
@@ -518,7 +518,7 @@ function goalStat(st,c,R,r){
       if(ap.length){const q=r.wpick(ap).v;q.as=(q.as||0)+1;q.ac=(q.ac||0)+1;bump('p'+q.id,q.name,c.id,'a');an=q.name;}}
     return{x:p.name,as:an};
   }
-  if(!c.sc){c.sc=[];for(let i=0;i<8;i++)c.sc.push({v:r.pick(FIRST)[0]+'. '+r.pick(LAST),w:[6,5,4,3,2,2,1,1][i]});}
+  if(!c.sc){c.sc=[];for(let i=0;i<8;i++)c.sc.push({v:npcPN(c,r),w:[6,5,4,3,2,2,1,1][i]});}
   const sn=r.wpick(c.sc).v;bump(c.id+'|'+sn,sn,c.id,'g');
   let an=null;if(r.f()<0.7){const o=c.sc.filter(x=>x.v!==sn);if(o.length){an=r.wpick(o).v;bump(c.id+'|'+an,an,c.id,'a');}}
   return{x:sn,as:an};
@@ -578,7 +578,7 @@ function mRun(st,ctx,r,to,o){
       for(const side of ['h','a'])if(r.f()<0.006*tkMul(side==='h'?h:a,true)&&ctx.red[side]<2){
         const c=side==='h'?h:a,R=side==='h'?RH:RA;const min=Math.floor(s*7.5)+r.int(1,7);let nm='';
         if(c.human){const pool=[];for(const k of ['D','M','A'])for(const x of R.xi[k])if(x.p)pool.push(x.p);if(pool.length){const pl=r.pick(pool);nm=pl.name;ctx.sus=ctx.sus||[];ctx.sus.push(pl.id);}}
-        else nm=r.pick(FIRST)[0]+'. '+r.pick(LAST);
+        else nm=npcPN(c,r);
         ctx.red[side]++;ctx.ev.push({m:min,t:'r',s:side,x:nm});
         const d=redPen(1);R.A-=d;R.M-=d;R.D-=d;
       }
@@ -935,6 +935,24 @@ function reduce(st,a){
 }
 
 function tkMul(c,red){if(!c||!c.human)return 1;return c.tk==='soft'?(red?0.4:0.5):c.tk==='hard'?(red?1.8:1.6):1;}
+
+// Länderspezifische Namen für Europapokal-Gegner
+const EUN={
+ es:{f:['Álvaro','Sergio','Pablo','Iker','Javier','Raúl','Diego','Mario'],l:['García','Fernández','López','Martínez','Sánchez','Pérez','Gómez','Ruiz','Navarro','Torres','Ramos','Morales']},
+ fr:{f:['Lucas','Hugo','Théo','Antoine','Mathis','Kylian','Julien','Benoît'],l:['Martin','Bernard','Dubois','Lefèvre','Moreau','Laurent','Girard','Bonnet','Fontaine','Rousseau','Mercier','Lambert']},
+ be:{f:['Jens','Wout','Arne','Senne','Thibaut','Dries','Lukas','Milan'],l:['Peeters','Janssens','Maes','Jacobs','Mertens','Willems','Claes','Goossens','Wouters','De Smet','Vermeulen','Desmet']},
+ cz:{f:['Jakub','Tomáš','Ondřej','Lukáš','Petr','Jan','Vojtěch','Matěj'],l:['Novák','Svoboda','Dvořák','Černý','Procházka','Kučera','Veselý','Horák','Němec','Marek','Pokorný','Král']},
+ at:{f:['Florian','Lukas','Stefan','Matthias','Dominik','Philipp','Marcel','Andreas'],l:['Gruber','Huber','Bauer','Wagner','Pichler','Steiner','Moser','Hofer','Leitner','Berger','Fuchs','Eder']},
+ sco:{f:['Callum','Ross','Fraser','Euan','Kieran','Lewis','Scott','Hamish'],l:['MacLeod','Campbell','Stewart','Robertson','MacDonald','Murray','Ferguson','Fraser','McKenzie','Gray','Hamilton','Reid']},
+ hr:{f:['Luka','Ivan','Marko','Josip','Ante','Mateo','Dario','Nikola'],l:['Horvat','Kovačević','Babić','Marić','Jurić','Novak','Knežević','Vuković','Perić','Pavlović','Matić','Tomić']},
+ it:{f:['Lorenzo','Matteo','Alessandro','Federico','Davide','Riccardo','Simone','Giorgio'],l:['Rossi','Russo','Ferrari','Esposito','Bianchi','Romano','Colombo','Ricci','Marino','Greco','Bruno','Gallo']},
+ pt:{f:['João','Tiago','Rúben','Diogo','Gonçalo','Rafael','Nuno','Bruno'],l:['Silva','Santos','Ferreira','Pereira','Oliveira','Costa','Rodrigues','Martins','Sousa','Gomes','Lopes','Carvalho']},
+ rs:{f:['Nemanja','Dušan','Aleksandar','Stefan','Miloš','Filip','Lazar','Uroš'],l:['Jovanović','Petrović','Nikolić','Marković','Đorđević','Stojanović','Ilić','Stanković','Pavlović','Milošević','Tadić','Vlahović']},
+ en:{f:['Jack','Harry','George','Oliver','Charlie','Alfie','James','Mason'],l:['Smith','Jones','Taylor','Brown','Wilson','Johnson','Walker','Wright','Robinson','Thompson','White','Hughes']},
+ nl:{f:['Daan','Bram','Sem','Lars','Thijs','Ruben','Jesse','Stijn'],l:['de Jong','Jansen','de Vries','van den Berg','Bakker','Visser','Smit','Meijer','de Boer','Mulder','Bos','Vos']},
+ lv:{f:['Artūrs','Jānis','Kristaps','Dāvis','Roberts','Edgars','Mārtiņš','Rihards'],l:['Bērziņš','Kalniņš','Ozoliņš','Jansons','Liepiņš','Krūmiņš','Balodis','Eglītis','Zariņš','Petersons','Vītols','Kļaviņš']}};
+function euCountry(n){n=String(n||'');const M=[['Meseta','es'],['Bravura','es'],['Garonne','fr'],['Riviera','fr'],['Brabant','be'],['Moldau','cz'],['Donau','at'],['Highland','sco'],['Adria','hr'],['Tiber','it'],['Partenope','it'],['Lombardia','it'],['Lisboa','pt'],['Atlântico','pt'],['Sava','rs'],['Thames','en'],['Amstel','nl'],['Baltika','lv']];for(const [k,c] of M)if(n.includes(k))return c;return null;}
+function npcPN(c,r){const L=c&&c.eu&&EUN[euCountry(c.name)];if(L)return r.pick(L.f)[0]+'. '+r.pick(L.l);return r.pick(FIRST)[0]+'. '+r.pick(LAST);}
 
 // ================= KLUBCHEF KARRIERE-MODUS =================
 const LNAME=['','1. Liga','2. Liga','Regionalliga','Verbandsliga','Kreisliga'];
@@ -1385,7 +1403,7 @@ function liveCards(st,ctx,r){
     if(ycm[p.id]){p.sent=true;p.red=true;ctx.red=ctx.red||{h:0,a:0};ctx.red[side]=(ctx.red[side]||0)+1;(ctx.sus=ctx.sus||[]).push(p.id);ctx.ev.push({m:Math.max(ycm[p.id]+1,st0+r.int(1,7)),t:'yr',s:side,x:p.name+' – Gelb-Rot, nächstes Spiel gesperrt!'});continue;}
     p.yc=(p.yc||0)+1;const five=p.yc%5===0;const ym=st0+r.int(1,7);ycm[p.id]=ym;
     ctx.ev.push({m:ym,t:'y',s:side,x:p.name+(five?' – 5. Gelbe, nächstes Spiel gesperrt!':'')});if(five)(ctx.ysus=ctx.ysus||[]).push(p.id);}
-  if(r.chance(0.13))ctx.ev.push({m:st0+r.int(1,7),t:'y',s:os,x:r.pick(FIRST)[0]+'. '+r.pick(LAST)});
+  if(r.chance(0.13))ctx.ev.push({m:st0+r.int(1,7),t:'y',s:os,x:npcPN(st.clubs[os==='h'?ctx.h:ctx.a],r)});
 }
 // Noten (1–6) nach jedem Spiel
 function matchNotes(st,m,ctx,fat,r){
@@ -3234,7 +3252,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='100',APP_RV=13;
+const APP_BUILD='101',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
