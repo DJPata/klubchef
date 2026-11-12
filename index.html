@@ -3147,7 +3147,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='82',APP_RV=13;
+const APP_BUILD='83',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3443,7 +3443,7 @@ function cardHtml(){
     h+=sec('Entwicklung');
     h+=`<div class="grid2">${kpi('Trainingschance',Math.round(trainChance(p,c)*100)+' %')}${kpi('Lernt Position',p.pos==='G'?'–':p.ptg?p.ptg+' · '+(p.ptp||0)+'/5':'keine')}</div>`;
   }
-  if(feat(ST)&&p.ct!=null&&p.ct<=2&&!p.loan)h+=`<div style="margin-top:10px">${negCard(p)}</div>`;
+  if(feat(ST)&&p.ct!=null&&p.ct<=2&&!p.loan)h+=`<div id="negc" style="margin-top:10px">${negCard(p)}</div>`;
   if(off&&!p.loan)h+=`<button class="btn block" style="margin:10px 0 8px" data-a="lendOut" data-v="${p.id}">${cl('lend'+p.id,'🔁 Bis Saisonende verleihen','Wirklich verleihen? Er spart dir Gehalt und sammelt Spielpraxis.')}</button><button class="btn bad block" data-a="sell" data-v="${p.id}">${cl('sell'+p.id,'Verkaufen für '+fm(sellPrice(c,p)),'Wirklich für '+fm(sellPrice(c,p))+' verkaufen?')}</button>`;
   else if(!p.loan&&!(feat(ST)&&p.ct!=null&&p.ct<=2))h+=`<p class="tiny mut" style="margin:10px 0 0">Verlängern geht ab 2 Jahren Restlaufzeit, verkaufen und verleihen in der Sommer- oder Winterpause.</p>`;
   return h;
@@ -3845,6 +3845,22 @@ ACT.fitXIgo=function(){ACT.fitXI();ACT.goXI();};
 ACT.bestXI=function(){const c=myC();if(!c||!xiEditable())return;const b=fitPlan(c,true);if(!b)return;ui.form=b.f;ui.tac=b.t;ui.lu=b.X.lu;ui.xiSel=null;
   const tired=c.cond?Object.values(b.X.lu).flat().map(id=>c.squad.find(p=>p.id===id)).filter(p=>p&&p.fr!=null&&p.fr<FIT_MIN).length:0;
   toast(`🧑‍🏫 Co-Trainer: ${fname(b.f)} mit ${TACS[b.t]} – die stärksten Spieler auf ihren Positionen${tired?` · Achtung: ${tired} davon unter ${FIT_MIN} % Frische`:''}.`,true);render();};
+
+// ---------- Saisonende: Letzte Chance – wer den Verein verlässt ----------
+function leaveCard(c){
+  const ex=c.squad.filter(p=>p.ct===1&&!p.loan&&!p.sold),lo=c.squad.filter(p=>p.loan),so=c.squad.filter(p=>p.sold),old=c.squad.filter(p=>!p.loan&&!(p.ct===1)&&!p.sold&&p.age>=33);
+  if(!ex.length&&!lo.length&&!so.length&&!old.length)return '';
+  const row=(p,txt,btn)=>`<div class="pl" data-a="card" data-v="${p.id}" style="cursor:pointer"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}</b><span>${txt}</span></div>${btn||'<span class="mut">›</span>'}</div>`;
+  let h=`<div class="card" style="border-color:var(--gold)"><h3 style="margin-top:0">🚪 Letzte Chance: Diese Spieler verlassen den Verein</h3>`;
+  if(ex.length)h+=`<div class="tiny mut" style="margin:6px 0 2px">📝 VERTRAG LÄUFT AUS – jetzt noch verlängern</div>`+ex.map(p=>row(p,`${p.age} J. · Gehalt ${fm(salary(p))} · Stimmung ${moodI(p.mood==null?70:p.mood)}`,`<button class="btn sm ok" data-a="cardNeg" data-v="${p.id}">Verlängern</button>`)).join('');
+  if(so.length)h+=`<div class="tiny mut" style="margin:10px 0 2px">🤝 VERKAUFT</div>`+so.map(p=>row(p,`wechselt zu ${esc(p.sold.club||'neuem Verein')} · ${fm(p.sold.price||0)}`)).join('');
+  if(lo.length)h+=`<div class="tiny mut" style="margin:10px 0 2px">🔁 LEIHE ENDET</div>`+lo.map(p=>row(p,'geht zurück zu seinem Verein')).join('');
+  if(old.length)h+=`<div class="tiny mut" style="margin:10px 0 2px">👴 KARRIEREENDE MÖGLICH</div>`+old.map(p=>row(p,`wird ${p.age+1} – ${p.age+1>=36?'hört sicher auf':'hört vielleicht auf (50 %)'}`)).join('');
+  h+=`<p class="tiny mut" style="margin:8px 0 0">Mit „Weiter zur Sommerpause“ sind sie weg. Spieler ohne Vertrag landen auf dem Transfermarkt.</p></div>`;
+  return h;}
+const _cseasonLC=VIEWS.cseason;VIEWS.cseason=function(){const h=_cseasonLC.apply(this,arguments);try{const c=myC();if(!ST.career||!c)return h;const lc=leaveCard(c);if(!lc)return h;const i=h.indexOf('<div class="card"><h3>Abrechnung</h3>');return i<0?h+lc:h.slice(0,i)+lc+h.slice(i);}catch(e){return h;}};
+
+ACT.cardNeg=function(v){ACT.card(v);setTimeout(()=>{const e=document.getElementById('negc');if(e)e.scrollIntoView({block:'start',behavior:'smooth'});},40);};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
