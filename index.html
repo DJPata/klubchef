@@ -3147,7 +3147,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='79',APP_RV=13;
+const APP_BUILD='80',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3400,16 +3400,16 @@ function sheetDraw(){
   let d=document.getElementById('sheet');
   if(!d){d=document.createElement('div');d.id='sheet';document.body.appendChild(d);d.addEventListener('click',e=>{if(e.target===d)ACT.sheetX();});}
   let h='',k='';
-  if(ST&&ST.career&&ui.view==='game'){if(ui.ask){h=askHtml();k='ask';}else if(ui.card){h=cardHtml();k=ui.card;if(!h)ui.card=null;}}else{ui.card=null;ui.ask=null;}
+  if(ST&&ST.career&&ui.view==='game'){if(ui.ask){h=askHtml();k='ask';}else if(ui.card){h=cardHtml();k=ui.card;if(!h)ui.card=null;}else if(ui.facil){h=facilHtml(ui.facil);k='f'+ui.facil;if(!h)ui.facil=null;}}else{ui.card=null;ui.ask=null;ui.facil=null;}
   if(!h){d.style.display='none';d.innerHTML='';d.dataset.k='';return;}
   const old=d.firstChild&&d.dataset.k===k?d.firstChild.scrollTop:0;
   d.innerHTML=`<div class="shb"><div class="grab"></div>${h}</div>`;d.style.display='flex';d.dataset.k=k;d.firstChild.scrollTop=old;
 }
 const _renderSheet=render;render=function(){_renderSheet();sheetDraw();};
-ACT.sheetX=function(){ui.card=null;ui.ask=null;ui.confirm=null;render();};
+ACT.sheetX=function(){ui.card=null;ui.ask=null;ui.facil=null;ui.confirm=null;render();};
 ACT.card=function(v){ui.card=v;ui.confirm=null;render();};
 const _plCard=ACT.pl;ACT.pl=function(v){const c=myC();if(ST&&ST.career&&c&&c.squad.some(p=>p.id===v)){ACT.card(v);return;}_plCard(v);};
-const _tabCard=ACT.tab;ACT.tab=function(v){ui.card=null;ui.ask=null;_tabCard(v);};
+const _tabCard=ACT.tab;ACT.tab=function(v){ui.card=null;ui.ask=null;ui.facil=null;_tabCard(v);};
 
 // ---------- Spielerkarte ----------
 function noteCol(n){return n<=2.5?'#3fd0a0':n<=3.5?'#f5c542':'#ff5b4d';}
@@ -3736,9 +3736,9 @@ function clubGround(c){
   const S=0.85,ox=180,oy=34;const P=(x,y,z)=>[(ox+(x-y)*0.866*S).toFixed(1),(oy+(x+y)*0.5*S-(z||0)*S).toFixed(1)].join(',');
   const poly=(pts,f,extra)=>`<polygon points="${pts.join(' ')}" fill="${f}" ${extra||''}/>`;
   const shade=(hex,k)=>{const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;r=Math.round(r*k);g=Math.round(g*k);b=Math.round(b*k);return '#'+((1<<24)+(Math.min(255,r)<<16)+(Math.min(255,g)<<8)+Math.min(255,b)).toString(16).slice(1);};
-  const items=[];const box=(x,y,z,w,d,h,top,side,o)=>{o=o||{};items.push({k:x+w/2+y+d/2+(o.bias||0),svg:
+  const items=[];const FG=(f,s)=>f?`<g data-a="facil" data-v="${f}" style="cursor:pointer">${s}</g>`:s;let F=null;const box=(x,y,z,w,d,h,top,side,o)=>{o=o||{};const f=o.f||F;items.push({k:x+w/2+y+d/2+(o.bias||0),f,svg:
     poly([P(x,y+d,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x,y+d,z+h)],shade(side,0.78))+poly([P(x+w,y,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x+w,y,z+h)],shade(side,0.92))+poly([P(x,y,z+h),P(x+w,y,z+h),P(x+w,y+d,z+h),P(x,y+d,z+h)],top)+(o.after||'')});};
-  const lbl=(x,y,z,t)=>items.push({k:999,svg:(()=>{const [X,Y]=P(x,y,z).split(',');return `<text x="${X}" y="${Y}" text-anchor="middle" font-size="7.5" font-weight="700" fill="#fff" stroke="#0b1a13" stroke-width="2.2" paint-order="stroke" font-family="system-ui,sans-serif">${t}</text>`;})()});
+  const lbl=(x,y,z,t)=>{const f=F;items.push({k:999,f,svg:(()=>{const [X,Y]=P(x,y,z).split(',');const on=f&&ui.facil===f;const can=f&&facCan(c,f);return `<text x="${X}" y="${Y}" text-anchor="middle" font-size="7.5" font-weight="700" fill="${on?'#d8f34e':'#fff'}" stroke="#0b1a13" stroke-width="2.2" paint-order="stroke" font-family="system-ui,sans-serif">${t}${can?' ⬆':''}</text>`;})()});};
   const tree=(x,y,r)=>{items.push({k:x+y,svg:(()=>{const [X,Y]=P(x,y,0).split(',');return `<rect x="${X-0.8}" y="${Y-6}" width="1.6" height="6" fill="#5b3d25"/><ellipse cx="${X}" cy="${Y-8}" rx="${r}" ry="${r*0.9}" fill="#2c7a43"/><ellipse cx="${X-r*0.3}" cy="${Y-9.5}" rx="${r*0.5}" ry="${r*0.45}" fill="#3a9452"/>`;})()});};
   const up=c.up||{},col=c.color||'#d8f34e';const st=up.stadium||1,tr=up.training||1,yo=up.youth||1,an=up.analysis||1,sc=up.scouting||1;const merch=(c.merch||[]).length;
   let g='';
@@ -3748,12 +3748,13 @@ function clubGround(c){
   // Parkplatz
   g+=poly([P(66,150),P(118,150),P(118,192),P(66,192)],'#5b605c');for(let i=0;i<7;i++)g+=`<polyline points="${P(70+i*7,152)} ${P(70+i*7,162)}" stroke="#d9dcd6" stroke-width=".5" fill="none"/>`+`<polyline points="${P(70+i*7,180)} ${P(70+i*7,190)}" stroke="#d9dcd6" stroke-width=".5" fill="none"/>`;
   // Spielfeld
-  const px=66,py=48,pw=92,pd=60;
+  const px=66,py=48,pw=92,pd=60;F='stadium';let g0=g;g='';
   for(let i=0;i<8;i++)g+=poly([P(px+i*pw/8,py),P(px+(i+1)*pw/8,py),P(px+(i+1)*pw/8,py+pd),P(px+i*pw/8,py+pd)],i%2?'#3f9a4f':'#47a857');
   const L=(pts)=>`<polyline points="${pts.map(a=>P(a[0],a[1])).join(' ')}" fill="none" stroke="#e8f5e9" stroke-width=".7"/>`;
   g+=L([[px+2,py+2],[px+pw-2,py+2],[px+pw-2,py+pd-2],[px+2,py+pd-2],[px+2,py+2]])+L([[px+pw/2,py+2],[px+pw/2,py+pd-2]]);
   {const pts=[];for(let i=0;i<=24;i++){const a=i/24*Math.PI*2;pts.push([px+pw/2+Math.cos(a)*8,py+pd/2+Math.sin(a)*8]);}g+=L(pts);}
   g+=L([[px+2,py+pd/2-14],[px+16,py+pd/2-14],[px+16,py+pd/2+14],[px+2,py+pd/2+14]])+L([[px+pw-2,py+pd/2-14],[px+pw-16,py+pd/2-14],[px+pw-16,py+pd/2+14],[px+pw-2,py+pd/2+14]]);
+  g=g0+FG('stadium',g);
   // Tribünen je nach Stadionstufe
   const t=6+st*2,h=[0,5,8,11,15,19][st],gp=3,seat=col,conc='#9aa19c';
   const roof=st>=4?{after:''}:{};
@@ -3766,30 +3767,55 @@ function clubGround(c){
   if(st>=4)for(const [x,y] of [[px-gp-t-4,py-gp-t-4],[px+pw+gp+t+2,py-gp-t-4],[px-gp-t-4,py+pd+gp+t+2],[px+pw+gp+t+2,py+pd+gp+t+2]]){box(x,y,0,1.2,1.2,h+16,'#d9dcd6','#b7bdb9');box(x-2,y-2,h+16,5,5,2.5,'#fff7c2','#e0d48a',{bias:2});}
   lbl(px+pw/2,py+pd+gp+t,h+4,'Stadion '+st);
   // Trainingsplätze
-  const tn=[0,1,2,2,3,4][tr];for(let i=0;i<tn;i++){const x=178,y=6+i*30;for(let j=0;j<2;j++)g+=poly([P(x+j*10.5,y),P(x+(j+1)*10.5,y),P(x+(j+1)*10.5,y+22),P(x+j*10.5,y+22)],j?'#3f9a4f':'#47a857');g+=L([[x+1,y+1],[x+20,y+1],[x+20,y+21],[x+1,y+21],[x+1,y+1]])+L([[x+1,y+11],[x+20,y+11]]);}
+  F='training';g0=g;g='';const tn=[0,1,2,2,3,4][tr];for(let i=0;i<tn;i++){const x=178,y=6+i*30;for(let j=0;j<2;j++)g+=poly([P(x+j*10.5,y),P(x+(j+1)*10.5,y),P(x+(j+1)*10.5,y+22),P(x+j*10.5,y+22)],j?'#3f9a4f':'#47a857');g+=L([[x+1,y+1],[x+20,y+1],[x+20,y+21],[x+1,y+21],[x+1,y+1]])+L([[x+1,y+11],[x+20,y+11]]);}
+  g0+=FG('training',g);g=g0;
   if(tr>=3)box(176,146,0,20,14,5+tr,'#e6e1d3','#c9c2b0');
   lbl(188,8,2,'Training '+tr);
   // NLZ
+  F='youth';
   box(10,146,0,30,22,4+yo*3.5,'#ece6d6','#d4ccb8',{after:''});for(let f=1;f<=yo;f++){const z=f*3.5+1;g+='';}
   lbl(25,157,6+yo*3.5,'NLZ '+yo);
   // Analysezentrum
-  box(12,14,0,24,20,4+an*4,'#9cc4ff','#4f86d6');if(an>=3){items.push({k:60,svg:(()=>{const [X,Y]=P(24,24,4+an*4).split(',');return `<ellipse cx="${X}" cy="${+Y-4}" rx="5" ry="2.4" fill="#e8eef7" stroke="#9aa6b5" stroke-width=".6"/><rect x="${X-0.5}" y="${+Y-4}" width="1" height="4" fill="#9aa6b5"/>`;})()});}
+  F='analysis';
+  box(12,14,0,24,20,4+an*4,'#9cc4ff','#4f86d6');if(an>=3){items.push({k:60,f:'analysis',svg:(()=>{const [X,Y]=P(24,24,4+an*4).split(',');return `<ellipse cx="${X}" cy="${+Y-4}" rx="5" ry="2.4" fill="#e8eef7" stroke="#9aa6b5" stroke-width=".6"/><rect x="${X-0.5}" y="${+Y-4}" width="1" height="4" fill="#9aa6b5"/>`;})()});}
   lbl(24,24,8+an*4,'Analyse '+an);
   // Scouting-Büro
-  box(14,64,0,18,14,3+sc*2.5,'#e7d6b0','#bfa77a');items.push({k:80,svg:(()=>{const [X,Y]=P(23,71,3+sc*2.5).split(',');return `<rect x="${X-0.4}" y="${+Y-12}" width=".8" height="12" fill="#ccc"/><polygon points="${X},${+Y-12} ${+X+7},${+Y-10} ${X},${+Y-8}" fill="${col}"/>`;})()});
+  F='scouting';
+  box(14,64,0,18,14,3+sc*2.5,'#e7d6b0','#bfa77a');items.push({k:80,f:'scouting',svg:(()=>{const [X,Y]=P(23,71,3+sc*2.5).split(',');return `<rect x="${X-0.4}" y="${+Y-12}" width=".8" height="12" fill="#ccc"/><polygon points="${X},${+Y-12} ${+X+7},${+Y-10} ${X},${+Y-8}" fill="${col}"/>`;})()});
   lbl(23,71,6+sc*2.5,'Scouting '+sc);
   // Fanshop
+  F='merch';if(!merch){box(130,141,0,10,8,0.6,'#6b726e','#5b605c');lbl(135,145,4,'🛍️ Fanshop');}
   if(merch){const w=merch>=8?22:merch>=4?16:10,d=merch>=8?12:merch>=4?10:8,hh=merch>=8?8:merch>=4?6:4;box(128,140,0,w,d,hh,'#f1ece0','#cfc6b2',{after:''});box(127,140+d-1,hh*0.55,w+2,3,0.8,col,shade(col,0.8),{bias:1});lbl(128+w/2,140+d/2,hh+4,'🛍️ Fanshop');}
+  F=null;
   // Bäume
   for(const [x,y,r] of [[4,100,4],[8,112,3.5],[44,186,4],[48,10,3.5],[150,190,4],[192,160,4.5],[196,176,3.5],[120,12,3.5],[140,8,3],[46,120,3]])tree(x,y,r);
-  items.sort((a,b)=>a.k-b.k);g+=items.map(i=>i.svg).join('');
+  items.sort((a,b)=>a.k-b.k);g+=items.map(i=>FG(i.f,i.svg)).join('');
   return `<svg viewBox="0 0 360 230" style="width:100%;display:block">${g}</svg>`;
 }
-function groundCard(c){return `<div class="card" style="padding:10px 8px 6px;background:radial-gradient(ellipse at 50% 40%,#173a28,#0e2218)"><div class="row" style="padding:0 6px"><b>🏟️ ${esc(c.stadium||'Dein Vereinsgelände')}</b><span class="sp"></span><span class="tiny mut">${num(CCAP[c.up.stadium||1])} Plätze</span></div>${clubGround(c)}<p class="tiny mut" style="margin:2px 6px 4px">Das Gelände wächst mit jedem Ausbau – Tribünen, Trainingsplätze, NLZ, Analysezentrum, Scouting und Fanshop.</p></div>`;}
-const _cofficeGround=VIEWS.coffice;VIEWS.coffice=function(){const h=_cofficeGround.apply(this,arguments);if(!ST.career||ui.sub!=='ausbau')return h;const c=myC();const i=h.indexOf('<div class="card"><div class="row"><h3 style="margin:0">');return i<0?h+groundCard(c):h.slice(0,i)+groundCard(c)+h.slice(i);};
+function groundCard(c){return `<div class="card" style="padding:10px 8px 6px;background:radial-gradient(ellipse at 50% 40%,#173a28,#0e2218)"><div class="row" style="padding:0 6px"><b>🏟️ ${esc(c.stadium||'Dein Vereinsgelände')}</b><span class="sp"></span><span class="tiny mut">${num(CCAP[c.up.stadium||1])} Plätze</span></div>${clubGround(c)}${facPills(c)}<p class="tiny mut" style="margin:6px 6px 4px">Tippe auf ein Gebäude, um es anzusehen und auszubauen. ⬆ = Ausbau bezahlbar.${ST.phase==='offseason'&&!ST.winter?'':' Ausbauen geht nur in der Sommerpause (der Fanshop immer).'}</p></div>`;}
+const _cofficeGround=VIEWS.coffice;VIEWS.coffice=function(){const h=_cofficeGround.apply(this,arguments);if(!ST.career||ui.sub!=='ausbau')return h;const c=myC();const i=h.indexOf('<div class="card"><div class="row"><h3 style="margin:0">');return i<0?h+groundCard(c):h.slice(0,i)+groundCard(c);};
 
 // Untermenü klebt unter der Kopfzeile: Höhe der Kopfzeile merken
 const _renderHH=render;render=function(){_renderHH();try{const hd=document.querySelector('#app header');if(hd)document.documentElement.style.setProperty('--hh',hd.offsetHeight+'px');}catch(e){}};
+
+// ---------- Ausbau über das Gelände ----------
+const FAC=[['stadium','🏟️','Stadion'],['training','🏋️','Training'],['youth','🎓','NLZ'],['analysis','🔎','Analyse'],['scouting','🔭','Scouting'],['merch','🛍️','Fanshop']];
+function facCost(c,k){const l=c.up[k]||1;return (k==='stadium'?CUPCOST:CUPCOST2)[l];}
+function facCan(c,k){if(k==='merch'){const own=c.merch||[];const nx=MERCH.find(m=>!own.includes(m[0]));return !!(nx&&c.cash>=nx[3]);}
+  const l=c.up[k]||1;return ST.phase==='offseason'&&!ST.winter&&!ST.ready[me()]&&l<5&&c.cash>=facCost(c,k);}
+function facTxt(c,k,l){if(k==='training')return `${Math.min(3,l)} ${l>1?'Trainingsplätze':'Trainingsplatz'} pro Spieltag${l>=4?` · Trainingserfolg +${l>=5?50:25} %`:''} · Spieler bis 26 entwickeln sich um +${String((l-1)*0.5).replace('.',',')} pro Saison besser.`;
+  if(k==='scouting')return UPS.scouting.d(l);if(k==='stadium')return `${num(CCAP[l])} Plätze · Ticket in der ${LNAME[c.lg]}: ${TPRICE[c.lg]} €.`;
+  if(k==='youth')return `NLZ mit ${Math.min(5,2+l)} Plätzen, Talente ~${TMEAN[c.lg]-15+l*2} Stärke.`;if(k==='analysis')return UPSC.analysis.d(l);return '';}
+function facilHtml(k){const c=myC();if(!c)return '';const head=t=>`<div class="row"><h3 style="margin:0">${t}</h3><span class="sp"></span><button class="ic" data-a="sheetX">✕</button></div>`;
+  if(k==='merch')return head('🛍️ Fanshop')+merchCard(c).replace('<div class="card">','<div class="card" style="margin-top:8px">');
+  const f=FAC.find(x=>x[0]===k);if(!f)return '';const l=c.up[k]||1;const cost=facCost(c,k);const off=ST.phase==='offseason'&&!ST.winter&&!ST.ready[me()];
+  let h=head(`${f[1]} ${UPSC[k].n}`)+`<div style="margin:10px 0 4px">${lvl(l)}</div><div class="kpi" style="margin-top:8px"><span>Jetzt · Stufe ${l}</span><div class="small" style="margin-top:4px">${esc(facTxt(c,k,l))}</div></div>`;
+  if(l>=5)return h+'<p class="small mut" style="margin:10px 0 0">Maximal ausgebaut. 🏆</p>';
+  h+=`<div class="kpi" style="margin-top:8px;border-color:var(--acc)"><span>Nächste Stufe ${l+1}</span><div class="small" style="margin-top:4px">${esc(facTxt(c,k,l+1))}</div></div>`;
+  h+=off?`<button class="btn ok block" style="margin-top:12px" data-a="up" data-v="${k}" ${c.cash<cost?'disabled':''}>${cl('up'+k,'Ausbauen für '+fm(cost),'Wirklich für '+fm(cost)+' ausbauen?')}</button>${c.cash<cost?`<p class="tiny" style="color:var(--bad);margin:6px 0 0">Dir fehlen noch ${fm(cost-c.cash)}.</p>`:''}`:`<p class="small mut" style="margin:12px 0 0">Kosten Stufe ${l+1}: <b>${fm(cost)}</b> · Ausbauen geht nur in der Sommerpause.</p>`;
+  return h;}
+function facPills(c){return `<div class="chips" style="margin:4px 6px 0;gap:5px">${FAC.map(([k,i,n])=>`<span class="chip ${ui.facil===k?'on':''}" style="padding:4px 8px;font-size:11.5px" data-a="facil" data-v="${k}">${i} ${n} ${k==='merch'?(c.merch||[]).length+'/'+MERCH.length:(c.up[k]||1)}${facCan(c,k)?' ⬆':''}</span>`).join('')}</div>`;}
+ACT.facil=function(v){ui.facil=v;ui.card=null;ui.confirm=null;render();};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
