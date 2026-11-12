@@ -2424,7 +2424,7 @@ VIEWS.cht=function(){
     <p class="small mut">Ändere jetzt Taktik oder Aufstellung (Wechsel) und ${brk?'spiel weiter':'pfeif die 2. Halbzeit an'}.</p>`;
   }
   if(s==='t')h+=tacPicker(c,form,tac,false);
-  if(s==='e'){const n=ST.ht&&ST.ht.xi1?htSubs(c,curLu(c),form):0;if(ST.ht.brk&&ST.ht.brk.t==='inj')h+=`<div class="card" style="border:1px solid var(--bad);padding:10px 14px"><span class="small">🚑 <b>${esc(ST.ht.brk.name)}</b> ist verletzt raus – wähle seinen Ersatz.</span></div>`;h+=`<div class="row" style="margin:10px 2px 0"><b>Wechsel ${n}/3</b><span class="sp"></span><span class="tiny mut">Ein- und Ausgewechselte verlieren nur 5 % Frische</span></div><div class="card">${pitchSvg(c,form)}</div>`+luCard(c,form,false);}
+  if(s==='e'){const n=ST.ht&&ST.ht.xi1?htSubs(c,curLu(c),form):0;if(ST.ht.brk&&ST.ht.brk.t==='inj')h+=`<div class="card" style="border:1px solid var(--bad);padding:10px 14px"><span class="small">${injSubTxt(c,form)}</span></div>`;h+=`<div class="row" style="margin:10px 2px 0"><b>Wechsel ${n}/3</b><span class="sp"></span><span class="tiny mut">Ein- und Ausgewechselte verlieren nur 5 % Frische</span></div><div class="card">${pitchSvg(c,form)}</div>`+luCard(c,form,false);}
   return h;
 };
 function evLine(e){return `<div class="tk ${e.s}"><span class="m">${e.m}′</span><span>${evText(e)}</span></div>`;}
@@ -3143,7 +3143,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='74',APP_RV=13;
+const APP_BUILD='75',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3719,6 +3719,13 @@ const _drawTickerSt=drawTicker;drawTicker=function(){_drawTickerSt();try{if(!TK|
   const box=document.getElementById('ovb');if(!box||box.querySelector('.tkst'))return;const at=box.querySelector('.clock')||box.querySelector('.score');if(!at)return;
   at.insertAdjacentHTML('afterend',`<details class="tkst" style="margin:8px 0 0" ${LS.get('kc:stOpen',true)?'open':''}><summary class="small" style="cursor:pointer;font-weight:700">📊 Statistik</summary>${statsBox(m)}</details>`);
   const d=box.querySelector('.tkst');d.addEventListener('toggle',()=>LS.set('kc:stOpen',d.open));}catch(e){}};
+
+// Verletzung im Spiel: zeigen, wer automatisch reingerückt ist
+function injSubTxt(c,form){const b=ST.ht.brk;const p=c.squad.find(x=>x.id===b.pid);let rep=null,slot='';
+  try{if(p){const lu=Object.assign({},c,{lineup:curLu(c)});const was=p.sent;p.sent=false;const X0=pickXI(lu,form);p.sent=was;const X1=pickXI(lu,form);
+    const ids=X=>{const s=new Set();for(const k of ['G','D','M','A'])for(const x of X[k])if(x.p)s.add(x.p.id);return s;};const a=ids(X0),b1=ids(X1);
+    for(const k of ['G','D','M','A'])for(const x of X0[k])if(x.p===p)slot=x.slot||POSL[k];const nid=[...b1].find(id=>!a.has(id));rep=nid?c.squad.find(x=>x.id===nid):null;}}catch(e){}
+  return `🚑 <b>${esc(b.name)}</b>${slot?' ('+esc(slot)+')':''} ist in der ${b.m}. Minute verletzt raus.${rep?` Für ihn steht jetzt automatisch <b>${esc(rep.name)}</b> auf dem Feld – das zählt als Wechsel.`:''} Willst du anders wechseln, zieh einen Spieler von der Bank auf die Position.`;}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
