@@ -956,9 +956,9 @@ function mktRate(c){return Math.round(SPON[c.lg]*0.6/18*1000)/1000;}
 const TPM={0.8:1,1:0.95,1.2:0.85,1.5:0.7};
 const MERCH=[['sticker','🏷️','Aufkleber',0.01,0.8],['schal','🧣','Fanschal',0.03,1.5],['muetze','🧢','Cap',0.06,2],['tasse','☕','Kaffeetasse',0.12,2.5],['trikot','👕','Trikot',0.4,5],['kalender','📅','Mannschaftskalender',0.8,3],['ball','⚽','Signierter Ball',1.5,4],['hoodie','🧥','Hoodie',3,6],['retro','✨','Retro-Trikot',6,8],['bett','🛏️','Fan-Bettwäsche',12,9]];
 function merchAtt(c){return Math.min(Math.round(c.fans*(TPM[c.tp||1]||0.95)/0.95),CCAP[c.up.stadium]);}
-function merchIncome(c){const own=c.merch||[];const eur=MERCH.filter(m=>own.includes(m[0])).reduce((a,m)=>a+m[4],0);return Math.round(eur*merchAtt(c)*(c.build?BUILD_F:1))/1e6;}
+function merchIncome(c){const own=c.merch||[];const eur=MERCH.filter(m=>own.includes(m[0])).reduce((a,m)=>a+m[4],0);return Math.round(eur*merchAtt(c)*(stBuilding(c)?BUILD_F:1))/1e6;}
 function merchPay(st,m){const me=st.clubs.me;if(!m||m.h!=='me'||!me.merch||!me.merch.length)return;const x=merchIncome(me);if(x>0){money(me,x);me.merchPaid=Math.round(((me.merchPaid||0)+x)*1e4)/1e4;}}
-function careerEcon(st,c){const t=c.lg;const tp=c.tp||1;return{ticket:r2(Math.min(Math.round(c.fans*(TPM[tp]||0.95)/0.95),CCAP[c.up.stadium])*TPRICE[t]*tp*(c.build?BUILD_F:1)/1e6),win:WINB[t]};}
+function careerEcon(st,c){const t=c.lg;const tp=c.tp||1;return{ticket:r2(Math.min(Math.round(c.fans*(TPM[tp]||0.95)/0.95),CCAP[c.up.stadium])*TPRICE[t]*tp*(stBuilding(c)?BUILD_F:1)/1e6),win:WINB[t]};}
 function clubName(r,used){for(let i=0;i<200;i++){const n=r.pick(PREF)+' '+r.pick(TOWNS);if(!used.has(n)){used.add(n);return n;}}return 'SV '+used.size;}
 // ---------- Regionen (Karriere) ----------
 const REG={
@@ -1518,7 +1518,7 @@ const CH={
   BOARD_PICK(st,a){needPhase(st,'offseason');if(st.winter)rej('Das Saisonziel wird in der Sommerpause festgelegt.');const b=st.clubs.me.board;if(!b||!b.opts||!b.opts[a.d])rej('?');b.diff=a.d;b.goal=b.opts[a.d];b.picked=true;},
   BUY:logWrap((st,a)=>H.BUY(st,a)),BUY_OFFER:logWrap((st,a)=>buyOffer(st,a)),BUY_COUNTER:logWrap((st,a)=>buyCounter(st,a)),OFFER_UP(st,a){offerUp(st,a);}, SELL:logWrap((st,a)=>{if(st.winter&&(st.clubs.me.buys||0)>=buyMax(st))rej('Keine Wintertransfers mehr übrig.');H.SELL(st,a);if(st.winter)st.clubs.me.buys=(st.clubs.me.buys||0)+1;}), HIRE:winterBlock((st,a)=>H.HIRE(st,a),'Staff gibt es nur in der Sommerpause.'), FIRE:(st,a)=>H.FIRE(st,a),
   CAMP_SIGN(st,a){const c=st.clubs.me;if(!c.camp)rej('Kein Camp offen.');const p=c.camp.kids.find(x=>x.id===a.player);if(!p)rej('Unbekannt.');if(!c.nlz)c.nlz=[];if(c.nlz.length>=nlzSlots(c)+2)rej('Das NLZ ist voll.');c.camp.kids=c.camp.kids.filter(x=>x!==p);ensureP(st,p);c.nlz.push(p);if(!c.camp.kids.length)c.camp=null;feed(st,`${p.name} kommt ins NLZ.`,'me');}, BID_OK:logWrap((st,a)=>H.BID_OK(st,a)), BID_NO:(st,a)=>H.BID_NO(st,a), OFFER_OK:logWrap((st,a)=>{if(st.winter&&(st.clubs.me.buys||0)>=buyMax(st))rej('Keine Wintertransfers mehr übrig.');H.OFFER_OK(st,a);if(st.winter)st.clubs.me.buys=(st.clubs.me.buys||0)+1;}), OFFER_NO:(st,a)=>H.OFFER_NO(st,a), EXTEND:(st,a)=>H.EXTEND(st,a), CAMP_SKIP:(st,a)=>H.CAMP_SKIP(st,a), UNREADY(){},
-  UPGRADE(st,a){if(a.kind==='stadium'){stadiumBuild(st);return;}needPhase(st,'offseason');if(st.winter)rej('Ausbauen geht nur in der Sommerpause.');const c=st.clubs.me;if(!UPSC[a.kind])rej('Unbekannt.');const l=c.up[a.kind]||1;if(l>=5)rej('Maximale Stufe.');
+  UPGRADE(st,a){facBuild(st,a.kind);return;needPhase(st,'offseason');if(st.winter)rej('Ausbauen geht nur in der Sommerpause.');const c=st.clubs.me;if(!UPSC[a.kind])rej('Unbekannt.');const l=c.up[a.kind]||1;if(l>=5)rej('Maximale Stufe.');
     const cost=(a.kind==='stadium'?CUPCOST:CUPCOST2)[l];if(c.cash<cost)rej('Nicht genug Geld.');money(c,-cost);c.up[a.kind]=l+1;feed(st,`${c.name} baut ${UPSC[a.kind].n} auf Stufe ${l+1} aus.`,c.id);},
   LOAN(st,a){const c=st.clubs.me;const s=LOANS[c.lg];if(c.debt+s>s*6+0.001)rej(`Die Bank gibt höchstens ${fm(s*6)}.`);c.debt=r2(c.debt+s);money(c,s);},
   REPAY(st,a){const c=st.clubs.me;const s=Math.min(c.debt,LOANS[c.lg]);if(s<=0)rej('Keine Schulden.');if(c.cash<s)rej('Nicht genug Geld.');c.debt=r2(c.debt-s);money(c,-s);},
@@ -1644,16 +1644,19 @@ function posPlay(st,p,s){p.pgm=p.pgm||{};p.pgm[s]=(p.pgm[s]||0)+1;if(p.pgm[s]<5)
   if(n>=5){p.xsp=(p.xsp||[]).concat([s]);if(p.ptg===s){delete p.ptg;delete p.ptp;}else delete p.pxm[s];delete p.pgm[s];feed(st,`🎓 ${p.name} hat durch Spielpraxis die Position ${s} gelernt!`,'me');}
   else feed(st,`🎓 ${p.name} hat 5× als ${s} gespielt – +1 Trainingseinheit (${n}/5).`,'me');}
 
-// ---------- Stadionausbau jederzeit, mit Bauzeit (10 Wochen) ----------
-const BUILD_F=0.7,BUILD_DAYS=70;
-function buildToday(st){if(st.phase==='offseason')return st.winter?mdDay(st,8)+3:mdDay(st,0)-BUILD_DAYS-5;const D=nextMyDay(st);return D!=null?D-1:mdDay(st,Math.min(17,st.md));}
-function stadiumBuild(st){const c=st.clubs.me;if(st.phase==='halftime')rej('Nicht während eines Spiels.');if(st.phase==='seasonEnd')rej('Erst weiter zur Sommerpause.');
-  if(c.build)rej('Am Stadion wird schon gebaut.');const l=c.up.stadium||1;if(l>=5)rej('Maximale Stufe.');const cost=CUPCOST[l];if(c.cash<cost)rej('Nicht genug Geld.');
-  money(c,-cost);const t=buildToday(st);c.build={k:'stadium',to:l+1,s:st.season,start:t,done:t+BUILD_DAYS};
-  feed(st,`🏗️ Baustart: ${c.name} baut das Stadion auf Stufe ${l+1} aus – fertig in ca. 10 Wochen. Bis dahin weniger Ticket- und Fanshop-Einnahmen.`,'me');buildCheck(st);}
-function buildCheck(st){const c=st.clubs.me;const b=c&&c.build;if(!b)return;const D=nextMyDay(st);
-  const fin=(D!=null&&D>=b.done)||(st.phase==='offseason'&&!st.winter&&st.season>b.s);if(!fin)return;
-  c.up.stadium=Math.max(c.up.stadium||1,b.to);c.build=null;feed(st,`🏟️ Ausbau fertig: Stadion Stufe ${c.up.stadium} – ${CCAP[c.up.stadium].toLocaleString('de-DE')} Plätze!`,'me');}
+// ---------- Ausbau jederzeit, mit Bauzeit je nach Stufe ----------
+const BUILD_F=0.7;
+function buildWeeks(k,to){return (k==='stadium'?2:0)+[0,0,4,6,8,10][to];}
+function blds(c){if(c.build){c.builds=Object.assign({},c.builds||{},{stadium:c.build});delete c.build;}return c.builds||(c.builds={});}
+function stBuilding(c){return !!(c&&(c.build||(c.builds&&c.builds.stadium)));}
+function buildToday(st,days){if(st.phase==='offseason')return st.winter?mdDay(st,8)+3:mdDay(st,0)-days-5;const D=nextMyDay(st);return D!=null?D-1:mdDay(st,Math.min(17,st.md));}
+function facBuild(st,k){const c=st.clubs.me;if(!UPSC[k])rej('Unbekannt.');if(st.phase==='halftime')rej('Nicht während eines Spiels.');if(st.phase==='seasonEnd')rej('Erst weiter zur Sommerpause.');
+  const B=blds(c);if(B[k])rej('Hier wird schon gebaut.');const l=c.up[k]||1;if(l>=5)rej('Maximale Stufe.');const cost=(k==='stadium'?CUPCOST:CUPCOST2)[l];if(c.cash<cost)rej('Nicht genug Geld.');
+  money(c,-cost);const days=buildWeeks(k,l+1)*7;const t=buildToday(st,days);B[k]={to:l+1,s:st.season,start:t,done:t+days};
+  feed(st,`🏗️ Baustart: ${UPSC[k].n} Stufe ${l+1} – fertig in ca. ${buildWeeks(k,l+1)} Wochen.${k==='stadium'?' Bis dahin weniger Ticket- und Fanshop-Einnahmen.':''}`,'me');buildCheck(st);}
+function buildCheck(st){const c=st.clubs.me;if(!c)return;const B=blds(c);const D=nextMyDay(st);
+  for(const k of Object.keys(B)){const b=B[k];const fin=(D!=null&&D>=b.done)||(st.phase==='offseason'&&!st.winter&&st.season>b.s);if(!fin)continue;
+    c.up[k]=Math.max(c.up[k]||1,b.to);delete B[k];feed(st,`${k==='stadium'?'🏟️':'🏗️'} Ausbau fertig: ${UPSC[k].n} Stufe ${c.up[k]}${k==='stadium'?' – '+CCAP[c.up[k]].toLocaleString('de-DE')+' Plätze':''}!`,'me');}}
 
 </script>
 <script>
@@ -3175,7 +3178,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='86',APP_RV=13;
+const APP_BUILD='87',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3620,7 +3623,7 @@ function calEvents(c){
   if(ST.euro&&ST.euro.gfix){EU_GMD.forEach((md,gi)=>{const f=ST.euro.gfix[gi]&&ST.euro.gfix[gi].find(x=>x.includes('me'));if(!f||md<ST.md||pend.includes('eurog'+md)||res.some(x=>x.k==='eurog'&&x.md===md))return;E.push({d:cupDay(ST,md,0),k:'eurog',md,o:f[0]==='me'?f[1]:f[0],h:f[0]==='me'});});
     nextRound('euro',ST.cups&&ST.cups.euro);}
   E.sort((a,b)=>a.d-b.d);return E;}
-function calMarks(){const M={};const add=(d,t)=>{(M[d]=M[d]||[]).push(t);};{const c=myC();if(c&&c.build)add(c.build.done,'🏟️ Stadionausbau fertig');}
+function calMarks(){const M={};const add=(d,t)=>{(M[d]=M[d]||[]).push(t);};{const c=myC();if(c&&c.builds)for(const k in c.builds)add(c.builds[k].done,'🏗️ '+UPSC[k].n+' fertig');}
   add(mdDay(ST,14),'📝 Verträge: letzte Spieltage – jetzt verlängern');add(mdDay(ST,17)+1,'🏁 Saisonende');add(mdDay(ST,8)+1,'❄️ Winterpause · Transferfenster offen');add(mdDay(ST,9),'▶️ Rückrunde');add(mdDay(ST,0),'▶️ Saisonstart');return M;}
 function calPage(c){
   const Y=seasonY(ST);const months=[];for(let i=0;i<10;i++)months.push(i<5?[Y,7+i]:[Y+1,i-5]);
@@ -3769,7 +3772,7 @@ function clubGround(c){
     poly([P(x,y+d,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x,y+d,z+h)],shade(side,0.78))+poly([P(x+w,y,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x+w,y,z+h)],shade(side,0.92))+poly([P(x,y,z+h),P(x+w,y,z+h),P(x+w,y+d,z+h),P(x,y+d,z+h)],top)+(o.after||'')});};
   const lbl=(x,y,z,t)=>{const f=F;items.push({k:999,f,svg:(()=>{const [X,Y]=P(x,y,z).split(',');const on=f&&ui.facil===f;const can=f&&facCan(c,f);return `<text x="${X}" y="${Y}" text-anchor="middle" font-size="7.5" font-weight="700" fill="${on?'#d8f34e':'#fff'}" stroke="#0b1a13" stroke-width="2.2" paint-order="stroke" font-family="system-ui,sans-serif">${t}${can?' ⬆':''}</text>`;})()});};
   const tree=(x,y,r)=>{items.push({k:x+y,svg:(()=>{const [X,Y]=P(x,y,0).split(',');return `<rect x="${X-0.8}" y="${Y-6}" width="1.6" height="6" fill="#5b3d25"/><ellipse cx="${X}" cy="${Y-8}" rx="${r}" ry="${r*0.9}" fill="#2c7a43"/><ellipse cx="${X-r*0.3}" cy="${Y-9.5}" rx="${r*0.5}" ry="${r*0.45}" fill="#3a9452"/>`;})()});};
-  const up=c.up||{},col=c.color||'#d8f34e';const st=up.stadium||1,tr=up.training||1,yo=up.youth||1,an=up.analysis||1,sc=up.scouting||1;const merch=(c.merch||[]).length;
+  const up=c.up||{},col=c.color||'#d8f34e';const bOn=k=>!!(c.builds&&c.builds[k])||(k==='stadium'&&!!c.build);const st=up.stadium||1,tr=up.training||1,yo=up.youth||1,an=up.analysis||1,sc=up.scouting||1;const merch=(c.merch||[]).length;
   let g='';
   // Boden + Wege
   g+=poly([P(0,0),P(200,0),P(200,200),P(0,200)],'#24563a');
@@ -3794,25 +3797,25 @@ function clubGround(c){
   if(st>=5)for(const [x,y] of [[px-gp-t,py-gp-t],[px+pw,py-gp-t],[px-gp-t,py+pd],[px+pw,py+pd]])box(x,y,0,t+gp,t+gp,h,shade(seat,0.8),conc);
   if(st>=4){const r='#c9d0cc';if(st>=2)box(px-2,py-gp-t-1,h,pw+4,t*0.8,1.2,r,'#7c847f',{bias:5});box(px-2,py+pd+gp+t*0.2,h,pw+4,t*0.8+1,1.2,r,'#7c847f',{bias:5});}
   if(st>=4)for(const [x,y] of [[px-gp-t-4,py-gp-t-4],[px+pw+gp+t+2,py-gp-t-4],[px-gp-t-4,py+pd+gp+t+2],[px+pw+gp+t+2,py+pd+gp+t+2]]){box(x,y,0,1.2,1.2,h+16,'#d9dcd6','#b7bdb9');box(x-2,y-2,h+16,5,5,2.5,'#fff7c2','#e0d48a',{bias:2});}
-  lbl(px+pw/2,py+pd+gp+t,h+4,'Stadion '+st+(c.build?' 🚧':''));
-  if(c.build){box(px+pw+gp+t+4,py+pd*0.3,0,2,2,h+26,'#f5c542','#c9a227',{bias:3});box(px+pw-30,py+pd*0.3-1,h+24,40+gp+t,3,1.6,'#f5c542','#c9a227',{bias:3.1});}
+  lbl(px+pw/2,py+pd+gp+t,h+4,'Stadion '+st+(bOn('stadium')?' 🚧':''));
+  if(bOn('stadium')){box(px+pw+gp+t+4,py+pd*0.3,0,2,2,h+26,'#f5c542','#c9a227',{bias:3});box(px+pw-30,py+pd*0.3-1,h+24,40+gp+t,3,1.6,'#f5c542','#c9a227',{bias:3.1});}
   // Trainingsplätze
   F='training';g0=g;g='';const tn=[0,1,2,2,3,4][tr];for(let i=0;i<tn;i++){const x=178,y=6+i*30;for(let j=0;j<2;j++)g+=poly([P(x+j*10.5,y),P(x+(j+1)*10.5,y),P(x+(j+1)*10.5,y+22),P(x+j*10.5,y+22)],j?'#3f9a4f':'#47a857');g+=L([[x+1,y+1],[x+20,y+1],[x+20,y+21],[x+1,y+21],[x+1,y+1]])+L([[x+1,y+11],[x+20,y+11]]);}
   g0+=FG('training',g);g=g0;
   if(tr>=3)box(176,146,0,20,14,5+tr,'#e6e1d3','#c9c2b0');
-  lbl(188,8,2,'Training '+tr);
+  lbl(188,8,2,'Training '+tr+(bOn('training')?' 🚧':''));
   // NLZ
   F='youth';
   box(10,146,0,30,22,4+yo*3.5,'#ece6d6','#d4ccb8',{after:''});for(let f=1;f<=yo;f++){const z=f*3.5+1;g+='';}
-  lbl(25,157,6+yo*3.5,'NLZ '+yo);
+  lbl(25,157,6+yo*3.5,'NLZ '+yo+(bOn('youth')?' 🚧':''));
   // Analysezentrum
   F='analysis';
   box(12,14,0,24,20,4+an*4,'#9cc4ff','#4f86d6');if(an>=3){items.push({k:60,f:'analysis',svg:(()=>{const [X,Y]=P(24,24,4+an*4).split(',');return `<ellipse cx="${X}" cy="${+Y-4}" rx="5" ry="2.4" fill="#e8eef7" stroke="#9aa6b5" stroke-width=".6"/><rect x="${X-0.5}" y="${+Y-4}" width="1" height="4" fill="#9aa6b5"/>`;})()});}
-  lbl(24,24,8+an*4,'Analyse '+an);
+  lbl(24,24,8+an*4,'Analyse '+an+(bOn('analysis')?' 🚧':''));
   // Scouting-Büro
   F='scouting';
   box(14,64,0,18,14,3+sc*2.5,'#e7d6b0','#bfa77a');items.push({k:80,f:'scouting',svg:(()=>{const [X,Y]=P(23,71,3+sc*2.5).split(',');return `<rect x="${X-0.4}" y="${+Y-12}" width=".8" height="12" fill="#ccc"/><polygon points="${X},${+Y-12} ${+X+7},${+Y-10} ${X},${+Y-8}" fill="${col}"/>`;})()});
-  lbl(23,71,6+sc*2.5,'Scouting '+sc);
+  lbl(23,71,6+sc*2.5,'Scouting '+sc+(bOn('scouting')?' 🚧':''));
   // Fanshop
   F='merch';if(!merch){box(130,141,0,10,8,0.6,'#6b726e','#5b605c');lbl(135,145,4,'🛍️ Fanshop');}
   if(merch){const w=merch>=8?22:merch>=4?16:10,d=merch>=8?12:merch>=4?10:8,hh=merch>=8?8:merch>=4?6:4;box(128,140,0,w,d,hh,'#f1ece0','#cfc6b2',{after:''});box(127,140+d-1,hh*0.55,w+2,3,0.8,col,shade(col,0.8),{bias:1});lbl(128+w/2,140+d/2,hh+4,'🛍️ Fanshop');}
@@ -3822,7 +3825,7 @@ function clubGround(c){
   items.sort((a,b)=>a.k-b.k);g+=items.map(i=>FG(i.f,i.svg)).join('');
   return `<svg viewBox="0 0 360 230" style="width:100%;display:block">${g}</svg>`;
 }
-function groundCard(c){return `<div class="card" style="padding:10px 8px 6px;background:radial-gradient(ellipse at 50% 40%,#173a28,#0e2218)"><div class="row" style="padding:0 6px"><b>🏟️ ${esc(c.stadium||'Dein Vereinsgelände')}</b><span class="sp"></span><span class="tiny mut">${num(CCAP[c.up.stadium||1])} Plätze</span></div>${clubGround(c)}${facPills(c)}<p class="tiny mut" style="margin:6px 6px 4px">Tippe auf ein Gebäude, um es anzusehen und auszubauen. ⬆ = Ausbau bezahlbar.${ST.phase==='offseason'&&!ST.winter?'':' Ausbauen geht nur in der Sommerpause – Stadion und Fanshop jederzeit.'}</p></div>`;}
+function groundCard(c){return `<div class="card" style="padding:10px 8px 6px;background:radial-gradient(ellipse at 50% 40%,#173a28,#0e2218)"><div class="row" style="padding:0 6px"><b>🏟️ ${esc(c.stadium||'Dein Vereinsgelände')}</b><span class="sp"></span><span class="tiny mut">${num(CCAP[c.up.stadium||1])} Plätze</span></div>${clubGround(c)}${facPills(c)}<p class="tiny mut" style="margin:6px 6px 4px">Tippe auf ein Gebäude, um es anzusehen und auszubauen. ⬆ = Ausbau bezahlbar.${ST.phase==='offseason'&&!ST.winter?'':' Bauen geht jederzeit – je höher die Stufe, desto länger die Bauzeit.'}</p></div>`;}
 const _cofficeGround=VIEWS.coffice;VIEWS.coffice=function(){const h=_cofficeGround.apply(this,arguments);if(!ST.career||ui.sub!=='ausbau')return h;const c=myC();const i=h.indexOf('<div class="card"><div class="row"><h3 style="margin:0">');return i<0?h+groundCard(c):h.slice(0,i)+groundCard(c);};
 
 // Untermenü klebt unter der Kopfzeile: Höhe der Kopfzeile merken
@@ -3832,22 +3835,22 @@ const _renderHH=render;render=function(){_renderHH();try{const hd=document.query
 const FAC=[['stadium','🏟️','Stadion'],['training','🏋️','Training'],['youth','🎓','NLZ'],['analysis','🔎','Analyse'],['scouting','🔭','Scouting'],['merch','🛍️','Fanshop']];
 function facCost(c,k){const l=c.up[k]||1;return (k==='stadium'?CUPCOST:CUPCOST2)[l];}
 function facCan(c,k){if(k==='merch'){const own=c.merch||[];const nx=MERCH.find(m=>!own.includes(m[0]));return !!(nx&&c.cash>=nx[3]);}
-  const l=c.up[k]||1;if(k==='stadium')return !c.build&&!['halftime','seasonEnd'].includes(ST.phase)&&!ST.ready[me()]&&l<5&&c.cash>=facCost(c,k);return ST.phase==='offseason'&&!ST.winter&&!ST.ready[me()]&&l<5&&c.cash>=facCost(c,k);}
+  const l=c.up[k]||1;return !(c.builds&&c.builds[k])&&!['halftime','seasonEnd'].includes(ST.phase)&&!ST.ready[me()]&&l<5&&c.cash>=facCost(c,k);}
 function facTxt(c,k,l){if(k==='training')return `${Math.min(3,l)} ${l>1?'Trainingsplätze':'Trainingsplatz'} pro Spieltag${l>=4?` · Trainingserfolg +${l>=5?50:25} %`:''} · Spieler bis 26 entwickeln sich um +${String((l-1)*0.5).replace('.',',')} pro Saison besser.`;
   if(k==='scouting')return UPS.scouting.d(l);if(k==='stadium')return `${num(CCAP[l])} Plätze · Ticket in der ${LNAME[c.lg]}: ${TPRICE[c.lg]} €.`;
   if(k==='youth')return `NLZ mit ${Math.min(5,2+l)} Plätzen, Talente ~${TMEAN[c.lg]-15+l*2} Stärke.`;if(k==='analysis')return UPSC.analysis.d(l);return '';}
 function facilHtml(k){const c=myC();if(!c)return '';const head=t=>`<div class="row"><h3 style="margin:0">${t}</h3><span class="sp"></span><button class="ic" data-a="sheetX">✕</button></div>`;
   if(k==='merch')return head('🛍️ Fanshop')+merchCard(c).replace('<div class="card">','<div class="card" style="margin-top:8px">');
-  const f=FAC.find(x=>x[0]===k);if(!f)return '';const l=c.up[k]||1;const cost=facCost(c,k);const off=k==='stadium'?!['halftime','seasonEnd'].includes(ST.phase)&&!ST.ready[me()]:ST.phase==='offseason'&&!ST.winter&&!ST.ready[me()];
-  if(k==='stadium'&&c.build){const b=c.build;const D=nextMyDay(ST);const left=D!=null?Math.max(0,b.done-D):0;const pct=Math.round(Math.min(100,Math.max(0,((D!=null?D:b.done)-b.start)/(b.done-b.start)*100)));
-    return head(`${f[1]} ${UPSC[k].n}`)+`<div style="margin:10px 0 4px">${lvl(l)}</div><div class="evc" style="border-color:var(--gold)"><b>🚧 Im Bau: Stufe ${b.to}</b><div class="small" style="margin-top:4px">Fertig ca. am <b>${calFmt(b.done,true)}</b>${left?` · noch ${Math.ceil(left/7)} Wochen`:''}</div><div class="bar" style="height:8px;margin-top:8px"><i style="width:${pct}%;background:var(--gold)"></i></div><div class="tiny mut" style="margin-top:6px">Während der Bauzeit: −30 % Ticket- und Fanshop-Einnahmen. Danach ${num(CCAP[b.to])} Plätze.</div></div>`;}
+  const f=FAC.find(x=>x[0]===k);if(!f)return '';const l=c.up[k]||1;const cost=facCost(c,k);const off=!['halftime','seasonEnd'].includes(ST.phase)&&!ST.ready[me()];
+  if(c.builds&&c.builds[k]){const b=c.builds[k];const D=nextMyDay(ST);const left=D!=null?Math.max(0,b.done-D):0;const pct=Math.round(Math.min(100,Math.max(0,((D!=null?D:b.done)-b.start)/(b.done-b.start)*100)));
+    return head(`${f[1]} ${UPSC[k].n}`)+`<div style="margin:10px 0 4px">${lvl(l)}</div><div class="evc" style="border-color:var(--gold)"><b>🚧 Im Bau: Stufe ${b.to}</b><div class="small" style="margin-top:4px">Fertig ca. am <b>${calFmt(b.done,true)}</b>${left?` · noch ${Math.ceil(left/7)} Wochen`:''}</div><div class="bar" style="height:8px;margin-top:8px"><i style="width:${pct}%;background:var(--gold)"></i></div><div class="tiny mut" style="margin-top:6px">${k==='stadium'?`Während der Bauzeit: −30 % Ticket- und Fanshop-Einnahmen. Danach ${num(CCAP[b.to])} Plätze.`:'Bis zur Fertigstellung gilt noch die alte Stufe.'}</div></div>`;}
   let h=head(`${f[1]} ${UPSC[k].n}`)+`<div style="margin:10px 0 4px">${lvl(l)}</div><div class="kpi" style="margin-top:8px"><span>Jetzt · Stufe ${l}</span><div class="small" style="margin-top:4px">${esc(facTxt(c,k,l))}</div></div>`;
   if(l>=5)return h+'<p class="small mut" style="margin:10px 0 0">Maximal ausgebaut. 🏆</p>';
   h+=`<div class="kpi" style="margin-top:8px;border-color:var(--acc)"><span>Nächste Stufe ${l+1}</span><div class="small" style="margin-top:4px">${esc(facTxt(c,k,l+1))}</div></div>`;
-  if(k==='stadium')h+=`<p class="tiny mut" style="margin:8px 0 0">🏗️ Bauzeit ca. 10 Wochen – jederzeit möglich. Während der Bauzeit −30 % Ticket- und Fanshop-Einnahmen. In der Sommerpause ist er bis zum Saisonstart fertig.</p>`;
-  h+=off?`<button class="btn ok block" style="margin-top:12px" data-a="up" data-v="${k}" ${c.cash<cost?'disabled':''}>${cl('up'+k,(k==='stadium'?'Bau starten für ':'Ausbauen für ')+fm(cost),'Wirklich für '+fm(cost)+' ausbauen?')}</button>${c.cash<cost?`<p class="tiny" style="color:var(--bad);margin:6px 0 0">Dir fehlen noch ${fm(cost-c.cash)}.</p>`:''}`:`<p class="small mut" style="margin:12px 0 0">Kosten Stufe ${l+1}: <b>${fm(cost)}</b> · Ausbauen geht nur in der Sommerpause.</p>`;
+  h+=`<p class="tiny mut" style="margin:8px 0 0">🏗️ Bauzeit ca. <b>${buildWeeks(k,l+1)} Wochen</b> – jederzeit möglich.${k==='stadium'?' Während der Bauzeit −30 % Ticket- und Fanshop-Einnahmen.':''} In der Sommerpause ist der Bau bis zum Saisonstart fertig.</p>`;
+  h+=off?`<button class="btn ok block" style="margin-top:12px" data-a="up" data-v="${k}" ${c.cash<cost?'disabled':''}>${cl('up'+k,'Bau starten für '+fm(cost),'Wirklich für '+fm(cost)+' ausbauen?')}</button>${c.cash<cost?`<p class="tiny" style="color:var(--bad);margin:6px 0 0">Dir fehlen noch ${fm(cost-c.cash)}.</p>`:''}`:`<p class="small mut" style="margin:12px 0 0">Kosten Stufe ${l+1}: <b>${fm(cost)}</b> · Ausbauen geht nur in der Sommerpause.</p>`;
   return h;}
-function facPills(c){return `<div class="chips" style="margin:4px 6px 0;gap:5px">${FAC.map(([k,i,n])=>`<span class="chip ${ui.facil===k?'on':''}" style="padding:4px 8px;font-size:11.5px" data-a="facil" data-v="${k}">${i} ${n} ${k==='merch'?(c.merch||[]).length+'/'+MERCH.length:(c.up[k]||1)}${facCan(c,k)?' ⬆':''}</span>`).join('')}</div>`;}
+function facPills(c){return `<div class="chips" style="margin:4px 6px 0;gap:5px">${FAC.map(([k,i,n])=>`<span class="chip ${ui.facil===k?'on':''}" style="padding:4px 8px;font-size:11.5px" data-a="facil" data-v="${k}">${i} ${n} ${k==='merch'?(c.merch||[]).length+'/'+MERCH.length:(c.up[k]||1)}${c.builds&&c.builds[k]?' 🚧':facCan(c,k)?' ⬆':''}</span>`).join('')}</div>`;}
 ACT.facil=function(v){ui.facil=v;ui.card=null;ui.confirm=null;render();};
 
 // ---------- Formation als Auswahlliste + „Fitte Elf“ vom Co-Trainer ----------
