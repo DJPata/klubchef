@@ -1236,8 +1236,10 @@ function careerEnsurePrep(st){
   }
   st.prep=pr;
 }
-function posChance(p){return Math.max(0.3,Math.min(0.75,0.75-(p.age-18)*0.02));}
-function trainChance(p){return Math.max(3,Math.min(60,60-(p.age-17)*3.5-(p.rat-40)*0.8))/100;}
+function trnSlots(c){return Math.min(3,(c&&c.up&&c.up.training)||1);}
+function trnMul(c){const l=(c&&c.up&&c.up.training)||1;return l>=5?1.5:l>=4?1.25:1;}
+function posChance(p,c){return Math.min(0.95,Math.max(0.3,Math.min(0.75,0.75-(p.age-18)*0.02))*trnMul(c));}
+function trainChance(p,c){return Math.min(0.9,Math.max(3,Math.min(60,60-(p.age-17)*3.5-(p.rat-40)*0.8))/100*trnMul(c));}
 function soKick(st,zone){
   const so=st.so;if(!so)rej('Kein Elfmeterschießen.');const r=CR(st);
   const n=so.kicks.length;const side=n%2===0?'h':'a';const meSide=so.h==='me'?'h':'a';const shooting=side===meSide;
@@ -1538,15 +1540,15 @@ const CH={
     if(c.squad.length<=SQUAD_MIN)rej('Mindestens 12 Spieler im Kader.');if(p.pos==='G'&&c.squad.filter(x=>x.pos==='G').length<2)rej('Du brauchst einen Torwart.');
     const r=CR(st);const to=st.clubs[r.pick(npcNames(st,c))].name;c.squad=c.squad.filter(x=>x!==p);(c.lent||(c.lent=[])).push({p,to});tlogAdd(st,p,c.name,to,0,true);feed(st,`${p.name} wird bis Saisonende an ${to} verliehen.`,'me');},
   TRAIN(st,a){needPhase(st,'matchday');const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler trainieren nicht bei dir.');
-    const slots=c.up.training||1;if(!c.trn||c.trn.md!==st.md||c.trn.s!==st.season)c.trn={md:st.md,s:st.season,n:0,ids:[]};
+    const slots=trnSlots(c);if(!c.trn||c.trn.md!==st.md||c.trn.s!==st.season)c.trn={md:st.md,s:st.season,n:0,ids:[]};
     if(c.trn.n>=slots)rej('Alle Trainingsplätze sind belegt.');if(c.trn.ids.includes(p.id))rej('Hat heute schon trainiert.');
     if(c.cond){if(p.fr==null)p.fr=100;if(p.fr<20)rej('Zu müde zum Trainieren (unter 20 %).');p.fr=Math.max(0,p.fr-5);}
     c.trn.n++;c.trn.ids.push(p.id);
     if(a.pos){const t=a.pos;if(!SPLINE[t]||t==='TW'||p.pos==='G'||knownSp(p).includes(t))rej('Diese Position kann er schon.');if(p.ptg!==t){p.ptg=t;p.ptp=0;}
-      if(CR(st).chance(posChance(p))){p.ptp=(p.ptp||0)+1;if(p.ptp>=5){p.xsp=(p.xsp||[]).concat([t]);delete p.ptg;delete p.ptp;c.lastTrain={id:p.id,ok:1,t:`🎓 ${p.name} beherrscht jetzt auch ${t}!`};feed(st,`🎓 ${p.name} hat die Position ${t} gelernt.`,'me');}
+      if(CR(st).chance(posChance(p,c))){p.ptp=(p.ptp||0)+1;if(p.ptp>=5){p.xsp=(p.xsp||[]).concat([t]);delete p.ptg;delete p.ptp;c.lastTrain={id:p.id,ok:1,t:`🎓 ${p.name} beherrscht jetzt auch ${t}!`};feed(st,`🎓 ${p.name} hat die Position ${t} gelernt.`,'me');}
         else c.lastTrain={id:p.id,ok:1,t:`${p.name}: ${t}-Training ${p.ptp}/5 ✓`};}
       else c.lastTrain={id:p.id,ok:0,t:`${p.name}: ${t}-Training ohne Fortschritt (${p.ptp||0}/5)`};return;}
-    const ok=CR(st).chance(trainChance(p));
+    const ok=CR(st).chance(trainChance(p,c));
     if(ok){if(p.rat>=p.pot){p.rat=Math.min(99,p.rat+1);p.pot=Math.min(99,p.pot+1);c.lastTrain={id:p.id,ok:1,t:`${p.name}: Stärke ${p.rat} · Potenzial ${p.pot} (beide +1)`};}else{p.pot=Math.min(99,p.pot+1);c.lastTrain={id:p.id,ok:1,t:`${p.name}: Potenzial ${p.pot-1} → ${p.pot}`};}}
     else c.lastTrain={id:p.id,ok:0,t:`${p.name}: kein Fortschritt`};},
   COND(st,a){const c=st.clubs.me;c.cond=!!a.on;for(const p of c.squad){if(c.cond){if(p.fr==null)p.fr=100;}else delete p.fr;}},
@@ -1930,7 +1932,7 @@ coffice(){
   }
   if(ui.sub==='ausbau'){
     const txt={training:l=>`Spieler bis 26 entwickeln sich um +${String((l-1)*0.5).replace('.',',')} pro Saison besser.`,scouting:UPS.scouting.d,stadium:l=>`${num(CCAP[l])} Plätze · Ticket in der ${LNAME[c.lg]}: ${TPRICE[c.lg]} €.`,youth:l=>`NLZ mit ${Math.min(5,2+l)} Plätzen, Talente ~${TMEAN[c.lg]-15+l*2} Stärke.`};
-    txt.analysis=l=>UPSC.analysis.d(l);h+=Object.keys(UPSC).map(k=>{const l=c.up[k]||1;const cost=(k==='stadium'?CUPCOST:CUPCOST2)[l];return `<div class="card"><div class="row"><h3 style="margin:0">${UPSC[k].n}</h3><span class="sp"></span>${lvl(l)}</div><p class="small" style="margin:6px 0">${esc(txt[k](l))}</p>${l>=5?'<div class="small mut">Maximal ausgebaut.</div>':`<div class="small mut">Stufe ${l+1}: ${esc(txt[k](l+1))}</div>${off?`<button class="btn sm ok" style="margin-top:8px" data-a="up" data-v="${k}" ${c.cash<cost?'disabled':''}>${cl('up'+k,'Ausbauen für '+fm(cost))}</button>`:''}`}</div>`;}).join('');
+    txt.analysis=l=>UPSC.analysis.d(l);txt.training=l=>`${Math.min(3,l)} Trainingsplatz${l>1?'e':''} pro Spieltag${l>=4?` · Trainingserfolg +${l>=5?50:25} %`:''} · Spieler bis 26 entwickeln sich um +${String((l-1)*0.5).replace('.',',')} pro Saison besser.`;h+=Object.keys(UPSC).map(k=>{const l=c.up[k]||1;const cost=(k==='stadium'?CUPCOST:CUPCOST2)[l];return `<div class="card"><div class="row"><h3 style="margin:0">${UPSC[k].n}</h3><span class="sp"></span>${lvl(l)}</div><p class="small" style="margin:6px 0">${esc(txt[k](l))}</p>${l>=5?'<div class="small mut">Maximal ausgebaut.</div>':`<div class="small mut">Stufe ${l+1}: ${esc(txt[k](l+1))}</div>${off?`<button class="btn sm ok" style="margin-top:8px" data-a="up" data-v="${k}" ${c.cash<cost?'disabled':''}>${cl('up'+k,'Ausbauen für '+fm(cost))}</button>`:''}`}</div>`;}).join('');
     if(!off)h+='<p class="small mut">Ausbauen geht nur in der Sommerpause.</p>';
   }
   if(ui.sub==='finanzen'){
@@ -2902,10 +2904,10 @@ ACT.goXI=function(){ui.tab='squad';ui.subs.squad='xi';render();scrollTo(0,0);};
 ACT.condSet=function(v){send('COND',{on:v==='1'});};
 ACT.train=function(v){send('TRAIN',{player:v});const c=myC();setTimeout(()=>{if(c&&c.lastTrain)toast((c.lastTrain.ok?'✓ ':'✗ ')+c.lastTrain.t,!!c.lastTrain.ok);},50);};
 function trainPage(c){
-  const slots=c.up.training||1;const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;const ids=used?c.trn.ids:[];
+  const slots=trnSlots(c);const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;const ids=used?c.trn.ids:[];
   const can=ST.phase==='matchday';
-  let h=`<div class="card" style="padding:10px 14px"><div class="row"><b>🏋️ Training</b><span class="sp"></span><span class="pill">Plätze ${used}/${slots}</span></div><p class="tiny mut" style="margin:6px 0 0">Jedes Training kostet 5 % Frische. Klappt es, steigt das Potenzial um 1 – ist es schon erreicht, wachsen Stärke und Potenzial. Junge, schwächere Spieler lernen leichter. Mehr Plätze gibt das Trainingszentrum (Büro › Ausbau).</p>${can?'':'<p class="small" style="margin:6px 0 0;color:var(--bad)">Training gibt es nur an Spieltagen.</p>'}</div>`;
-  const ps=c.squad.filter(p=>!p.loan).map(p=>({p,ch:trainChance(p)})).sort((a,b)=>b.ch-a.ch||a.p.age-b.p.age);
+  let h=`<div class="card" style="padding:10px 14px"><div class="row"><b>🏋️ Training</b><span class="sp"></span><span class="pill">Plätze ${used}/${slots}</span></div><p class="tiny mut" style="margin:6px 0 0">Jedes Training kostet 5 % Frische. Klappt es, steigt das Potenzial um 1 – ist es schon erreicht, wachsen Stärke und Potenzial. Junge, schwächere Spieler lernen leichter. Mehr Plätze (bis 3) und ab Stufe 4 bessere Chancen gibt das Trainingszentrum (Klub › Ausbau).</p>${can?'':'<p class="small" style="margin:6px 0 0;color:var(--bad)">Training gibt es nur an Spieltagen.</p>'}</div>`;
+  const ps=c.squad.filter(p=>!p.loan).map(p=>({p,ch:trainChance(p,c)})).sort((a,b)=>b.ch-a.ch||a.p.age-b.p.age);
   h+=`<div class="card" style="padding:8px 14px">${ps.map(({p,ch})=>{const done=ids.includes(p.id);const tired=c.cond&&p.fr!=null&&p.fr<20;const dis=!can||done||used>=slots||tired;
     return `<div class="pl"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn" data-a="card" data-v="${p.id}" style="cursor:pointer"><b>${esc(p.name)}${ticons(p)}</b><span>${p.age} J. · Pot. ${p.pot}${c.cond?' · '+frTag(p):''}</span></div><b style="min-width:44px;text-align:right;margin-right:8px;color:${ch>=0.35?'#3fd0a0':ch>=0.15?'#f5c542':'#8a9a92'}">${Math.round(ch*100)} %</b><button class="btn sm ${dis?'':'ok'}" data-a="train" data-v="${p.id}" ${dis?'disabled':''}>${done?'✓':tired?'müde':'🏋️'}</button></div>`;}).join('')}</div>`;
   return h;
@@ -3143,7 +3145,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='75',APP_RV=13;
+const APP_BUILD='76',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3358,12 +3360,12 @@ trainPage=function(c){
   const chips=`<div class="chips" style="margin:8px 0 0">${[['rat','💪 Stärke'],['pos','🎓 Position lernen'],['rest','🧘 Erholung']].map(([k,l])=>`<span class="chip ${mode===k?'on':''}" data-a="trnMode" data-v="${k}">${l}</span>`).join('')}</div>`;
   if(mode==='rest')return chips+restPage(c);
   if(mode!=='pos')return chips+_trainPageP(c);
-  const slots=c.up.training||1;const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;const ids=used?c.trn.ids:[];const can=ST.phase==='matchday';
+  const slots=trnSlots(c);const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;const ids=used?c.trn.ids:[];const can=ST.phase==='matchday';
   let h=chips+`<div class="card" style="padding:10px 14px"><div class="row"><b>🎓 Positionstraining</b><span class="sp"></span><span class="pill">Plätze ${used}/${slots}</span></div><p class="tiny mut" style="margin:6px 0 0">Nutzt dieselben Trainingsplätze und kostet 5 % Frische. Nach <b>5 erfolgreichen</b> Einheiten beherrscht der Spieler die neue Position ohne Abzug – auch in einem anderen Mannschaftsteil (z. B. ZM als IV).</p>${c.lastTrain?`<div class="small" style="margin-top:6px;color:${c.lastTrain.ok?'var(--acc2)':'var(--mut)'}">${esc(c.lastTrain.t)}</div>`:''}</div>`;
   const ps=c.squad.filter(p=>!p.loan&&p.pos!=='G');
   h+=`<div class="card" style="padding:8px 14px">${ps.map(p=>{const kn=knownSp(p);const opts=['IV','AV','ZM','LM','RM','ST','FL'].filter(x=>!kn.includes(x));const tgt=(ui.ptg&&ui.ptg[p.id])||p.ptg||opts[0];
     const done=ids.includes(p.id);const tired=c.cond&&p.fr!=null&&p.fr<20;const dis=!can||done||used>=slots||tired||!tgt;const prog=p.ptg===tgt?(p.ptp||0):0;
-    return `<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row"><span class="pos ${p.pos}">${posL(p)}</span><div class="pn" style="margin-left:8px;cursor:pointer" data-a="card" data-v="${p.id}"><b>${esc(p.name)}</b><span>kann: ${kn.join(', ')} · ${p.age} J. · Chance ${Math.round(posChance(p)*100)} %</span></div><span class="sp"></span><b style="margin-right:8px">${prog}/5</b><button class="btn sm ${dis?'':'ok'}" data-a="ptrain" data-v="${p.id}|${tgt}" ${dis?'disabled':''}>${done?'✓':tired?'müde':'🎓'}</button></div>
+    return `<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row"><span class="pos ${p.pos}">${posL(p)}</span><div class="pn" style="margin-left:8px;cursor:pointer" data-a="card" data-v="${p.id}"><b>${esc(p.name)}</b><span>kann: ${kn.join(', ')} · ${p.age} J. · Chance ${Math.round(posChance(p,c)*100)} %</span></div><span class="sp"></span><b style="margin-right:8px">${prog}/5</b><button class="btn sm ${dis?'':'ok'}" data-a="ptrain" data-v="${p.id}|${tgt}" ${dis?'disabled':''}>${done?'✓':tired?'müde':'🎓'}</button></div>
     <div class="chips" style="margin:6px 0 0 0;gap:4px">${opts.map(o=>`<span class="chip ${o===tgt?'on':''}" style="padding:3px 8px;font-size:11px" data-a="ptgSet" data-v="${p.id}|${o}">${o}${p.ptg===o&&p.ptp?' '+p.ptp+'/5':''}</span>`).join('')}</div></div>`;}).join('')}</div>`;
   return h;
 };
@@ -3410,7 +3412,7 @@ const _tabCard=ACT.tab;ACT.tab=function(v){ui.card=null;ui.ask=null;_tabCard(v);
 // ---------- Spielerkarte ----------
 function noteCol(n){return n<=2.5?'#3fd0a0':n<=3.5?'#f5c542':'#ff5b4d';}
 function restLeft(c){return 20-(c.rest&&c.rest.md===ST.md&&c.rest.s===ST.season?c.rest.used:0);}
-function trnFree(c){const slots=c.up.training||1;const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;return {slots,used,ids:used?c.trn.ids:[]};}
+function trnFree(c){const slots=trnSlots(c);const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;return {slots,used,ids:used?c.trn.ids:[]};}
 function cardHtml(){
   const c=myC();if(!c||!ST.career)return '';const p=c.squad.find(x=>x.id===ui.card);if(!p)return '';
   const md=ST.phase==='matchday',off=ST.phase==='offseason'&&!ST.ready[me()];const t=p.tr&&TRAITS[p.tr];
@@ -3437,7 +3439,7 @@ function cardHtml(){
   h+=`<div class="grid2">${kpi('Laufzeit',p.loan?'Leihe':p.ct!=null?p.ct+' J.'+(p.ct===1?' 📝':''):'–',p.ct===1&&!p.loan?'var(--gold)':'')}${kpi('Gehalt/Saison',fm(salary(p)))}${kpi('Marktwert',fm(value(p)))}${kpi('Verkaufserlös',p.loan?'–':fm(sellPrice(c,p)))}</div>`;
   if(!p.loan){
     h+=sec('Entwicklung');
-    h+=`<div class="grid2">${kpi('Trainingschance',Math.round(trainChance(p)*100)+' %')}${kpi('Lernt Position',p.pos==='G'?'–':p.ptg?p.ptg+' · '+(p.ptp||0)+'/5':'keine')}</div>`;
+    h+=`<div class="grid2">${kpi('Trainingschance',Math.round(trainChance(p,c)*100)+' %')}${kpi('Lernt Position',p.pos==='G'?'–':p.ptg?p.ptg+' · '+(p.ptp||0)+'/5':'keine')}</div>`;
   }
   if(feat(ST)&&p.ct!=null&&p.ct<=2&&!p.loan)h+=`<div style="margin-top:10px">${negCard(p)}</div>`;
   if(off&&!p.loan)h+=`<button class="btn block" style="margin:10px 0 8px" data-a="lendOut" data-v="${p.id}">${cl('lend'+p.id,'🔁 Bis Saisonende verleihen','Wirklich verleihen? Er spart dir Gehalt und sammelt Spielpraxis.')}</button><button class="btn bad block" data-a="sell" data-v="${p.id}">${cl('sell'+p.id,'Verkaufen für '+fm(sellPrice(c,p)),'Wirklich für '+fm(sellPrice(c,p))+' verkaufen?')}</button>`;
