@@ -96,7 +96,8 @@ nav button.on{color:var(--acc)}
 #sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 8px}
 #sheet .card{background:var(--panel2)}#sheet .kpi{padding:7px 10px;background:rgba(255,255,255,.04)}#sheet .kpi b{font-size:17px}#sheet .grid2{gap:6px}
 .todo{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}.todo:first-of-type{border-top:0}.todo i{font-style:normal;font-size:18px;width:24px;text-align:center}.todo div{flex:1;min-width:0}.todo b{display:block;font-size:14px}.todo span{font-size:12px;color:var(--mut)}
-nav button{position:relative}nav .nd{position:absolute;top:2px;left:50%;margin-left:10px;width:8px;height:8px;border-radius:4px;background:var(--bad)}
+nav button{position:relative}.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal .cw{text-align:center;font-size:10px;color:var(--mut);padding-bottom:2px}.cd{aspect-ratio:1/1.2;border-radius:7px;background:var(--panel2);padding:2px 3px;font-size:10px;position:relative;overflow:hidden;cursor:pointer;border:1px solid transparent}.cd.ps{background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 4px,transparent 4px 8px)}.cd.td{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}.cd.sel{background:rgba(216,243,78,.12)}.cd .n{color:var(--mut);font-size:10px;line-height:1}.cd .ce{font-weight:800;font-size:9.5px;border-radius:4px;padding:1px 0;color:#0b1a13;text-align:center;margin-top:2px;letter-spacing:.3px}.cd .cr{text-align:center;font-weight:700;font-size:10.5px;margin-top:1px}.cd .cx{position:absolute;top:1px;right:3px;font-style:normal;font-size:9px;color:var(--gold)}.cd .cm{text-align:center;font-size:14px;margin-top:4px}
+nav .nd{position:absolute;top:2px;left:50%;margin-left:10px;width:8px;height:8px;border-radius:4px;background:var(--bad)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
 .kpi b{display:block;font-family:'Bebas Neue',sans-serif;font-size:26px;font-weight:400;line-height:1.1}
@@ -1029,6 +1030,25 @@ const KNOWNM=['Vinícius','Rodrygo','Raphinha','Endrick','Pedri','Gavi','Rodri',
 function cName(st,r,p){if(!st||!st.career)return;const u=r.f();
   if(u<0.10){if(r.chance(0.25))p.name=r.pick(LEGM);else p.name=r.pick(FIRST)+' '+r.pick(LEGS);p.leg=1;p.rat=Math.min(90,p.rat+2);p.pot=Math.max(p.pot,p.rat);}
   else if(u<0.50){p.name=r.chance(0.12)?r.pick(KNOWNM):r.pick(FIRST)+' '+r.pick(KNOWN);}}
+// ---------- Kalender: Liga samstags, Pokal/Europa mittwochs; Frische nach freien Tagen ----------
+function dNum(y,m,d){return Math.round(Date.UTC(y,m,d)/864e5);}
+function satFrom(n){const wd=(n+4)%7;return n+(6-wd+7)%7;}
+function seasonY(st,s){return 2025+(s==null?st.season:s);}
+function mdDay(st,md,s){const y=seasonY(st,s);return md<9?satFrom(dNum(y,7,8))+14*md:satFrom(dNum(y+1,0,30))+14*(md-9);}
+function cupDay(st,md,k,s){return mdDay(st,md,s)+(k?7:4);}
+function nextMyDay(st){const me=st.clubs.me;
+  if(st.phase==='matchday'){if(st.cupPend){const P=st.cupPend;const k=me.cupWk&&me.cupWk.s===st.season&&me.cupWk.md===P.md?me.cupWk.n:0;return cupDay(st,P.md,k);}return st.md<18?mdDay(st,st.md):null;}
+  if(st.phase==='offseason')return mdDay(st,st.winter?9:0);
+  return null;}
+function frRate(me){return has(me,'fit')?2:1;}
+function frCatchUp(st){const me=st.clubs.me;if(!me||!me.cond)return;const D=nextMyDay(st);if(D==null)return;
+  if(me.frAt==null||me.frAt>=D){me.frAt=D-1;return;}
+  const n=D-1-me.frAt;if(n<=0)return;const add=n*frRate(me);
+  for(const p of me.squad){if(p.fr==null)p.fr=100;p.fr=Math.min(100,p.fr+add);}me.frAt=D-1;}
+function careerCond(st,full,half,day){const me=st.clubs.me;if(!me.cond)return;
+  for(const p of me.squad){if(p.fr==null)p.fr=100;if(full.has(p.id))p.fr-=20;else if(half.has(p.id))p.fr-=10;p.fr=Math.max(0,Math.min(100,p.fr));}
+  if(me.frAt==null||day>me.frAt)me.frAt=day;}
+function resLog(st,x){x.s=st.season;st.myRes=(st.myRes||[]).filter(e=>e.s>=st.season-1);st.myRes.push(x);}
 function careerOffseason(st,first){
   careerSoldOut(st);
   const r=CR(st);const c=st.clubs.me;const t=c.lg;
@@ -1187,6 +1207,7 @@ function careerMigrate5(st){
 function careerEnsurePrep(st){
   if(!st.nl5&&st.phase!=='seasonEnd'&&st.order&&st.order[4]&&!st.order[5])careerMigrate5(st);
   if(st.clubs.me&&!st.clubs.me.sp)st.clubs.me.sp=true;
+  try{frCatchUp(st);}catch(e){}
   if(!st.gkFix){st.gkFix=1;for(const c of Object.values(st.clubs))for(const p of (c.squad||[]).concat(c.nlz||[]))if(p.pos==='G'&&p.tr&&p.tr!=='tw')p.tr='tw';for(const p of (st.market||[]))if(p.pos==='G'&&p.tr&&p.tr!=='tw')p.tr='tw';}
   {const me=st.clubs.me;if(me&&!me.nlz){nlzFill(st,CR(st),me);}if(me&&!me.board){boardSet(st);}}
   if(st.phase!=='matchday'||st.md>=18)return;const me=st.clubs.me;
@@ -1274,7 +1295,7 @@ function careerCupFinish(st,ctx,P,fat){
   for(const [p,n] of inj)p.inj=Math.max(p.inj||0,n);
   if(ctx.li)for(const l of ctx.li){const p=me.squad.find(x=>x.id===l.id);if(p)p.inj=Math.max(p.inj||0,l.n);}
   if(ctx.ysus)for(const id of ctx.ysus)sus.push(id);matchNotes(st,m,ctx,fat,r);moodUpdate(st,fat);merchPay(st,m);
-  applySus(st,sus);if(fat)condUpdate(me,fat.full,fat.half);
+  applySus(st,sus);{const k=me.cupWk&&me.cupWk.s===st.season&&me.cupWk.md===P.md?me.cupWk.n:0;const dd=cupDay(st,P.md,k);me.cupWk={s:st.season,md:P.md,n:k+1};if(fat)careerCond(st,fat.full,fat.half,dd);resLog(st,{d:dd,md:P.md,k:P.key,o:P.h==='me'?P.a:P.h,h:P.h==='me',gh:m.gh,ga:m.ga});}
   st.last={season:st.season,md:P.md+0.5,results:[m],other:[],cards:{}};
   if(P.key==='eurog'){m.pens=null;m.w=m.gh>m.ga?m.h:m.ga>m.gh?m.a:null;euroTab(st.euro,m);if(m.w==='me')money(me,1);else if(!m.w)money(me,0.3);
     st.cupPend=(st.cupQ&&st.cupQ.shift())||null;if(st.md>=18&&!st.so&&!st.cupPend)careerEndSeason(st);return;}
@@ -1384,7 +1405,8 @@ function careerResolve(st,myCtx,fat){
   const cards={};
   if(card.prep&&!data)cards.me={t:'Ruhige Woche',x:'Keine Schlagzeilen.',g:1};
   else{const x=card.run(me,r,st,F,data);cards.me={t:card.t,x,g:card.g};if(card.opts){me.pending={k:card.k,t:card.t,x,opts:card.opts,data,career:true};cards.me.choice=true;}}
-  if(fat)condUpdate(me,fat.full,fat.half);
+  if(fat)careerCond(st,fat.full,fat.half,mdDay(st,st.md));
+  {const mm=results.find(m=>(m.h==='me'||m.a==='me')&&!m.cup);if(mm)resLog(st,{d:mdDay(st,st.md),md:st.md,k:'L',o:mm.h==='me'?mm.a:mm.h,h:mm.h==='me',gh:mm.gh,ga:mm.ga});}
   if(me.poach){const pp=me.nlz&&me.nlz.find(p=>p.id===me.poach.id);if(pp){me.nlz=me.nlz.filter(p=>p!==pp);money(me,me.poach.comp);feed(st,`${pp.name} wechselt zu ${me.poach.club} – Ausbildungsentschädigung ${fm(me.poach.comp)}.`,'me');}me.poach=null;}
   else if(me.nlz&&me.nlz.length&&r.chance(0.06)){const p=me.nlz.slice().sort((a,b)=>b.pot-a.pot)[0];const cl=st.clubs[r.pick(st.order[Math.max(1,me.lg-1)].filter(id=>id!=='me'))];me.poach={id:p.id,club:cl.name,comp:r2(Math.max(0.005,value(p)*0.6))};feed(st,`👀 ${cl.name} will dein NLZ-Talent ${p.name} abwerben! Hochziehen oder ziehen lassen? (Mannschaft › NLZ)`,'me');}
   if(!st.formTab)st.formTab={};
@@ -2377,7 +2399,8 @@ VIEWS.league=function(){
 // ---------- Ligen (Karriere) ----------
 VIEWS.cleague=function(){
   const c=myC();const L=ui.lgv||c.lg;
-  let h=subNav('cleague',[['tab','Tabelle'],['cup','Pokale'],['st','Statistik'],['ch','Chronik']]);const s=sub('cleague');
+  let h=subNav('cleague',[['tab','Tabelle'],['cal','📅 Kalender'],['cup','Pokale'],['st','Statistik'],['ch','Chronik']]);const s=sub('cleague');
+  if(s==='cal')return h+calPage(c);
   if(s==='tab'||s==='st')h+=`<div class="chips" style="margin:8px 0 0">${[1,2,3,4,5].map(l=>`<span class="chip ${l===L?'on':''}" data-a="lgv" data-v="${l}" style="padding:5px 9px;font-size:12px">${LNAME[l]}${l===c.lg?' •':''}</span>`).join('')}</div>`;
   if(s==='tab')h+=`<div class="card"><h3>${LNAME[L]}</h3>${ctable(L)}<p class="tiny mut" style="margin:8px 0 0">${L>1?'🟩 1–2 steigen auf. ':''}${L<NL?'🟥 9–10 steigen ab.':''}</p></div>`;
   if(s==='cup'){h+=euroHtml()+cupHtml(ST.cups.kreis)+cupHtml(ST.cups.land);if(!ST.cups.land)h+='<div class="card small mut">🏆 Landespokal: Der Kreispokalsieger trifft ab Spieltag 12 auf die 1. Liga und fünf Teams der 2. Liga.</div>';}
@@ -3058,7 +3081,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='69',APP_RV=13;
+const APP_BUILD='70',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3400,7 +3423,8 @@ function zentrale(c){
 function oppLine(opp){
   try{const R=clubRat(opp);const avg=Math.round((R.A+R.M+R.D)/3);let pos=0;if(opp.lg>0&&ST.order&&ST.order[opp.lg]&&ST.order[opp.lg].includes(opp.id))pos=careerTable(ST,opp.lg).findIndex(x=>x.id===opp.id)+1;
     const me=myC();const mylg=me?me.lg:0;
-    return `<div class="small mut" style="margin-top:2px">Gegner: ${pos?'Platz '+pos+(opp.lg!==mylg?' ('+esc(LNAME[opp.lg])+')':'')+' · ':opp.eu?'Europa · ':''}Stärke <b style="color:var(--ink)">${avg}</b></div>`;}catch(e){return '';}
+    const D=nextMyDay(ST);
+    return `<div class="small mut" style="margin-top:2px;cursor:pointer" data-a="todoGo" data-v="cleague|cal">${D!=null?'📅 '+calFmt(D,true)+' · ':''}Gegner: ${pos?'Platz '+pos+(opp.lg!==mylg?' ('+esc(LNAME[opp.lg])+')':'')+' · ':opp.eu?'Europa · ':''}Stärke <b style="color:var(--ink)">${avg}</b></div>`;}catch(e){return '';}
 }
 ACT.todoGo=function(v){const [tab,s,x]=String(v).split('|');ui.pl=null;ui.confirm=null;ui.ask=null;ui.tab=tab;if(tab==='coffice')ui.sub=s;else if(s)ui.subs[tab]=s;if(x==='rest'||x==='rat'||x==='pos')ui.trnMode=x;ui.card=x&&x.indexOf('p:')===0?x.slice(2):null;render();scrollTo(0,0);};
 const _cofficeZ=VIEWS.coffice;VIEWS.coffice=function(){const h=_cofficeZ.apply(this,arguments);return ST.career&&ST.phase==='offseason'?zentrale(myC())+h:h;};
@@ -3473,6 +3497,61 @@ function bkStartCard(){
 }
 const _vStartBk=vStart;vStart=function(){const h=_vStartBk();return ui.startPg==='career'?h+bkStartCard():h;};
 const _settingsBk=VIEWS.settings;VIEWS.settings=function(){return (ST&&ST.career?bkCard():'')+_settingsBk();};
+
+// ---------- Monatskalender (Karriere) ----------
+const CAL_COL={L:'#d8f34e',kreis:'#f5c542',land:'#f5c542',euro:'#6fa8ff',eurog:'#6fa8ff'};
+const CAL_N={L:'Liga',kreis:'Kreispokal',land:'Landespokal',euro:'Europapokal',eurog:'Europapokal'};
+const MON=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+function calD(n){const d=new Date(n*864e5);return {y:d.getUTCFullYear(),m:d.getUTCMonth(),d:d.getUTCDate(),w:d.getUTCDay()};}
+function calFmt(n,wd){const x=calD(n);return (wd?WD[x.w]+', ':'')+String(x.d).padStart(2,'0')+'.'+String(x.m+1).padStart(2,'0')+'.';}
+function calShort(c){if(!c)return '?';const w=String(c.name).split(/\s+/).filter(x=>x&&!PREFIXES.includes(x));return (w[w.length-1]||c.name).replace(/[^A-Za-zÄÖÜäöüß]/g,'').slice(0,3).toUpperCase();}
+function calEvents(c){
+  const E=[];const S=ST.season;const res=(ST.myRes||[]).filter(x=>x.s===S);const lg=c.lg;
+  for(let md=0;md<18;md++){const fx=ST.sched[lg]&&ST.sched[lg][md]&&ST.sched[lg][md].find(f=>f.includes('me'));if(!fx)continue;
+    const r=res.find(x=>x.k==='L'&&x.md===md);E.push({d:mdDay(ST,md),k:'L',md,o:fx[0]==='me'?fx[1]:fx[0],h:fx[0]==='me',gh:r?r.gh:null,ga:r?r.ga:null,done:md<ST.md});}
+  for(const r of res)if(r.k!=='L')E.push({d:r.d,k:r.k,md:r.md,o:r.o,h:r.h,gh:r.gh,ga:r.ga,done:true});
+  const pend=[];if(ST.phase==='matchday'||ST.phase==='halftime'){const me=c;const all=[ST.cupPend].concat(ST.cupQ||[]).filter(Boolean);let k0=me.cupWk&&me.cupWk.s===S&&all[0]&&me.cupWk.md===all[0].md?me.cupWk.n:0;
+    if(ST.phase==='halftime'&&ST.ht&&ST.ht.cup){const P=ST.ht.cup;E.push({d:cupDay(ST,P.md,k0),k:P.key,md:P.md,o:P.h==='me'?P.a:P.h,h:P.h==='me',live:true});pend.push(P.key+P.md);k0++;}
+    else if(ST.phase==='halftime'&&ST.ht&&!ST.ht.cup){/* Ligaspiel läuft */}
+    all.forEach((P,i)=>{if(ST.phase==='halftime'&&ST.ht&&ST.ht.cup&&P===ST.cupPend)return;E.push({d:cupDay(ST,P.md,k0+i),k:P.key,md:P.md,o:P.h==='me'?P.a:P.h,h:P.h==='me'});pend.push(P.key+P.md);});}
+  const nextRound=(key,cup)=>{if(!cup||cup.winner||!cup.alive.includes('me'))return;const ri=cup.log.length;const md=cup.mds[ri];if(md==null||md<ST.md||pend.includes(key+md))return;
+    if(res.some(x=>x.k===key&&x.md===md))return;const i=cup.alive.indexOf('me');E.push({d:cupDay(ST,md,0),k:key,md,o:cup.alive[i^1]||null,h:i%2===0});};
+  nextRound('kreis',ST.cups&&ST.cups.kreis);nextRound('land',ST.cups&&ST.cups.land);
+  if(ST.euro&&ST.euro.gfix){EU_GMD.forEach((md,gi)=>{const f=ST.euro.gfix[gi]&&ST.euro.gfix[gi].find(x=>x.includes('me'));if(!f||md<ST.md||pend.includes('eurog'+md)||res.some(x=>x.k==='eurog'&&x.md===md))return;E.push({d:cupDay(ST,md,0),k:'eurog',md,o:f[0]==='me'?f[1]:f[0],h:f[0]==='me'});});
+    nextRound('euro',ST.cups&&ST.cups.euro);}
+  E.sort((a,b)=>a.d-b.d);return E;}
+function calMarks(){const M={};const add=(d,t)=>{(M[d]=M[d]||[]).push(t);};
+  add(mdDay(ST,14),'📝 Verträge: letzte Spieltage – jetzt verlängern');add(mdDay(ST,17)+1,'🏁 Saisonende');add(mdDay(ST,8)+1,'❄️ Winterpause · Transferfenster offen');add(mdDay(ST,9),'▶️ Rückrunde');add(mdDay(ST,0),'▶️ Saisonstart');return M;}
+function calPage(c){
+  const Y=seasonY(ST);const months=[];for(let i=0;i<10;i++)months.push(i<5?[Y,7+i]:[Y+1,i-5]);
+  const T=nextMyDay(ST);const E=calEvents(c);const M=calMarks();
+  if(ui.calM==null||ui.calS!==ST.season){ui.calS=ST.season;let ref=T!=null?T:(E.length?E[E.length-1].d:mdDay(ST,0));const x=calD(ref);let mi=months.findIndex(([y,m])=>y===x.y&&m===x.m);ui.calM=mi<0?(ref<mdDay(ST,0)?0:9):mi;}
+  const [y,m]=months[ui.calM];const first=dNum(y,m,1),last=dNum(y,m+1,1)-1;
+  const w0=mdDay(ST,8)+1,w1=mdDay(ST,9)-1,s0=mdDay(ST,0),s1=mdDay(ST,17)+1;
+  const byDay={};for(const e of E)(byDay[e.d]=byDay[e.d]||[]).push(e);
+  const resCol=e=>{if(e.gh==null)return '';const my=e.h?e.gh:e.ga,ot=e.h?e.ga:e.gh;return my>ot?'#3fd0a0':my<ot?'#ff6b5b':'#93ab9c';};
+  const scoreTxt=e=>e.gh==null?'':(e.h?e.gh+':'+e.ga:e.ga+':'+e.gh);
+  let h=`<div class="card" style="padding:10px 10px 12px"><div class="row" style="margin-bottom:8px"><button class="btn sm" data-a="calM" data-v="-1" ${ui.calM<=0?'disabled':''}>‹</button><b style="flex:1;text-align:center;font-size:16px">${MON[m]} ${y}</b><button class="btn sm" data-a="calM" data-v="1" ${ui.calM>=9?'disabled':''}>›</button></div>`;
+  h+=`<div class="cal">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(x=>`<div class="cw">${x}</div>`).join('')}`;
+  const off=(calD(first).w+6)%7;for(let i=0;i<off;i++)h+='<div></div>';
+  for(let d=first;d<=last;d++){const evs=byDay[d]||[];const mk=M[d]||[];const pause=(d>=w0&&d<=w1)||d<s0||d>s1;
+    let inner=`<span class="n">${calD(d).d}</span>`;
+    if(evs.length){const e=evs[0];const col=resCol(e);inner+=`<div class="ce" style="background:${CAL_COL[e.k]}">${esc(calShort(ST.clubs[e.o]))}</div><div class="cr" style="color:${col||'var(--mut)'}">${e.gh!=null?scoreTxt(e):e.live?'live':(e.h?'H':'A')}</div>`;if(evs.length>1)inner+=`<i class="cx">+${evs.length-1}</i>`;}
+    else if(mk.length)inner+=`<div class="cm">${mk[0].split(' ')[0]}</div>`;
+    h+=`<div class="cd${pause?' ps':''}${d===T?' td':''}${ui.calD===d?' sel':''}" data-a="calD" data-v="${d}">${inner}</div>`;}
+  h+=`</div><div class="row tiny mut" style="gap:10px;margin-top:8px;flex-wrap:wrap"><span><b style="color:${CAL_COL.L}">■</b> Liga</span><span><b style="color:${CAL_COL.kreis}">■</b> Pokal</span><span><b style="color:${CAL_COL.euro}">■</b> Europa</span><span><b style="color:var(--acc)">▢</b> nächstes Spiel</span><span>▒ Pause</span></div></div>`;
+  // Liste des Monats
+  const inM=E.filter(e=>e.d>=first&&e.d<=last);const mkM=Object.keys(M).map(Number).filter(d=>d>=first&&d<=last);
+  const days=[...new Set(inM.map(e=>e.d).concat(mkM))].sort((a,b)=>a-b);
+  if(days.length){h+=`<div class="card" style="padding:8px 14px">${days.map(d=>{const evs=byDay[d]||[];const mk=M[d]||[];
+    return `<div style="padding:7px 0;border-top:1px solid var(--line);${ui.calD===d?'background:rgba(216,243,78,.07);margin:0 -14px;padding:7px 14px;':''}" data-a="calD" data-v="${d}"><div class="tiny mut">${calFmt(d,true)}${d===T?' · <b style="color:var(--acc)">nächstes Spiel</b>':''}</div>${evs.map(e=>{const o=ST.clubs[e.o];const col=resCol(e);
+      return `<div class="row small" style="gap:8px;margin-top:3px"><span style="width:8px;height:8px;border-radius:2px;background:${CAL_COL[e.k]};flex:none"></span><span class="mut" style="min-width:76px">${CAL_N[e.k]}${e.k==='L'?' '+(e.md+1)+'.':''}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.h?'vs':'@'} <b>${esc(o?o.name:'offen')}</b></span><b style="color:${col||'var(--mut)'}">${e.gh!=null?scoreTxt(e)+(e.k!=='L'&&e.k!=='eurog'&&e.gh===e.ga?' n.E.':''):e.done?'–':e.h?'Heim':'Ausw.'}</b></div>`;}).join('')}${mk.map(t=>`<div class="small" style="margin-top:3px">${esc(t)}</div>`).join('')}</div>`;}).join('')}</div>`;}
+  else h+=`<div class="card small mut">${first>s1?'Sommerpause – die neue Saison startet im August.':'In diesem Monat keine Spiele (Winterpause).'}</div>`;
+  if(c.cond)h+=`<p class="tiny mut" style="margin:0 2px 8px">Frische: ein volles Spiel kostet 20 %, ein Teileinsatz 10 %. Pro freiem Tag erholen sich alle um ${frRate(c)} %${has(c,'fit')?' (mit Fitnesstrainer)':' – mit Fitnesstrainer 2 %'}.</p>`;
+  return h;}
+ACT.calM=function(v){ui.calM=Math.max(0,Math.min(9,(ui.calM||0)+(+v)));ui.calD=null;render();};
+ACT.calD=function(v){ui.calD=ui.calD===+v?null:+v;render();};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
