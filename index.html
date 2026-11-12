@@ -3234,7 +3234,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='99',APP_RV=13;
+const APP_BUILD='100',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4006,7 +4006,7 @@ const _squadLand=VIEWS.squad;VIEWS.squad=function(){if(isLand()&&sub('squad')===
 // ---------- Spielerkarte im FIFA-Stil: Werte je Mannschaftsteil ----------
 function lineTriple(p,big){if(!ST||!ST.career||!p)return '';if(p.pos==='G')return big?`<div class="fcard"><div class="fc on"><span>TOR</span><b>${p.rat}</b></div></div>`:'';
   const L=[['A','ANG','Angriff'],['M','MIT','Mittelfeld'],['D','ABW','Abwehr']];
-  if(!big)return `<span class="lt">${L.map(([k,s])=>`<i class="${p.pos===k?'on':''}">${s[0]}${lineVal(p,k)}</i>`).join('')}</span>`;
+  if(!big)return `<span class="lt">${L.map(([k,s])=>`<i class="${p.pos===k?'on':''}">${s} ${lineVal(p,k)}</i>`).join('')}</span>`;
   return `<div class="fcard">${L.map(([k,s,n])=>{const v=lineVal(p,k);return `<div class="fc ${p.pos===k?'on':''}"><span>${s}</span><b style="color:${ratCol(v)}">${v}</b><div class="bar"><i style="width:${Math.max(4,Math.min(100,(v-30)/60*100))}%;background:${p.pos===k?'var(--acc)':'#8a9a92'}"></i></div></div>`;}).join('')}</div>`;}
 const _cardHtmlL=cardHtml;cardHtml=function(){const h=_cardHtmlL();if(!h)return h;const c=myC();const p=c&&c.squad.find(x=>x.id===ui.card);if(!p)return h;const m='data-a="sheetX">✕</button></div>';const j=h.indexOf(m);if(j<0)return h;const i=j+m.length;return h.slice(0,i)+lineTriple(p,true)+h.slice(i);};
 const _crowL=crow;crow=function(p,o){const h=_crowL(p,o);if(!ST||!ST.career||p.pos==='G')return h;const i=h.indexOf('</b><span>');if(i<0)return h;return h.slice(0,i)+lineTriple(p,false)+h.slice(i);};
