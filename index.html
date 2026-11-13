@@ -159,6 +159,31 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body.land .calL{display:grid;grid-template-columns:1.35fr 1fr;gap:10px;align-items:start}
 body.land .calL .cd{aspect-ratio:auto;height:46px}
 body.land .calL>.card{margin:0}
+
+/* Kompakt-Modus Querformat */
+body.land .card{padding:7px 10px;margin:5px 0}
+body.land h3{font-size:15px;margin:2px 0 6px}body.land h4{font-size:11px;margin:6px 0 3px}
+body.land .card p{margin:4px 0}
+body.land .pl{padding:4px 0;min-height:0}body.land .pl .rt{font-size:18px;min-width:26px}body.land .pl .pn b{font-size:13px}body.land .pl .pn span{font-size:11px}
+body.land .pos{font-size:10px;padding:2px 5px;min-width:26px}
+body.land .btn{min-height:32px;padding:5px 10px;font-size:13px}body.land .btn.sm{min-height:26px;padding:3px 8px;font-size:12px}
+body.land .tac{padding:6px 9px;margin:4px 0}body.land .tac .small{font-size:11.5px}
+body.land .kpi,body.land .grid2>div{padding:6px 8px}
+body.land .todo .ti,body.land .tdi{padding:5px 0}
+body.land .lbody.lb2{column-count:2;column-gap:10px}
+body.land .lbody.lb2>*{break-inside:avoid;-webkit-column-break-inside:avoid}
+body.land .lbody.lb2>.card{display:block;margin:0 0 8px}
+body.land .lbody.lb2>.cspan{column-span:all}
+body.land .lbody:not(.lb2) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl){display:grid;grid-template-columns:1fr 1fr;column-gap:16px;align-items:center}
+body.land .lbody:not(.lb2) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl)>:not(.pl){grid-column:1/-1}
+
+body.land .lbody:not(.lb2) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.land .pl .pn{min-width:0;flex:1}body.land .pl .pn>b,body.land .pl .pn>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.land .pl>.btn,body.land .pl>button{flex:none}
+body.land .futg{grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:5px}
+body.land .fut{min-height:92px;padding:4px 6px 5px;border-radius:8px}
+body.land .fut-t b{font-size:22px}body.land .fut-n{font-size:11px}body.land .fut-m{font-size:9px}
+body.land .futg + h4, body.land .card h4{margin-top:4px}
 </style>
 </head>
 <body>
@@ -2675,7 +2700,7 @@ VIEWS.market=function(){
   h+=`<div class="row small mut" style="margin:10px 2px"><span>${inS?`⚽ Saison läuft · Vereinslose sofort, sonst zum nächsten Fenster${(c.deals||[]).length?' · '+c.deals.length+' vereinbart':''}`:ST.career?(ST.winter?`❄️ Wintertransfers ${c.buys||0}/5`:`Transfers ${c.buys||0} · unbegrenzt`):ST.winter?`❄️ Wintertransfers ${Math.max(0,(c.buys||0)-3)}/2`:`Transfers ${c.buys||0}/${buyMax(ST)}`} · Kader ${c.squad.length}/${SQUAD_MAX}</span><span class="sp"></span><span>${fm(c.cash)}</span></div>`;
   if(ST.career)h+=fltBar('mkt',true);else h+=posChips();
   const list=ST.career?fltApply('mkt',vis,c):vis.filter(p=>ui.pos==='all'||p.pos===ui.pos).sort((a,b)=>b.rat-a.rat);
-  h+=`<div class="card" style="padding:8px 14px">${list.map(p=>{const pr=buyPrice(c,p);return crow(p,{tap:1,mk:1,sub:`${p.age} J.${p.free?' · ablösefrei':''} · Gehalt ${fm(salary(p))}${ST.career?fltPosTag('mkt',p):''}`,right:inS?(p.free?`<button class="btn sm ok" data-a="buy" data-v="${p.id}" ${c.cash<pr||c.squad.length>=SQUAD_MAX?'disabled':''}>Holen ${fm(pr)}</button>`:`<button class="btn sm" data-a="pl" data-v="${p.id}">Angebot</button>`):`<button class="btn sm ok" data-a="buy" data-v="${p.id}" ${rd||lim||c.cash<pr||c.squad.length>=SQUAD_MAX?'disabled':''}>${fm(pr)}</button>`});}).join('')||'<div class="empty">Keine Spieler sichtbar.</div>'}</div>`;
+  h+=`<div class="card" style="padding:8px 14px">${list.map(p=>{const pr=buyPrice(c,p);return crow(p,{tap:1,mk:1,sub:`${p.age} J.${p.free?' · ablösefrei':''} · Gehalt ${fm(salary(p))}${ST.career?fltPosTag('mkt',p):''}`,right:inS?(p.free?`<button class="btn sm ok" data-a="buy" data-v="${p.id}" ${c.cash<pr||c.squad.length>=SQUAD_MAX?'disabled':''}>${fm(pr)}</button>`:`<button class="btn sm" data-a="pl" data-v="${p.id}">Angebot</button>`):`<button class="btn sm ok" data-a="buy" data-v="${p.id}" ${rd||lim||c.cash<pr||c.squad.length>=SQUAD_MAX?'disabled':''}>${fm(pr)}</button>`});}).join('')||'<div class="empty">Keine Spieler sichtbar.</div>'}</div>`;
   if(hidden)h+=`<p class="tiny mut">🔭 ${hidden} weitere Spieler kennt nur ein besseres Scouting-Netzwerk.</p>`;
   if(feat(ST))h+='<p class="tiny mut">Achtung: Andere Vereine kaufen mit – gute Spieler sind schnell weg, und manchmal bietet jemand mit.</p>';
   return h;
@@ -3466,7 +3491,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='108',APP_RV=13;
+const APP_BUILD='109',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4336,7 +4361,10 @@ function vGameLand(){
   const nav=`<nav>${sideHead()}<div class="in">${M.map(m=>`<button class="${m===cur[0]?'on':''}" data-a="lmGo" data-v="${m[0]}|0">${dotM(m)?'<b class="nd"></b>':''}<i>${m[1]}</i>${m[2]}</button>`).join('')}</div></nav>`;
   const rb=readyBar();const subs=cur[0][3];
   const sb=`<div class="lsub"><div class="lsubs">${subs.map((it,i)=>`<span class="chip ${i===cur[1]?'on':''}" data-a="lmGo" data-v="${cur[0][0]}|${i}">${esc(it[0])}</span>`).join('')}</div></div>`;
-  return `<div class="lbody">${body}</div>`+sb+rb+nav;}
+  const LB2=new Set(['znlz','coffice|sponsor','coffice|finanzen','coffice|vorstand','coffice|vorb','coffice|bericht','settings','squad|ro','cleague|st','cleague|ch','news','cmatch','zhome','cseason']);
+  const key=ui.tab==='coffice'?'coffice|'+ui.sub:ui.tab==='squad'||ui.tab==='cleague'?ui.tab+'|'+(ui.subs[ui.tab]||''):ui.tab;
+  const lb2=LB2.has(key)&&!ui.pl;
+  return `<div class="lbody${lb2?' lb2':''}">${body}</div>`+sb+rb+nav;}
 // ---------- Ansichtsgröße (Querformat) ----------
 function vsGet(){return LS.get('kc:vs','s');}
 function vsApply(){const v=vsGet();document.body.classList.remove('vs-s','vs-m','vs-l');document.body.classList.add('vs-'+v);}
