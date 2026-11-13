@@ -174,19 +174,36 @@ body.land .lbody.lb2{column-count:2;column-gap:10px}
 body.land .lbody.lb2>*{break-inside:avoid;-webkit-column-break-inside:avoid}
 body.land .lbody.lb2>.card{display:block;margin:0 0 8px}
 body.land .lbody.lb2>.cspan{column-span:all}
-body.land .lbody:not(.lb2) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl){display:grid;grid-template-columns:1fr 1fr;column-gap:16px;align-items:center}
-body.land .lbody:not(.lb2) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl)>:not(.pl){grid-column:1/-1}
+body.land .lbody:not(.lb2):not(.lcols) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl){display:grid;grid-template-columns:1fr 1fr;column-gap:16px;align-items:center}
+body.land .lbody:not(.lb2):not(.lcols) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl)>:not(.pl){grid-column:1/-1}
 
-body.land .lbody:not(.lb2) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.land .lbody:not(.lb2):not(.lcols) .card:has(> .pl ~ .pl ~ .pl ~ .pl ~ .pl ~ .pl){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 body.land .pl .pn{min-width:0;flex:1}body.land .pl .pn>b,body.land .pl .pn>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.land .pl>.btn,body.land .pl>button{flex:none}
-body.land .futg{grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:5px}
-body.land .fut{min-height:92px;padding:4px 6px 5px;border-radius:8px}
+body.land .futg{grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:4px}
+body.land .fut{min-height:82px;padding:3px 5px 4px;border-radius:8px}
 body.land .fut-t b{font-size:22px}body.land .fut-n{font-size:11px}body.land .fut-m{font-size:9px}
 body.land .futg + h4, body.land .card h4{margin-top:4px}
 
 #infoPop .ipb.lvup{animation:lvpop .45s cubic-bezier(.2,1.6,.4,1);border-color:var(--acc);box-shadow:0 0 30px rgba(216,243,78,.25);min-width:240px}
 @keyframes lvpop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* Querformat: kein Seiten-Scrollen – feste Bühne */
+body.land{overflow:hidden;height:100vh;height:100dvh;overscroll-behavior:none}
+body.land .lbody{position:fixed;top:0;bottom:50px;left:calc(150px + env(safe-area-inset-left));right:env(safe-area-inset-right);padding:6px 10px 6px;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+body.land .lbody>*{flex:none;margin-top:0!important;margin-bottom:0!important}
+body.land .lbody>.grow,body.land .lcol>.grow{flex:1 1 auto;min-height:0;overflow:auto;scrollbar-width:thin}
+body.land .lbody.lcols{flex-direction:row;align-items:stretch}
+body.land .lcol{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+body.land .lcol>*{flex:none;margin:0!important}
+
+body.land .lbody>.gland{flex:1 1 auto}body.land .gland{display:grid;grid-template-columns:1.55fr 1fr;gap:8px;height:100%;min-height:0}
+body.land .gland>.card{margin:0;min-height:0;overflow:hidden}
+body.land .gland .cg2{width:auto!important;height:100%;max-width:100%}
+.cg2 text{font-family:system-ui,-apple-system,sans-serif}
+
+body.land .grow{align-content:start;grid-auto-rows:max-content}
+body.land .grow>*{flex-shrink:0}
 </style>
 </head>
 <body>
@@ -2308,10 +2325,10 @@ coffice(){
   if(ui.sub==='finanzen'){
     const sal=c.squad.reduce((s,p)=>s+salary(p),0),ssal=c.staff.reduce((s,x)=>s+x.sal,0);const ls=LOANS[c.lg];
     h+=tpCard(c);
-    h+=`<div class="card"><div class="grid2"><div class="kpi"><span>Kontostand</span><b style="${c.cash<0?'color:var(--bad)':''}">${fm(c.cash)}</b></div><div class="kpi"><span>Schulden</span><b>${fm(c.debt)}</b></div><div class="kpi"><span>Fans</span><b>${num(c.fans)}</b></div><div class="kpi"><span>Stadion</span><b>${num(CCAP[c.up.stadium])}</b></div></div>
-    <h4>Am Saisonende</h4><div class="fin"><span>TV-Geld ${LNAME[c.lg]} (je nach Platz)</span><span class="pos-p">ca. +${fm(TVB[c.lg])}</span></div>${c.spon&&!c.spon.paid?`<div class="fin"><span>Sponsor (fest)</span><span class="pos-p">+${fm(c.spon.amount)}</span></div>`:''}${c.spon&&c.spon.type==='goal'?`<div class="fin"><span>Sponsor-Bonus (${esc(c.spon.goal)})</span><span class="pos-p">+${fm(c.spon.bonus)} wenn erreicht</span></div>`:''}${c.merch&&c.merch.length?`<div class="fin"><span>Fanshop (pro Heimspiel ${fm(merchIncome(c))})</span><span class="pos-p">bisher +${fm(c.merchPaid||0)}</span></div>`:''}${has(c,'mkt')?`<div class="fin"><span>Marketingchef (pro Spieltag ${fm(mktRate(c))})</span><span class="pos-p">bisher +${fm(c.mktPaid||0)}</span></div>`:''}<div class="fin"><span>Gehälter Spieler</span><span class="neg-p">−${fm(sal)}</span></div><div class="fin"><span>Gehälter Staff</span><span class="neg-p">−${fm(ssal)}</span></div><div class="fin"><span>Zinsen (10 %)</span><span class="neg-p">−${fm(c.debt*0.1)}</span></div>
+    h+=`<div class="card"><div class="grid2"><div class="kpi"><span>Kontostand</span><b style="${c.cash<0?'color:var(--bad)':''}">${fm(c.cash)}</b></div><div class="kpi"><span>Schulden</span><b>${fm(c.debt)}</b></div><div class="kpi"><span>Fans</span><b>${num(c.fans)}</b></div><div class="kpi"><span>Stadion</span><b>${num(CCAP[c.up.stadium])}</b></div></div></div>
+    <div class="card"><h4 style="margin-top:0">Am Saisonende</h4><div class="fin"><span>TV-Geld ${LNAME[c.lg]} (je nach Platz)</span><span class="pos-p">ca. +${fm(TVB[c.lg])}</span></div>${c.spon&&!c.spon.paid?`<div class="fin"><span>Sponsor (fest)</span><span class="pos-p">+${fm(c.spon.amount)}</span></div>`:''}${c.spon&&c.spon.type==='goal'?`<div class="fin"><span>Sponsor-Bonus (${esc(c.spon.goal)})</span><span class="pos-p">+${fm(c.spon.bonus)} wenn erreicht</span></div>`:''}${c.merch&&c.merch.length?`<div class="fin"><span>Fanshop (pro Heimspiel ${fm(merchIncome(c))})</span><span class="pos-p">bisher +${fm(c.merchPaid||0)}</span></div>`:''}${has(c,'mkt')?`<div class="fin"><span>Marketingchef (pro Spieltag ${fm(mktRate(c))})</span><span class="pos-p">bisher +${fm(c.mktPaid||0)}</span></div>`:''}<div class="fin"><span>Gehälter Spieler</span><span class="neg-p">−${fm(sal)}</span></div><div class="fin"><span>Gehälter Staff</span><span class="neg-p">−${fm(ssal)}</span></div><div class="fin"><span>Zinsen (10 %)</span><span class="neg-p">−${fm(c.debt*0.1)}</span></div>
     <p class="small mut">Pro Heimspiel: ${num(Math.min(c.fans,CCAP[c.up.stadium]))} Zuschauer × ${TPRICE[c.lg]} € = ${fm(careerEcon(ST,c).ticket)}. Siegprämie: ${fm(WINB[c.lg])}.</p>
-    <h4>Bank</h4><div class="row"><button class="btn sm" data-a="loan">Kredit +${fm(ls)}</button><button class="btn sm" data-a="repay" ${c.debt<=0?'disabled':''}>Tilgen</button></div><p class="tiny mut">Max. ${fm(ls*6)} Schulden in dieser Liga.</p></div>
+    </div><div class="card"><h4 style="margin-top:0">🏦 Bank</h4><div class="row"><button class="btn sm" data-a="loan">Kredit +${fm(ls)}</button><button class="btn sm" data-a="repay" ${c.debt<=0?'disabled':''}>Tilgen</button></div><p class="tiny mut">Max. ${fm(ls*6)} Schulden in dieser Liga.</p></div>
     `;
   }
   return h;
@@ -2774,7 +2791,7 @@ function matchPage(c){
     <div class="card"><div class="row tiny mut"><span style="width:82px"></span><span class="sp">${home?'Du':'Gegner'+(opp.human?' (geschätzt)':'')}</span><span>${home?'Gegner'+(opp.human?' (geschätzt)':''):'Du'}</span></div>${strBars(c,R,O,home)}<p class="tiny mut" style="margin:6px 0 0">${esc(TAC[tac].n)} · ${fname(form)} · Moral ${c.moral}/5 · <u data-a="goXI" style="cursor:pointer">Aufstellung & Taktik ändern ›</u></p></div>`+xiWarn(c,form,pickXI(Object.assign({},c,{lineup:curLu(c)}),form));
     {const hc=home?c:opp;if(hc.stadium||(home&&c.ultras))h+=`<div class="small mut" style="text-align:center;margin:-4px 0 8px">🏟 ${hc.stadium?esc((home?'Heimspiel: ':'Auswärts: ')+hc.stadium):''}${home&&c.ultras?` · ${esc(c.ultras)} sind am Start`:''}</div>`;}
     if(!ST.career&&feat(ST)&&ST.md>=ST.schedule.length-4){const ex=c.squad.filter(p=>p.ct===1&&!p.loan);if(ex.length)h+=`<div class="evc" style="padding:10px;border-color:var(--gold)"><b>📝 Verträge laufen aus</b><div class="small">${ex.map(p=>esc(p.name)+' ('+posL(p)+', '+p.rat+')').join(', ')} – nach dieser Saison ablösefrei weg. <u data-a="goCt" style="cursor:pointer">Jetzt verlängern ›</u></div></div>`;}
-    h+=analysisCard(c,opp,home,form,tac)+tipCard(c,opp,home,form,tac)+(ST.career?premCard(c):'');
+    if(!(ST.career&&isLand()))h+=analysisCard(c,opp,home,form,tac)+tipCard(c,opp,home,form,tac)+(ST.career?premCard(c):'');
     const L=ST.last;
     if(L&&L.season===ST.season&&L.md!=='CL'){const mine=L.results.filter(m=>m.h===me()||m.a===me());const card=L.cards[me()];
       h+=`<div class="card"><h4 style="margin-top:0">Letzter Spieltag</h4>${mine.map(m=>resLine(m)+(m.stats?`<details style="margin:4px 0 2px"><summary class="small" style="cursor:pointer">📊 Statistik</summary>${statsBox(m)}</details>`:'')).join('')}${mine.filter(m=>m.potm).map(m=>`<div class="small" style="margin-top:6px">⭐ Spieler des Spiels: <b>${esc(m.potm.n)}</b> (Note ${noteF(m.potm.note)})</div>`).join('')}${mine.length?'<button class="btn sm" style="margin-top:8px" data-a="ticker">▶ Ticker</button>':''}${card&&!c.pending?`<div class="evc ${card.g?'':'bad'}"><b>🃏 ${esc(card.t)}</b><div class="small">${esc(card.x)}</div></div>`:''}</div>`;}
@@ -3526,7 +3543,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='110',APP_RV=13;
+const APP_BUILD='111',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4363,19 +4380,19 @@ ACT.scReg=function(v){ui.scReg=v;render();};ACT.scMon=function(v){ui.scMon=+v;re
 ACT.scGo=function(){if(conf('scGo'))send('SCOUT_GO',{reg:ui.scReg||'sa',months:ui.scMon||3,pos:ui.scPos||null});};
 ACT.scSign=function(v){if(conf('ss'+v))send('SCOUT_SIGN',{player:+v||v});};
 ACT.scEnd=function(){if(conf('scEnd'))send('SCOUT_END');};
-VIEWS.zana=function(){const c=myC();if(ST.phase!=='matchday')return '<div class="card small mut">Die Gegneranalyse gibt es am Spieltag.</div>';const form=ui.form||c.form,tac=ui.tac||c.tac;const {home,opp}=oppInfo(c);return `<div class="g2"><div>${xiStrength(c,form)}${analysisCard(c,opp,home,form,tac)}</div><div>${tipCard(c,opp,home,form,tac)}${premCard(c)}</div></div>`;};
+VIEWS.zana=function(){const c=myC();if(ST.phase!=='matchday')return '<div class="card small mut">Die Gegneranalyse gibt es am Spieltag.</div>';const form=ui.form||c.form,tac=ui.tac||c.tac;const {home,opp}=oppInfo(c);if(isLand())return `<div>${xiStrength(c,form)}</div>`+analysisCard(c,opp,home,form,tac)+tipCard(c,opp,home,form,tac)+premCard(c);return `<div class="g2"><div>${xiStrength(c,form)}${analysisCard(c,opp,home,form,tac)}</div><div>${tipCard(c,opp,home,form,tac)}${premCard(c)}</div></div>`;};
 VIEWS.zhome=function(){const c=myC();if(ST.phase==='matchday')return VIEWS.cmatch();if(ST.phase==='halftime')return VIEWS.cht();if(ST.phase==='seasonEnd')return VIEWS.cseason();ui.sub='bericht';return zentrale(c)+VIEWS.coffice();};
 function lmHome(){return {matchday:'cmatch',halftime:'cht',seasonEnd:'cseason',offseason:'zhome'}[ST.phase]||'zhome';}
 function lmMenu(){const ph=ST.phase;const off=ph==='offseason',md=ph==='matchday',ht=ph==='halftime',se=ph==='seasonEnd';const sum=off&&!ST.winter;
   const sq=(l,k)=>[l,'squad',k],mk=(l,k)=>[l,'market',k],lg=(l,k)=>[l,'cleague',k],of=(l,k)=>[l,'coffice',k];
-  const M=[['zen','⚽','Zentrale',[['Übersicht',lmHome(),null]].concat(md?[['Gegner','zana',null]]:[],ht?[]:[['Kalender','zcal',null],['News','news',null]])],
+  const M=[['zen','⚽','Zentrale',[['Übersicht',lmHome(),null]].concat(md?[['Aufgaben','zgoal',null],['Gegner & Tipp','zana',null]]:[],ht?[]:[['Kalender','zcal',null],['News','news',null]])],
     ['team','👕','Team',[sq('Kader','sp'),ht?['Taktik','cht',null]:sq('Taktik','xi')].concat(ht?[]:[sq('Training','tr'),sq('Rollen','ro'),sq('Verträge','ct')])]];
   if(!ht){M.push(['tm','🔁','Transfers',off?[mk('Kaufen','buy'),mk('Angebote'+((myC().offers||[]).length?' ('+myC().offers.length+')':''),'off'),mk('Leihen','loan'),mk('Verlauf','tl')]:[mk('Kaufen','buy'),mk('Verlauf','tl')]]);
     M.push(['nlz','🎓','NLZ',[['Talente & Camp','znlz',null],['Auslandsscout'+(myC().scout&&(myC().scout.rep||[]).length?' ❗':''),'zscout',null]]]);}
   M.push(['comp','🏆','Wettbewerbe',[lg('Tabelle','tab'),lg('Pokale','cup'),lg('Statistik','st'),lg('Chronik','ch')]]);
   if(md||off){M.push(['gel','🏟️','Gelände',[of('Vereinsgelände','ausbau')]]);M.push(['fin','💶','Finanzen',[of('Übersicht','finanzen'),of('Sponsoren','sponsor'),of('Gehälter','gehalt')]]);
     M.push(['vor','🏛️','Vorstand',[of('Ziele','vorstand'),of('Staff','staff')].concat(sum?[of('Vorbereitung'+(myC().prepS===ST.season?'':' ❗'),'vorb'),of('Bericht','bericht')]:[])]);}
-  if(!ht)M.push(['set','⚙️','Optionen',[['Einstellungen','settings',null]]]);
+  if(!ht)M.push(['set','⚙️','Optionen',[['Allgemein','settings','gen'],['Vereinslogo','settings','logo']]]);
   return M;}
 function lmOn(it){const [l,tab,k]=it;if(ui.tab!==tab)return false;if(k==null)return true;if(tab==='coffice')return ui.sub===k;return ui.subs[tab]===k;}
 function lmCur(M){for(const m of M)for(let i=0;i<m[3].length;i++)if(lmOn(m[3][i]))return [m,i];
@@ -4396,7 +4413,7 @@ function vGameLand(){
   const nav=`<nav>${sideHead()}<div class="in">${M.map(m=>`<button class="${m===cur[0]?'on':''}" data-a="lmGo" data-v="${m[0]}|0">${dotM(m)?'<b class="nd"></b>':''}<i>${m[1]}</i>${m[2]}</button>`).join('')}</div></nav>`;
   const rb=readyBar();const subs=cur[0][3];
   const sb=`<div class="lsub"><div class="lsubs">${subs.map((it,i)=>`<span class="chip ${i===cur[1]?'on':''}" data-a="lmGo" data-v="${cur[0][0]}|${i}">${esc(it[0])}</span>`).join('')}</div></div>`;
-  const LB2=new Set(['znlz','coffice|sponsor','coffice|finanzen','coffice|vorstand','coffice|vorb','coffice|bericht','settings','squad|ro','cleague|st','cleague|ch','news','cmatch','zhome','cseason']);
+  const LB2=new Set(['znlz','coffice|sponsor','coffice|finanzen','coffice|vorstand','coffice|vorb','coffice|bericht','settings','squad|ro','cleague|st','cleague|ch','news','cmatch','zhome','cseason','zana','zgoal']);
   const key=ui.tab==='coffice'?'coffice|'+ui.sub:ui.tab==='squad'||ui.tab==='cleague'?ui.tab+'|'+(ui.subs[ui.tab]||''):ui.tab;
   const lb2=LB2.has(key)&&!ui.pl;
   return `<div class="lbody${lb2?' lb2':''}">${body}</div>`+sb+rb+nav;}
@@ -4453,7 +4470,7 @@ function squadOverview(c){
   let xi=new Set();if(['matchday','halftime'].includes(ST.phase)){const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),ui.form||c.form);for(const k of ['G','D','M','A'])for(const x of X[k])if(x.p)xi.add(x.p.id);}
   let h=`<div class="row small mut" style="margin:8px 2px 4px"><span>${c.squad.length}/${SQUAD_MAX} Spieler · Gehälter ${fm(sal)}/Saison</span><span class="sp"></span><div class="chips" style="gap:4px"><span class="chip ${mode==='cards'?'on':''}" style="padding:4px 9px;font-size:12px" data-a="sqv" data-v="cards">🃏 Karten</span><span class="chip ${mode==='list'?'on':''}" style="padding:4px 9px;font-size:12px" data-a="sqv" data-v="list">☰ Liste</span></div></div>`;
   h+=fltBar('sq',false);
-  const L=fltApply('sq',c.squad,c);const grouped=!fltActive('sq');
+  let L=fltApply('sq',c.squad,c);const grouped=!fltActive('sq')&&!isLand();if(isLand()&&!fltActive('sq')){const O={G:0,D:1,M:2,A:3};L=L.slice().sort((a,b)=>O[a.pos]-O[b.pos]);}
   const render1=ps=>mode==='cards'?`<div class="futg">${ps.map(p=>fcardMini(p,c,{xi:xi.has(p.id)})).join('')}</div>`:ps.map(p=>crow(p,{tap:1,xi:xi.has(p.id),sub:undefined})).join('');
   if(grouped){for(const pos of ['G','D','M','A']){const ps=L.filter(p=>p.pos===pos);h+=`<div class="card" style="padding:8px 12px"><h4 style="margin:2px 0 6px">${{G:'Torhüter',D:'Abwehr',M:'Mittelfeld',A:'Sturm'}[pos]} <span class="mut tiny">${ps.length}</span></h4>${render1(ps)||'<div class="mut small">—</div>'}</div>`;}}
   else h+=`<div class="card" style="padding:8px 12px">${render1(L)||'<div class="empty small">Kein Spieler passt zum Filter.</div>'}</div>`;
@@ -4563,7 +4580,7 @@ function derbyCard(c){const o=oppInfo(c);if(!o||!c.rival||o.opp.id!==c.rival.id|
   return `<div class="card" style="border-color:#ff7a1a;background:linear-gradient(135deg,rgba(255,122,26,.16),transparent)"><div class="row"><b>🔥 DERBY!</b><span class="sp"></span><span class="pill">Bilanz ${R.w}-${R.d}-${R.l}</span></div><div class="small" style="margin-top:4px">Gegen den Erzrivalen ${esc(o.opp.name)}: Sieg = Fans +3 %, Moral +1 & Prämie. Niederlage = Moral −1.</div></div>`;}
 function msCard(c){const M=c.ms&&c.ms.s===ST.season?c.ms:{d:{}};const n=MSD.filter(d=>M.d[d.k]).length;
   return `<div class="card"><div class="row"><b>🏅 Saison-Meilensteine</b>${inf('Jeder Meilenstein bringt einmal pro Saison eine Prämie und neue Fans.')}<span class="sp"></span><span class="pill">${n}/${MSD.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${MSD.map(d=>`<span class="chip" style="padding:3px 8px;font-size:11px;${M.d[d.k]?'border-color:var(--gold);color:var(--gold)':'opacity:.55'}">${d.e} ${d.t}</span>`).join('')}</div>${c.rival&&ST.clubs[c.rival.id]?`<div class="tiny mut" style="margin-top:6px">🔥 Erzrivale: <b>${esc(ST.clubs[c.rival.id].name)}</b> · Derby-Bilanz ${c.rival.w}-${c.rival.d}-${c.rival.l}</div>`:''}</div>`;}
-{const _cmF=VIEWS.cmatch;VIEWS.cmatch=function(){let h=_cmF.apply(this,arguments);if(!ST.career||ST.phase!=='matchday')return h;const c=myC();if(!c)return h;try{h=derbyCard(c)+h+taskCard(c)+msCard(c);}catch(e){}return h;};}
+{const _cmF=VIEWS.cmatch;VIEWS.cmatch=function(){let h=_cmF.apply(this,arguments);if(!ST.career||ST.phase!=='matchday')return h;const c=myC();if(!c)return h;try{h=isLand()?derbyCard(c)+h:derbyCard(c)+h+taskCard(c)+msCard(c);}catch(e){}return h;};}
 // ---------- Level-up- & Meilenstein-Momente ----------
 function celebrate(){if(!ST||!ST.career||ui.view!=='game'||ui.quick)return;if(!['matchday','offseason','seasonEnd'].includes(ST.phase))return;const c=myC();if(!c)return;
   const key='kc:cel:'+ST.seed;const S=LS.get(key,null);const now={r:{},x:{},m:{}};for(const p of c.squad.concat(c.nlz||[])){now.r[p.id]=p.rat;now.x[p.id]=(p.xsp||[]).length;}
@@ -4579,6 +4596,83 @@ function celebrate(){if(!ST||!ST.career||ui.view!=='game'||ui.quick)return;if(![
     ${pos.map(p=>`<div style="text-align:center;margin-top:6px">🎓 ${esc(p.name)} beherrscht jetzt ${esc((p.xsp||[]).slice(-1)[0]||'')}</div>`).join('')}
     <div class="tiny mut" style="margin-top:10px;text-align:center">Tippen zum Schließen</div></div>`;el.classList.add('on');}
 {const _rCel=render;render=function(){_rCel.apply(this,arguments);try{setTimeout(celebrate,30);}catch(e){}};}
+// ---------- Querformat: alles auf eine Bühne, kein Seiten-Scrollen ----------
+function landFit(){if(!document.body.classList.contains('land'))return;const lb=document.querySelector('.lbody');if(!lb||lb.dataset.fit)return;lb.dataset.fit=1;
+  if(ui.tab==='settings'){const logo=(ui.subs.settings||'gen')==='logo';for(const k of [...lb.children]){const isL=/Vereinslogo/.test(k.textContent||'');if(isL!==logo)k.remove();}}
+  const kids=[...lb.children].filter(k=>k.offsetParent!==null||k.tagName!=='SCRIPT');if(!kids.length)return;
+  const H=lb.clientHeight-12;const multi=lb.classList.contains('lb2');
+  if(multi&&kids.length>1){lb.classList.remove('lb2');
+    const hs=kids.map(k=>k.getBoundingClientRect().height+6);const tot=hs.reduce((a,b)=>a+b,0);
+    const ncol=tot>2*H&&lb.clientWidth>600&&kids.length>2?3:tot>H?2:1;
+    if(ncol>1){lb.classList.add('lcols');const cols=[];for(let i=0;i<ncol;i++){const d=document.createElement('div');d.className='lcol';cols.push(d);}
+      // Reihenfolge behalten, Spalten möglichst gleich hoch
+      let ci=0,acc=0;const tgt=tot/ncol;kids.forEach((k,i)=>{if(ci<ncol-1&&acc>0&&acc+hs[i]/2>tgt){ci++;acc=0;}cols[ci].appendChild(k);acc+=hs[i];});
+      for(const d of cols)lb.appendChild(d);
+      for(const d of cols)fitCol(d);return;}}
+  fitCol(lb);}
+function fitCol(box){const H=box.clientHeight;if(box.scrollHeight<=H+2)return;const kids=[...box.children];if(!kids.length)return;
+  let big=kids[0],bh=0;for(const k of kids){const h=k.getBoundingClientRect().height;if(h>bh){bh=h;big=k;}}big.classList.add('grow');}
+{const _rFit=render;render=function(){_rFit.apply(this,arguments);try{landFit();}catch(e){console.error(e);}};}
+
+VIEWS.zgoal=function(){const c=myC();return derbyCard(c)+taskCard(c)+msCard(c);};
+// ---------- Vereinsgelände 2.0: weich, modern, ohne Kanten ----------
+function clubGround2(c){const up=c.up||{},col=c.color||'#d8f34e',st=up.stadium||1,tr=up.training||1,yo=up.youth||1,an=up.analysis||1,sc=up.scouting||1;const merch=(c.merch||[]).length;
+  const B=c.builds||{};const bOn=k=>!!B[k]||(k==='stadium'&&!!c.build);
+  let g=`<defs><radialGradient id="gbg" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#1f5a3a"/><stop offset="1" stop-color="#0c2418"/></radialGradient>
+   <linearGradient id="gst" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}"/><stop offset="1" stop-color="${col}" stop-opacity=".55"/></linearGradient>
+   <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6c4" stop-opacity=".95"/><stop offset="1" stop-color="#fff6c4" stop-opacity="0"/></radialGradient>
+   <linearGradient id="gpitch" x1="0" x2="1"><stop offset="0" stop-color="#3ea65a"/><stop offset="1" stop-color="#2f8f4b"/></linearGradient>
+   <filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2.5" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+   <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="#f5c542" opacity=".55"/></pattern></defs>`;
+  g+=`<rect width="360" height="230" rx="14" fill="url(#gbg)"/>`;
+  // Wege (weich geschwungen)
+  g+=`<path d="M0 196 C 90 186, 140 214, 220 200 S 330 178, 360 186" stroke="#55615b" stroke-width="9" fill="none" stroke-linecap="round" opacity=".85"/><path d="M0 196 C 90 186, 140 214, 220 200 S 330 178, 360 186" stroke="#c9d1cc" stroke-width=".8" stroke-dasharray="5 5" fill="none" opacity=".6"/>`;
+  g+=`<path d="M86 0 C 92 60, 70 130, 96 230" stroke="#55615b" stroke-width="7" fill="none" stroke-linecap="round" opacity=".7"/>`;
+  const cx=196,cy=104;const rx=58+st*9,ry=40+st*6;
+  // Stadion
+  let s=`<g filter="url(#sh)">`;
+  s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#2a3530"/>`;
+  for(let i=0;i<st;i++){const k=i/st;s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx-4-i*7}" ry="${ry-3-i*5}" fill="url(#gst)" opacity="${0.55+0.45*(1-k)}" stroke="rgba(255,255,255,.18)" stroke-width=".6"/>`;}
+  s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx-4-st*7}" ry="${ry-3-st*5}" fill="#1c2a23"/>`;
+  if(st>=4)s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx-2}" ry="${ry-1.5}" fill="none" stroke="rgba(235,245,240,.55)" stroke-width="${st>=5?7:5}" stroke-dasharray="${st>=5?'0':'40 6'}"/>`;
+  s+=`</g>`;
+  // Spielfeld
+  const pw=88,ph=54,px=cx-pw/2,py=cy-ph/2;s+=`<rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="5" fill="url(#gpitch)"/>`;
+  for(let i=0;i<8;i+=2)s+=`<rect x="${px+i*pw/8}" y="${py}" width="${pw/8}" height="${ph}" fill="#fff" opacity=".05"/>`;
+  s+=`<g fill="none" stroke="rgba(255,255,255,.75)" stroke-width=".7"><rect x="${px+3}" y="${py+3}" width="${pw-6}" height="${ph-6}" rx="2"/><line x1="${cx}" y1="${py+3}" x2="${cx}" y2="${py+ph-3}"/><circle cx="${cx}" cy="${cy}" r="7"/><rect x="${px+3}" y="${cy-11}" width="12" height="22"/><rect x="${px+pw-15}" y="${cy-11}" width="12" height="22"/></g>`;
+  // Banden
+  const BD=c.boards||[];const nb=boardSlots(c);for(let i=0;i<nb;i++){const b=BD[i];const w=(pw-8)/nb;s+=`<rect x="${px+4+i*w+0.8}" y="${py-3.6}" width="${w-1.6}" height="2.6" rx="1" fill="${b?(b.t==='b'?'#f2c94c':'#ece6d2'):'#3a4a40'}"/>`;}
+  // Flutlicht
+  if(st>=3)for(const [x,y] of [[cx-rx+8,cy-ry+8],[cx+rx-8,cy-ry+8],[cx-rx+8,cy+ry-8],[cx+rx-8,cy+ry-8]])s+=`<circle cx="${x}" cy="${y}" r="9" fill="url(#glow)"/><circle cx="${x}" cy="${y}" r="2.2" fill="#fff8d0"/>`;
+  if(bOn('stadium'))s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#hatch)" opacity=".5"/><text x="${cx+rx-6}" y="${cy-ry+14}" font-size="16">🏗️</text>`;
+  g+=`<g data-a="facil" data-v="stadium" style="cursor:pointer">${s}</g>`;
+  const tag=(x,y,k,txt)=>{const can=facCan(c,k);const on=ui.facil===k;const w=txt.length*4.6+(can?12:6);return `<g transform="translate(${x},${y})"><rect x="${-w/2}" y="-7" width="${w}" height="13" rx="6.5" fill="${on?'#d8f34e':'rgba(8,20,14,.82)'}" stroke="${can?'#d8f34e':'rgba(255,255,255,.18)'}" stroke-width=".7"/><text text-anchor="middle" y="2.6" font-size="7.4" font-weight="700" fill="${on?'#0b1a13':'#fff'}">${esc(txt)}${can?' ⬆':''}</text></g>`;};
+  g+=tag(cx,cy+ry+9,'stadium','Stadion '+st+(bOn('stadium')?' 🚧':''));
+  // Gebäude als weiche Karten
+  const bld=(k,x,y,w,h,fill,icon,lv,lbl)=>{let o=`<g data-a="facil" data-v="${k}" style="cursor:pointer"><g filter="url(#sh)"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${fill}"/><rect x="${x}" y="${y}" width="${w}" height="${h*0.45}" rx="7" fill="#fff" opacity=".13"/></g>`;
+    o+=`<text x="${x+w/2}" y="${y+h/2+5}" text-anchor="middle" font-size="${Math.min(15,h*0.5)}">${icon}</text>`;
+    for(let i=0;i<5;i++)o+=`<circle cx="${x+w/2-8+i*4}" cy="${y+h-4}" r="1.3" fill="${i<lv?'#d8f34e':'rgba(0,0,0,.35)'}"/>`;
+    if(bOn(k))o+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="url(#hatch)"/><text x="${x+w-4}" y="${y+4}" font-size="11">🏗️</text>`;
+    return o+tag(x+w/2,y+h+9,k,lbl+(bOn(k)?' 🚧':''))+'</g>';};
+  g+=bld('analysis',16,14,46+an*3,30,'#4f86d6','🔎',an,'Analyse '+an);
+  g+=bld('scouting',16,76,44+sc*3,28,'#b58a4a','🔭',sc,'Scouting '+sc);
+  g+=bld('youth',14,138,48+yo*4,32,'#8a7bd1','🎓',yo,'NLZ '+yo);
+  // Trainingsplätze
+  {const n=[0,1,2,2,3,4][tr];let o=`<g data-a="facil" data-v="training" style="cursor:pointer">`;for(let i=0;i<Math.max(1,n);i++){const x=306,y=10+i*30;o+=`<g filter="url(#sh)"><rect x="${x}" y="${y}" width="44" height="24" rx="5" fill="url(#gpitch)" opacity="${n?1:0.35}"/></g><rect x="${x+2.5}" y="${y+2.5}" width="39" height="19" rx="2" fill="none" stroke="rgba(255,255,255,.6)" stroke-width=".6"/><line x1="${x+22}" y1="${y+2.5}" x2="${x+22}" y2="${y+21.5}" stroke="rgba(255,255,255,.6)" stroke-width=".6"/>`;}
+    if(bOn('training'))o+=`<text x="340" y="14" font-size="11">🏗️</text>`;o+=tag(328,10+Math.max(1,n)*30+3,'training','Training '+tr+(bOn('training')?' 🚧':''))+'</g>';g+=o;}
+  // Fanshop
+  {const w=merch>=8?50:merch>=4?42:34;g+=`<g data-a="facil" data-v="merch" style="cursor:pointer"><g filter="url(#sh)"><rect x="296" y="${170}" width="${w}" height="24" rx="7" fill="${merch?'#f1ece0':'#4a554f'}"/><rect x="296" y="170" width="${w}" height="7" rx="3.5" fill="${col}"/></g><text x="${296+w/2}" y="190" text-anchor="middle" font-size="11">🛍️</text>${tag(296+w/2,203,'merch','Fanshop '+merch+'/'+MERCH.length)}</g>`;}
+  // Parkplatz & Bäume
+  g+=`<g opacity=".8"><rect x="112" y="204" width="56" height="20" rx="5" fill="#3b4540"/>${[0,1,2,3,4,5].map(i=>`<line x1="${118+i*9}" y1="206" x2="${118+i*9}" y2="214" stroke="#9aa39e" stroke-width=".6"/>`).join('')}<text x="140" y="221" text-anchor="middle" font-size="6" fill="#c9d1cc">P</text></g>`;
+  for(const [x,y,r] of [[104,22,6],[116,14,4.5],[286,120,6],[292,134,4.5],[70,206,5],[250,214,5],[266,16,5],[110,184,4]])g+=`<circle cx="${x}" cy="${y+1.5}" r="${r}" fill="#000" opacity=".25"/><circle cx="${x}" cy="${y}" r="${r}" fill="#2f8a4c"/><circle cx="${x-r*0.3}" cy="${y-r*0.3}" r="${r*0.45}" fill="#5fc27a" opacity=".55"/>`;
+  return `<svg viewBox="0 0 360 230" class="cg2" style="width:100%;display:block">${g}</svg>`;}
+function facRows(c){return FAC.map(([k,i,n])=>{const isM=k==='merch';const l=isM?(c.merch||[]).length:(c.up[k]||1);const b=c.builds&&c.builds[k];const can=facCan(c,k);
+  const sub=isM?`${l}/${MERCH.length} Artikel`:b?`🚧 Ausbau auf ${b.to} läuft`:l>=5?'Maximalstufe':`Ausbau ${fm(facCost(c,k))}`;
+  return `<div class="pl" data-a="facil" data-v="${k}" style="cursor:pointer${ui.facil===k?';background:rgba(216,243,78,.07)':''}"><span style="font-size:18px;width:26px;text-align:center">${i}</span><div class="pn"><b>${n}${isM?'':' · Stufe '+l}</b><span>${sub}</span></div>${can?'<span class="pill" style="color:var(--acc)">⬆</span>':'<span class="mut">›</span>'}</div>`;}).join('');}
+clubGround=clubGround2;
+{const _cofG2=VIEWS.coffice;VIEWS.coffice=function(){if(ST.career&&ui.sub==='ausbau'&&isLand()){const c=myC();
+  return `<div class="gland"><div class="card" style="padding:6px;background:#0c2418;display:flex;align-items:center;justify-content:center">${clubGround2(c)}</div><div class="card"><div class="row"><b>🏟️ ${esc(c.stadium||'Vereinsgelände')}</b>${inf('Tippe auf ein Gebäude, um es anzusehen und auszubauen. ⬆ = Ausbau bezahlbar. Bauen geht jederzeit – je höher die Stufe, desto länger die Bauzeit. Während des Stadionausbaus gibt es weniger Ticket- und Fanshop-Einnahmen.')}<span class="sp"></span><span class="tiny mut">${num(CCAP[c.up.stadium||1])} Plätze</span></div><div>${facRows(c)}</div></div></div>`;}
+  return _cofG2.apply(this,arguments);};}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
