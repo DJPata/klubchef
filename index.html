@@ -245,6 +245,11 @@ body.land .shb.mod .mg{grid-template-columns:1fr 1.15fr;align-items:start}
 .mdone{text-align:center;padding:10px 6px}
 .mscroll{max-height:56vh;overflow:auto}
 .swpop{position:fixed!important;z-index:40;margin:0!important;box-shadow:0 12px 30px rgba(0,0,0,.55);background:var(--panel)!important;animation:mpop .22s cubic-bezier(.2,1.4,.4,1)}
+
+.g3d{perspective:950px;perspective-origin:50% 20%;width:100%;display:flex;justify-content:center;align-items:center;overflow:visible}
+.g3d svg{transform:rotateX(30deg) scale(1.06);transform-origin:50% 62%;filter:drop-shadow(0 18px 18px rgba(0,0,0,.45))}
+body.land .gland .g3d{height:100%}
+body.land .gland .g3d svg{height:100%;width:auto!important;max-width:100%}
 </style>
 </head>
 <body>
@@ -1526,6 +1531,12 @@ function fxResolve(st,r,results){const me=st.clubs.me;const lm=results.find(m=>!
   const M=seasonMs(st);M.res.push([gf,ga]);const R=M.res;const last=n=>R.slice(-n);const got=k=>{if(M.d[k])return;M.d[k]=st.md+1;const d=MSD.find(x=>x.k===k);const x=msReward(me);payAcc(me,x);me.fans+=Math.round(me.fans*0.01);feed(st,`${d.e} Meilenstein: ${d.t}! +${fm(x)}`,'me');};
   if(R.length>=3&&last(3).every(([a,b])=>a>b))got('w3');if(R.length>=5&&last(5).every(([a,b])=>a>=b))got('unb5');if(R.filter(([a,b])=>b===0).length>=3)got('cs3');if(R.reduce((s,[a])=>s+a,0)>=20)got('g20');if(gf>=5)got('g5');
   if(me.rival&&me.rival.id===opp&&gf>ga)got('derby');try{if(myPlace(st)===1&&st.md>=3)got('top');}catch(e){}}
+// ---------- Eigene Spieler anbieten (Wechsel erst im nächsten Fenster) ----------
+function listTick(st,r){const me=st.clubs.me;const L=me.squad.filter(p=>p.listed&&!p.sold);if(!L.length)return;me.mOff=me.mOff||[];
+  for(const p of L){if(me.mOff.some(o=>o.pid===p.id))continue;const pct=p.listed.pct||1;const ch=clamp(0.42-(pct-1)*0.9+(p.age<=24?0.08:0),0.06,0.6);if(!r.chance(ch))continue;
+    const ids=npcNames(st,me);const club=st.clubs[r.pick(ids)].name;const price=r2(Math.max(0.01,value(p)*pct*(0.85+r.f()*0.25)));
+    me.mOff.push({id:'mo'+(st.nextId++),pid:p.id,club,price,md:st.md});feed(st,`📨 ${club} bietet ${fm(price)} für ${p.name} (Wechsel zur ${st.md<9?'Winterpause':'Sommerpause'}).`,'me');}
+  me.mOff=me.mOff.filter(o=>st.md-o.md<=3&&me.squad.some(p=>p.id===o.pid&&!p.sold));}
 function addFreeAg(st,r,t,n){for(let i=0;i<n;i++){const pos=r.wpick([{v:'G',w:1},{v:'D',w:3},{v:'M',w:3},{v:'A',w:3}]).v;const p=genPlayer(st,r,pos,TMEAN[t]-1,6,26,34);cName(st,r,p);p.free=true;p.tier=1;p.ct=null;st.market.push(p);}}
 // ---------- Transfers während der Saison ----------
 function seasonFree(st,a){const c=st.clubs.me;const p=st.market.find(x=>x.id===a.player);if(!p)rej('Der Spieler ist schon vergeben.');if(!p.free)rej('Vertragsspieler kannst du während der Saison nur fürs nächste Transferfenster verpflichten.');
@@ -1804,7 +1815,7 @@ function careerResolve(st,myCtx,fat){
   for(const m of results.concat(other))if(!m.cup){for(const [id,g1,g2] of [[m.h,m.gh,m.ga],[m.a,m.ga,m.gh]]){const f=st.formTab[id]||(st.formTab[id]=[]);f.push(g1>g2?'S':g1===g2?'U':'N');if(f.length>5)f.shift();}}
   if(me.prem){const wins=results.filter(m=>m.w==='me').length;if(wins){const cost=r2(premCost(me)*wins);money(me,-cost);me.premPaid=r2((me.premPaid||0)+cost);}}
   if(me.spon&&me.spon.type==='win'&&me.spon.perWin){const lw=results.filter(m=>!m.cup&&m.w==='me').length;if(lw){const x=r2(me.spon.perWin*lw);me.sponWin=r2((me.sponWin||0)+x);feed(st,`💶 Siegprämie von ${me.spon.n}: +${fm(x)}`,'me');}}
-  sponTick(st,r,results);fxResolve(st,r,results);
+  sponTick(st,r,results);fxResolve(st,r,results);listTick(st,r);
   st.last={season:st.season,md:st.md,results,other,cards};
   st.md++;st.ready={};
   if(st.md===14||st.md===17){const ex=me.squad.filter(p=>p.ct===1&&!p.loan);if(ex.length)feed(st,`📝 ${st.md===17?'Letzter Spieltag':'Noch '+(18-st.md)+' Spieltage'} – Verträge laufen aus: ${ex.map(p=>p.name).join(', ')}. Jetzt verlängern (Mannschaft › Verträge), sonst gehen sie ablösefrei!`,'me');}
@@ -1917,6 +1928,11 @@ const CH={
   POACH_LET(st,a){const c=st.clubs.me;if(!c.poach)rej('?');const p=(c.nlz||[]).find(x=>x.id===c.poach.id);if(p){c.nlz=c.nlz.filter(x=>x!==p);money(c,c.poach.comp);feed(st,`${p.name} wechselt zu ${c.poach.club} – Entschädigung ${fm(c.poach.comp)}.`,'me');}c.poach=null;},
   STYLE(st,a){applyStyle(st.clubs.me,a);},
   PREM(st,a){st.clubs.me.prem=clamp(a.v|0,0,2);},
+  LIST(st,a){const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler kannst du nicht anbieten.');if(p.sold)rej('Er ist schon verkauft.');if(!a.pct){delete p.listed;c.mOff=(c.mOff||[]).filter(o=>o.pid!==p.id);return;}p.listed={pct:clamp(+a.pct,0.8,1.5)};},
+  MO_OK(st,a){const c=st.clubs.me;const o=(c.mOff||[]).find(x=>x.id===a.offer);if(!o)rej('Angebot nicht mehr gültig.');const p=c.squad.find(x=>x.id===o.pid);if(!p)rej('?');
+    if(c.squad.filter(x=>!x.sold).length<=SQUAD_MIN)rej('Mindestens 12 Spieler im Kader.');if(p.pos==='G'&&c.squad.filter(x=>x.pos==='G'&&!x.sold).length<2)rej('Du brauchst einen Torwart.');
+    p.sold={club:o.club,price:o.price};delete p.listed;c.mOff=c.mOff.filter(x=>x.pid!==p.id);c.lastNeg={ok:true,t:`🤝 Deal! ${p.name} wechselt zur ${st.md<9?'Winterpause':'Sommerpause'} für ${fm(o.price)} zu ${o.club}.`};feed(st,c.lastNeg.t,'me');},
+  MO_NO(st,a){const c=st.clubs.me;c.mOff=(c.mOff||[]).filter(x=>x.id!==a.offer);},
   BENCH(st,a){if(st.phase!=='matchday')rej('Die Bank stellst du vor dem Anpfiff auf.');const c=st.clubs.me;if(a.ids===null){delete c.bench;return;}const ids=[];for(const id of (Array.isArray(a.ids)?a.ids:[]))if(c.squad.some(p=>p.id===id)&&!ids.includes(id))ids.push(id);c.bench=ids.slice(0,BENCH_N);},
   ROLE(st,a){const c=st.clubs.me;if(!ROLEK[a.k])rej('?');c.roles=c.roles||{};if(!a.player){delete c.roles[a.k];return;}const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.pos==='G'&&a.k!=='cap')rej('Torhüter schießen keine Standards.');c.roles[a.k]=p.id;},
   ROLE_AUTO(st,a){const c=st.clubs.me;c.roles={};for(const k in ROLEK){const p=roleAuto(c,k,c.squad.filter(x=>!x.loan||k!=='cap'));if(p)c.roles[k]=p.id;}},
@@ -2805,7 +2821,7 @@ VIEWS.market=function(){
   const rd=!!ST.ready[me()];const lim=ST.rv>=2&&(c.buys||0)>=buyMax(ST);
   const offs=(c.offers||[]).length;
   const inS=ST.career&&ST.phase==='matchday';
-  const msubs=inS?[['buy','Kaufen'],['tl','Transfers']]:[['buy','Kaufen'],['off',`Angebote${offs?' ('+offs+')':''}`]];if(ST.career&&!inS)msubs.push(['loan','Leihen'],['tl','Transfers']);if(inS&&!['buy','tl'].includes(ui.subs.market))ui.subs.market='buy';
+  const nmo=(c.mOff||[]).length;const msubs=inS?[['buy','Kaufen'],['sell','Anbieten'+(nmo?' ('+nmo+')':'')],['tl','Transfers']]:[['buy','Kaufen'],['off',`Angebote${offs?' ('+offs+')':''}`]];if(ST.career&&!inS)msubs.push(['loan','Leihen'],['tl','Transfers']);if(inS&&!['buy','tl','sell'].includes(ui.subs.market))ui.subs.market='buy';if(inS&&ui.subs.market==='sell')return (isLand()?'':subNav('market',msubs))+sellPage(c);
   let h=feat(ST)?subNav('market',msubs):'';
   if(ST.career&&sub('market')==='loan')return h+loanPage(c);
   if(ST.career&&sub('market')==='tl')return h+tlogPage(c);
@@ -3609,7 +3625,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='119',APP_RV=13;
+const APP_BUILD='120',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4457,7 +4473,7 @@ function lmMenu(){const ph=ST.phase;const off=ph==='offseason',md=ph==='matchday
   const sq=(l,k)=>[l,'squad',k],mk=(l,k)=>[l,'market',k],lg=(l,k)=>[l,'cleague',k],of=(l,k)=>[l,'coffice',k];
   const M=[['zen','⚽','Zentrale',[['Übersicht',lmHome(),null]].concat(md?[['Aufgaben','zgoal',null],['Gegner & Tipp','zana',null]]:[],ht?[]:[['Kalender','zcal',null],['News','news',null]])],
     ['team','👕','Team',[sq('Kader','sp'),ht?['Taktik','cht',null]:sq('Taktik','xi')].concat(ht?[]:[sq('Training','tr'),sq('Rollen','ro'),sq('Verträge','ct')])]];
-  if(!ht){M.push(['tm','🔁','Transfers',off?[mk('Kaufen','buy'),mk('Angebote'+((myC().offers||[]).length?' ('+myC().offers.length+')':''),'off'),mk('Leihen','loan'),mk('Verlauf','tl')]:[mk('Kaufen','buy'),mk('Verlauf','tl')]]);
+  if(!ht){M.push(['tm','🔁','Transfers',off?[mk('Kaufen','buy'),mk('Angebote'+((myC().offers||[]).length?' ('+myC().offers.length+')':''),'off'),mk('Leihen','loan'),mk('Verlauf','tl')]:[mk('Kaufen','buy'),mk('Anbieten'+((myC().mOff||[]).length?' ('+myC().mOff.length+')':''),'sell'),mk('Verlauf','tl')]]);
     M.push(['nlz','🎓','NLZ',[['Talente & Camp','znlz',null],['Auslandsscout'+(myC().scout&&(myC().scout.rep||[]).length?' ❗':''),'zscout',null]]]);}
   M.push(['comp','🏆','Wettbewerbe',[lg('Tabelle','tab'),lg('Pokale','cup'),lg('Statistik','st'),lg('Chronik','ch')]]);
   if(md||off){M.push(['gel','🏟️','Gelände',[of('Vereinsgelände','ausbau')]]);M.push(['fin','💶','Finanzen',[of('Übersicht','finanzen'),of('Sponsoren','sponsor'),of('Gehälter','gehalt')]]);
@@ -4694,14 +4710,16 @@ function clubGround2(c){const up=c.up||{},col=c.color||'#d8f34e',st=up.stadium||
    <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6c4" stop-opacity=".95"/><stop offset="1" stop-color="#fff6c4" stop-opacity="0"/></radialGradient>
    <linearGradient id="gpitch" x1="0" x2="1"><stop offset="0" stop-color="#3ea65a"/><stop offset="1" stop-color="#2f8f4b"/></linearGradient>
    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2.5" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
-   <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="#f5c542" opacity=".55"/></pattern></defs>`;
+   <linearGradient id="gwall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#46524c"/><stop offset="1" stop-color="#1b2420"/></linearGradient><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="#f5c542" opacity=".55"/></pattern></defs>`;
   g+=`<rect width="360" height="230" rx="14" fill="url(#gbg)"/>`;
   // Wege (weich geschwungen)
   g+=`<path d="M0 196 C 90 186, 140 214, 220 200 S 330 178, 360 186" stroke="#55615b" stroke-width="9" fill="none" stroke-linecap="round" opacity=".85"/><path d="M0 196 C 90 186, 140 214, 220 200 S 330 178, 360 186" stroke="#c9d1cc" stroke-width=".8" stroke-dasharray="5 5" fill="none" opacity=".6"/>`;
   g+=`<path d="M86 0 C 92 60, 70 130, 96 230" stroke="#55615b" stroke-width="7" fill="none" stroke-linecap="round" opacity=".7"/>`;
   const cx=196,cy=104;const rx=58+st*9,ry=40+st*6;
   // Stadion
-  let s=`<g filter="url(#sh)">`;
+  let s=`<ellipse cx="${cx}" cy="${cy+9}" rx="${rx+2}" ry="${ry+1}" fill="#000" opacity=".35"/><ellipse cx="${cx}" cy="${cy+6}" rx="${rx}" ry="${ry}" fill="url(#gwall)"/>`;
+  for(let i=0;i<6;i++){const a=Math.PI*(0.15+i*0.14);s+=`<rect x="${(cx+Math.cos(a)*rx*0.98-1.2).toFixed(1)}" y="${(cy+Math.sin(a)*ry*0.98).toFixed(1)}" width="2.4" height="5" fill="#0d1612" opacity=".5"/>`;}
+  s+=`<g filter="url(#sh)">`;
   s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#2a3530"/>`;
   for(let i=0;i<st;i++){const k=i/st;s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx-4-i*7}" ry="${ry-3-i*5}" fill="url(#gst)" opacity="${0.55+0.45*(1-k)}" stroke="rgba(255,255,255,.18)" stroke-width=".6"/>`;}
   s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx-4-st*7}" ry="${ry-3-st*5}" fill="#1c2a23"/>`;
@@ -4720,7 +4738,8 @@ function clubGround2(c){const up=c.up||{},col=c.color||'#d8f34e',st=up.stadium||
   const tag=(x,y,k,txt)=>{const can=facCan(c,k);const on=ui.facil===k;const w=txt.length*4.6+(can?12:6);return `<g transform="translate(${x},${y})"><rect x="${-w/2}" y="-7" width="${w}" height="13" rx="6.5" fill="${on?'#d8f34e':'rgba(8,20,14,.82)'}" stroke="${can?'#d8f34e':'rgba(255,255,255,.18)'}" stroke-width=".7"/><text text-anchor="middle" y="2.6" font-size="7.4" font-weight="700" fill="${on?'#0b1a13':'#fff'}">${esc(txt)}${can?' ⬆':''}</text></g>`;};
   g+=tag(cx,cy+ry+9,'stadium','Stadion '+st+(bOn('stadium')?' 🚧':''));
   // Gebäude als weiche Karten
-  const bld=(k,x,y,w,h,fill,icon,lv,lbl)=>{let o=`<g data-a="facil" data-v="${k}" style="cursor:pointer"><g filter="url(#sh)"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${fill}"/><rect x="${x}" y="${y}" width="${w}" height="${h*0.45}" rx="7" fill="#fff" opacity=".13"/></g>`;
+  const dk=(hex,f)=>{const n=parseInt(hex.slice(1),16);const r=Math.round((n>>16)*f),g2=Math.round((n>>8&255)*f),b=Math.round((n&255)*f);return '#'+((1<<24)+(r<<16)+(g2<<8)+b).toString(16).slice(1);};
+  const bld=(k,x,y,w,h,fill,icon,lv,lbl)=>{const dep=5+lv*1.4;let o=`<g data-a="facil" data-v="${k}" style="cursor:pointer"><rect x="${x+2}" y="${y+dep+2}" width="${w}" height="${h}" rx="7" fill="#000" opacity=".3"/><rect x="${x}" y="${y+dep}" width="${w}" height="${h}" rx="7" fill="${dk(fill,0.55)}"/>${[...Array(Math.max(1,lv))].map((_,i)=>`<rect x="${x+4+i*((w-8)/Math.max(1,lv))}" y="${y+h+dep*0.35}" width="${Math.max(2,(w-8)/Math.max(1,lv)-3)}" height="${dep*0.4}" rx="1" fill="#fff6c4" opacity=".55"/>`).join('')}<g filter="url(#sh)"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${fill}"/><rect x="${x}" y="${y}" width="${w}" height="${h*0.45}" rx="7" fill="#fff" opacity=".13"/></g>`;
     o+=`<text x="${x+w/2}" y="${y+h/2+5}" text-anchor="middle" font-size="${Math.min(15,h*0.5)}">${icon}</text>`;
     for(let i=0;i<5;i++)o+=`<circle cx="${x+w/2-8+i*4}" cy="${y+h-4}" r="1.3" fill="${i<lv?'#d8f34e':'rgba(0,0,0,.35)'}"/>`;
     if(bOn(k))o+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="url(#hatch)"/><text x="${x+w-4}" y="${y+4}" font-size="11">🏗️</text>`;
@@ -4729,14 +4748,14 @@ function clubGround2(c){const up=c.up||{},col=c.color||'#d8f34e',st=up.stadium||
   g+=bld('scouting',16,76,44+sc*3,28,'#b58a4a','🔭',sc,'Scouting '+sc);
   g+=bld('youth',14,138,48+yo*4,32,'#8a7bd1','🎓',yo,'NLZ '+yo);
   // Trainingsplätze
-  {const n=[0,1,2,2,3,4][tr];let o=`<g data-a="facil" data-v="training" style="cursor:pointer">`;for(let i=0;i<Math.max(1,n);i++){const x=306,y=10+i*30;o+=`<g filter="url(#sh)"><rect x="${x}" y="${y}" width="44" height="24" rx="5" fill="url(#gpitch)" opacity="${n?1:0.35}"/></g><rect x="${x+2.5}" y="${y+2.5}" width="39" height="19" rx="2" fill="none" stroke="rgba(255,255,255,.6)" stroke-width=".6"/><line x1="${x+22}" y1="${y+2.5}" x2="${x+22}" y2="${y+21.5}" stroke="rgba(255,255,255,.6)" stroke-width=".6"/>`;}
+  {const n=[0,1,2,2,3,4][tr];let o=`<g data-a="facil" data-v="training" style="cursor:pointer">`;for(let i=0;i<Math.max(1,n);i++){const x=306,y=10+i*30;o+=`<rect x="${x}" y="${y+2.5}" width="44" height="24" rx="5" fill="#1d4a2c" opacity="${n?1:0.35}"/><g filter="url(#sh)"><rect x="${x}" y="${y}" width="44" height="24" rx="5" fill="url(#gpitch)" opacity="${n?1:0.35}"/></g><rect x="${x+2.5}" y="${y+2.5}" width="39" height="19" rx="2" fill="none" stroke="rgba(255,255,255,.6)" stroke-width=".6"/><line x1="${x+22}" y1="${y+2.5}" x2="${x+22}" y2="${y+21.5}" stroke="rgba(255,255,255,.6)" stroke-width=".6"/>`;}
     if(bOn('training'))o+=`<text x="340" y="14" font-size="11">🏗️</text>`;o+=tag(328,10+Math.max(1,n)*30+3,'training','Training '+tr+(bOn('training')?' 🚧':''))+'</g>';g+=o;}
   // Fanshop
-  {const w=merch>=8?50:merch>=4?42:34;g+=`<g data-a="facil" data-v="merch" style="cursor:pointer"><g filter="url(#sh)"><rect x="296" y="${170}" width="${w}" height="24" rx="7" fill="${merch?'#f1ece0':'#4a554f'}"/><rect x="296" y="170" width="${w}" height="7" rx="3.5" fill="${col}"/></g><text x="${296+w/2}" y="190" text-anchor="middle" font-size="11">🛍️</text>${tag(296+w/2,203,'merch','Fanshop '+merch+'/'+MERCH.length)}</g>`;}
+  {const w=merch>=8?50:merch>=4?42:34;g+=`<g data-a="facil" data-v="merch" style="cursor:pointer"><rect x="296" y="175" width="${w}" height="24" rx="7" fill="#6e675a"/><g filter="url(#sh)"><rect x="296" y="${170}" width="${w}" height="24" rx="7" fill="${merch?'#f1ece0':'#4a554f'}"/><rect x="296" y="170" width="${w}" height="7" rx="3.5" fill="${col}"/></g><text x="${296+w/2}" y="190" text-anchor="middle" font-size="11">🛍️</text>${tag(296+w/2,203,'merch','Fanshop '+merch+'/'+MERCH.length)}</g>`;}
   // Parkplatz & Bäume
   g+=`<g opacity=".8"><rect x="112" y="204" width="56" height="20" rx="5" fill="#3b4540"/>${[0,1,2,3,4,5].map(i=>`<line x1="${118+i*9}" y1="206" x2="${118+i*9}" y2="214" stroke="#9aa39e" stroke-width=".6"/>`).join('')}<text x="140" y="221" text-anchor="middle" font-size="6" fill="#c9d1cc">P</text></g>`;
-  for(const [x,y,r] of [[104,22,6],[116,14,4.5],[286,120,6],[292,134,4.5],[70,206,5],[250,214,5],[266,16,5],[110,184,4]])g+=`<circle cx="${x}" cy="${y+1.5}" r="${r}" fill="#000" opacity=".25"/><circle cx="${x}" cy="${y}" r="${r}" fill="#2f8a4c"/><circle cx="${x-r*0.3}" cy="${y-r*0.3}" r="${r*0.45}" fill="#5fc27a" opacity=".55"/>`;
-  return `<svg viewBox="0 0 360 230" class="cg2" style="width:100%;display:block">${g}</svg>`;}
+  for(const [x,y,r] of [[104,22,6],[116,14,4.5],[286,120,6],[292,134,4.5],[70,206,5],[250,214,5],[266,16,5],[110,184,4]])g+=`<ellipse cx="${x+2}" cy="${y+r+2}" rx="${r}" ry="${r*0.45}" fill="#000" opacity=".3"/><rect x="${x-0.8}" y="${y}" width="1.6" height="${r+1.5}" fill="#5b3d25"/><circle cx="${x}" cy="${y-2}" r="${r}" fill="#2f8a4c"/><circle cx="${x-r*0.3}" cy="${y-2-r*0.3}" r="${r*0.45}" fill="#5fc27a" opacity=".55"/>`;
+  return `<div class="g3d"><svg viewBox="0 0 360 236" class="cg2" style="width:100%;display:block">${g}</svg></div>`;}
 function facRows(c){return FAC.map(([k,i,n])=>{const isM=k==='merch';const l=isM?(c.merch||[]).length:(c.up[k]||1);const b=c.builds&&c.builds[k];const can=facCan(c,k);
   const sub=isM?`${l}/${MERCH.length} Artikel`:b?`🚧 Ausbau auf ${b.to} läuft`:l>=5?'Maximalstufe':`Ausbau ${fm(facCost(c,k))}`;
   return `<div class="pl" data-a="facil" data-v="${k}" style="cursor:pointer${ui.facil===k?';background:rgba(216,243,78,.07)':''}"><span style="font-size:18px;width:26px;text-align:center">${i}</span><div class="pn"><b>${n}${isM?'':' · Stufe '+l}</b><span>${sub}</span></div>${can?'<span class="pill" style="color:var(--acc)">⬆</span>':'<span class="mut">›</span>'}</div>`;}).join('');}
@@ -4816,6 +4835,26 @@ function swPop(){const el=document.getElementById('xiswap');if(!el||!isLand()||!
   el.classList.add('swpop');document.body.appendChild(el);const w=230;const vw=window.innerWidth,vh=window.innerHeight;
   let x=r.right+10;if(x+w>vw-8)x=r.left-w-10;x=Math.max(8,Math.min(vw-w-8,x));el.style.width=w+'px';const h=el.offsetHeight;let y=r.top+r.height/2-h/2;y=Math.max(8,Math.min(vh-h-56,y));el.style.left=x+'px';el.style.top=y+'px';}
 {const _rSw=render;render=function(){document.querySelectorAll('body>.swpop').forEach(e=>e.remove());_rSw.apply(this,arguments);try{swPop();}catch(e){}};}
+
+// ---------- Eigene Spieler anbieten ----------
+function sellPage(c){const W=ST.md<9?'Winterpause':'Sommerpause';const O=(c.mOff||[]);let h='';
+  if(O.length)h+=`<div class="card" style="border-color:var(--gold)"><div class="row"><b>📨 Angebote</b><span class="sp"></span><span class="pill">${O.length}</span></div>${O.map(o=>{const p=c.squad.find(x=>x.id===o.pid);if(!p)return '';return `<div class="pl"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}</b><span>${esc(o.club)} · <b style="color:var(--acc2)">${fm(o.price)}</b> · MW ${fm(value(p))}</span></div><button class="btn sm ok" data-a="moOk" data-v="${o.id}">${cl('mo'+o.id,'Annehmen','Sicher?')}</button><button class="btn sm" data-a="moNo" data-v="${o.id}">✕</button></div>`;}).join('')}</div>`;
+  const L=c.squad.filter(p=>!p.loan).sort((a,b)=>(!!b.sold-!!a.sold)||(!!b.listed-!!a.listed)||b.rat-a.rat);
+  h+=`<div class="card"><div class="row"><b>📤 Spieler anbieten</b>${inf('Setz Spieler auf die Transferliste. Andere Vereine melden sich mit Angeboten (gilt 3 Spieltage). Nimmst du an, bleibt der Spieler bis zur '+W+' und wechselt dann – das Geld kommt beim Wechsel. Je niedriger dein Preis, desto schneller kommen Angebote.')}<span class="sp"></span><span class="tiny mut">Wechsel zur ${W}</span></div>
+  ${L.map(p=>crow(p,{tap:1,sub:p.sold?`🔜 wechselt zu ${esc(p.sold.club)} · ${fm(p.sold.price)}`:p.listed?`📤 gelistet für ${fm(r2(value(p)*p.listed.pct))} (${Math.round(p.listed.pct*100)} %)`:`MW ${fm(value(p))} · Vertrag ${p.ct!=null?p.ct+' J.':'–'}`,right:p.sold?'':p.listed?`<button class="btn sm" data-a="unlist" data-v="${p.id}">Zurückziehen</button>`:`<button class="btn sm" data-a="sellOpen" data-v="${p.id}">Anbieten</button>`})).join('')}</div>`;
+  return h;}
+ACT.sellOpen=function(v){ui.negMsg=null;ui.slPct=1;ui.modal={t:'sell',id:v};render();};
+ACT.slPct=function(v){ui.slPct=+v;render();};
+ACT.slGo=function(v){send('LIST',{player:v,pct:ui.slPct||1});ui.modal=null;render();toast('📤 Auf der Transferliste – Angebote kommen in den nächsten Spieltagen.',true);};
+ACT.unlist=function(v){send('LIST',{player:v,pct:0});};
+ACT.moOk=function(v){if(conf('mo'+v))negSend('MO_OK',{offer:v});};
+ACT.moNo=function(v){send('MO_NO',{offer:v});};
+{const _mh=modalHtml;modalHtml=function(){const M=ui.modal;const c=myC();if(!M||M.t!=='sell'||!c)return _mh();const p=c.squad.find(x=>x.id===M.id);if(!p)return '';const pct=ui.slPct||1;
+  const ch=v=>Math.round(clamp(0.42-(v-1)*0.9+(p.age<=24?0.08:0),0.06,0.6)*100);const W=ST.md<9?'Winterpause':'Sommerpause';
+  return `<button class="ic mx" data-a="sheetX">✕</button><div class="mt">📤 Spieler anbieten</div><div class="mg"><div>${plHead(p,c,true)}<div class="tip">💼 <b>Sportdirektor:</b> ${p.age>=30?'Mit dem Alter sinkt sein Wert – jetzt wäre ein guter Zeitpunkt.':p.age<=21?'Junge Spieler sind gefragt – du kannst ruhig etwas mehr verlangen.':'Ein fairer Preis bringt schnell Interessenten.'}</div></div>
+   <div><div class="card"><h4 style="margin-top:0">Wunschpreis</h4><div class="chips">${[0.8,0.9,1,1.2,1.5].map(v=>`<span class="chip ${Math.abs(pct-v)<0.001?'on':''}" data-a="slPct" data-v="${v}">${Math.round(v*100)} %</span>`).join('')}</div>
+   <div class="grid2" style="margin-top:10px"><div class="kpi"><span>Preis</span><b>${fm(r2(value(p)*pct))}</b></div><div class="kpi"><span>Angebot pro Spieltag</span><b>ca. ${ch(pct)} %</b></div></div>
+   <p class="tiny mut" style="margin:8px 0">Er spielt weiter für dich und wechselt erst zur ${W}.</p><button class="btn pri block" data-a="slGo" data-v="${p.id}">Auf die Transferliste</button></div></div></div>`;};}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
