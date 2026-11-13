@@ -99,6 +99,17 @@ nav button.on{color:var(--acc)}
 nav button{position:relative}
 .fcard{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 2px}.fc{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:6px 8px;text-align:center}.fc span{display:block;font-size:10px;letter-spacing:.8px;color:var(--mut)}.fc b{display:block;font-family:'Bebas Neue',sans-serif;font-size:26px;font-weight:400;line-height:1.1}.fc.on{border-color:var(--acc);background:rgba(216,243,78,.07)}.fc .bar{height:4px;margin-top:3px}
 .pgrid{display:grid;gap:4px;margin:8px 0 2px;grid-template-columns:repeat(5,1fr);grid-template-areas:'LA . ST . RA' 'LM ZOM ZOM ZOM RM' 'LM ZM ZM ZM RM' '. ZDM ZDM ZDM .' 'LV IV IV IV RV';background:repeating-linear-gradient(180deg,#1d6b3a 0 20%,#1a6135 20% 40%);border-radius:10px;padding:6px}.pg{background:rgba(11,26,19,.72);border-radius:7px;padding:3px 2px;text-align:center;border:1px solid transparent;align-self:center}.pg span{display:block;font-size:9px;color:var(--mut);letter-spacing:.4px}.pg b{font-size:14px}.pg.on{border-color:var(--acc)}.pg.on b{color:var(--acc)}.pg.ok b{color:#3fd0a0}.pg.mid b{color:#f5c542}.pg.low b{color:#8a9a92}.pg.low{opacity:.75}
+.fbar{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:4px 0 6px}
+.futg{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:7px}
+.fut{position:relative;border-radius:10px;padding:6px 7px 7px;cursor:pointer;color:#14210f;min-height:118px;display:flex;flex-direction:column;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.fut.bronze{background:linear-gradient(160deg,#d9a877,#9c6b3e)}.fut.silver{background:linear-gradient(160deg,#e6ecef,#9aa6ad)}.fut.gold{background:linear-gradient(160deg,#ffe48a,#c9971f)}.fut.dia{background:linear-gradient(160deg,#c9f6ff,#6fb7ff 50%,#b48cff);animation:dia 3s ease-in-out infinite}
+@keyframes dia{50%{filter:brightness(1.15)}}
+.fut.xi{outline:2px solid var(--acc);outline-offset:1px}
+.fut-t{display:flex;align-items:baseline;gap:5px}.fut-t b{font-family:'Bebas Neue',sans-serif;font-size:28px;font-weight:400;line-height:1}.fut-t span{font-size:11px;font-weight:800}
+.fut-s{font-size:10px;letter-spacing:-1px;color:#5a3a00;min-height:12px}.fut-n{font-weight:800;font-size:12.5px;margin-top:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fut-m{display:flex;justify-content:space-between;font-size:10px;font-weight:600;opacity:.8}.fut-fr{height:4px;border-radius:2px;background:rgba(0,0,0,.25);margin-top:3px;overflow:hidden}.fut-fr i{display:block;height:100%}
+.fut-i{position:absolute;top:5px;right:6px;font-size:11px}
+body.land .pcl{display:grid;grid-template-columns:1fr 1.1fr;gap:14px;align-items:start}body.land #sheet .shb{max-width:min(860px,94vw)!important;width:min(860px,94vw)}
 .lt{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}.lt i{font-style:normal;font-size:10px;font-weight:600;color:var(--mut);background:rgba(255,255,255,.05);border-radius:4px;padding:0 4px}.lt i.on{color:var(--acc)}
 body.land{font-size:13.5px}body.land.vs-s{font-size:12.5px}body.land.vs-l{font-size:15px}
 body.land #app{max-width:none;padding:0 10px 64px calc(160px + env(safe-area-inset-left))}
@@ -2539,9 +2550,9 @@ VIEWS.market=function(){
   }
   const vis=ST.market.filter(p=>visible(c,p));const hidden=ST.market.length-vis.length;
   h+=`<div class="row small mut" style="margin:10px 2px"><span>${ST.career?(ST.winter?`❄️ Wintertransfers ${c.buys||0}/5`:`Transfers ${c.buys||0} · unbegrenzt`):ST.winter?`❄️ Wintertransfers ${Math.max(0,(c.buys||0)-3)}/2`:`Transfers ${c.buys||0}/${buyMax(ST)}`} · Kader ${c.squad.length}/${SQUAD_MAX}</span><span class="sp"></span><span>${fm(c.cash)}</span></div>`;
-  h+=posChips();
-  const list=vis.filter(p=>ui.pos==='all'||p.pos===ui.pos).sort((a,b)=>b.rat-a.rat);
-  h+=`<div class="card" style="padding:8px 14px">${list.map(p=>{const pr=buyPrice(c,p);return crow(p,{tap:1,mk:1,sub:`${p.age} J.${p.free?' · ablösefrei':''} · Gehalt ${fm(salary(p))}`,right:`<button class="btn sm ok" data-a="buy" data-v="${p.id}" ${rd||lim||c.cash<pr||c.squad.length>=SQUAD_MAX?'disabled':''}>${fm(pr)}</button>`});}).join('')||'<div class="empty">Keine Spieler sichtbar.</div>'}</div>`;
+  if(ST.career)h+=fltBar('mkt',true);else h+=posChips();
+  const list=ST.career?fltApply('mkt',vis,c):vis.filter(p=>ui.pos==='all'||p.pos===ui.pos).sort((a,b)=>b.rat-a.rat);
+  h+=`<div class="card" style="padding:8px 14px">${list.map(p=>{const pr=buyPrice(c,p);return crow(p,{tap:1,mk:1,sub:`${p.age} J.${p.free?' · ablösefrei':''} · Gehalt ${fm(salary(p))}${ST.career?fltPosTag('mkt',p):''}`,right:`<button class="btn sm ok" data-a="buy" data-v="${p.id}" ${rd||lim||c.cash<pr||c.squad.length>=SQUAD_MAX?'disabled':''}>${fm(pr)}</button>`});}).join('')||'<div class="empty">Keine Spieler sichtbar.</div>'}</div>`;
   if(hidden)h+=`<p class="tiny mut">🔭 ${hidden} weitere Spieler kennt nur ein besseres Scouting-Netzwerk.</p>`;
   if(feat(ST))h+='<p class="tiny mut">Achtung: Andere Vereine kaufen mit – gute Spieler sind schnell weg, und manchmal bietet jemand mit.</p>';
   return h;
@@ -3330,7 +3341,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='104',APP_RV=13;
+const APP_BUILD='105',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4176,6 +4187,53 @@ function fitTrainPage(c){const T=trnFree(c);const can=ST.phase==='matchday';
     return `<div class="pl"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn" data-a="card" data-v="${p.id}" style="cursor:pointer"><b>${esc(p.name)}</b><span>${p.age} J.${c.cond?' · '+frTag(p):''}</span></div><b style="min-width:54px;text-align:right;margin-right:8px;color:${f>=75?'#3fd0a0':f>=55?'#f5c542':'#ff6b5b'}">FIT ${f}</b><button class="btn sm ${dis?'':'ok'}" data-a="ftrain" data-v="${p.id}" ${dis?'disabled':''}>${done?'✓':tired?'müde':'🏃'}</button></div>`;}).join('')}</div>`;
   return h;}
 ACT.ftrain=function(v){send('TRAIN',{player:v,fit:1});const c=myC();setTimeout(()=>{if(c&&c.lastTrain)toast((c.lastTrain.ok?'✓ ':'✗ ')+c.lastTrain.t,!!c.lastTrain.ok);},50);};
+
+// ================= Paket C: Filter, Karten-Raster, Spielerübersicht quer =================
+const FLT0={pos:'',minR:0,minF:0,maxA:0,minS:0,afford:0,sort:'rat',dir:-1};
+function fltGet(k){const o=LS.get('kc:flt',{});return Object.assign({},FLT0,o[k]||{});}
+function fltSet(k,f,v){const o=LS.get('kc:flt',{});o[k]=Object.assign({},FLT0,o[k]||{});o[k][f]=v;LS.set('kc:flt',o);}
+function fltActive(k){const f=fltGet(k);return !!(f.pos||f.minR||f.minF||f.maxA||f.minS||f.afford||f.sort!=='rat');}
+function fltRat(f,p){return f.pos?(f.pos==='TW'?(p.pos==='G'?p.rat:Math.max(1,p.rat-25)):(p.pos==='G'?Math.max(1,p.rat-25):posVal(p,f.pos))):p.rat;}
+function fltApply(k,list,c){const f=fltGet(k);const known=p=>!c.squad.includes(p)&&(c.up.scouting||1)<3;
+  let L=list.filter(p=>{if(f.pos&&(f.pos==='TW')!==(p.pos==='G'))return false;if(f.minR&&fltRat(f,p)<f.minR)return false;if(f.minF&&fitOf(p)<f.minF)return false;if(f.maxA&&p.age>f.maxA)return false;if(f.minS&&!known(p)&&starsOf(p)<f.minS)return false;if(f.afford&&c.cash<buyPrice(c,p))return false;return true;});
+  const key={rat:p=>fltRat(f,p),pot:p=>p.pot,fit:p=>fitOf(p),fr:p=>p.fr==null?100:p.fr,age:p=>p.age,val:p=>value(p),ct:p=>p.ct==null?9:p.ct,st:p=>starsOf(p)}[f.sort]||(p=>p.rat);
+  return L.sort((a,b)=>(key(a)-key(b))*f.dir||b.rat-a.rat);}
+function fltPosTag(k,p){const f=fltGet(k);if(!f.pos)return '';const v=fltRat(f,p);return ` · <b style="color:${ratCol(v)}">${f.pos} ${v}</b>`;}
+function fltBar(k,mk){const f=fltGet(k);const sel=(fld,opts)=>`<select data-flt="${k}|${fld}" style="padding:4px 6px;font-size:12px;min-height:30px;border-radius:8px">${opts.map(([v,l])=>`<option value="${v}" ${String(f[fld])===String(v)?'selected':''}>${l}</option>`).join('')}</select>`;
+  return `<div class="fbar">${sel('pos',[['','Alle Pos.'],...POS12.map(x=>[x,x])])}${sel('minR',[[0,'Stärke'],[40,'ab 40'],[50,'ab 50'],[60,'ab 60'],[70,'ab 70'],[80,'ab 80']])}${sel('minF',[[0,'Fitness'],[50,'FIT ab 50'],[60,'FIT ab 60'],[70,'FIT ab 70'],[80,'FIT ab 80']])}${sel('maxA',[[0,'Alter'],[19,'bis 19'],[21,'bis 21'],[23,'bis 23'],[26,'bis 26'],[30,'bis 30']])}${sel('minS',[[0,'Sterne'],[3,'ab ★3'],[4,'ab ★4'],[5,'★5']])}${mk?`<span class="chip ${f.afford?'on':''}" style="padding:4px 9px;font-size:12px" data-a="fltT" data-v="${k}|afford">💶 bezahlbar</span>`:''}
+  <span class="sp"></span>${sel('sort',[['rat',f.pos?'Wert '+f.pos:'Stärke'],['pot','Potenzial'],['fit','Fitness'],['fr','Frische'],['age','Alter'],['val','Marktwert'],['ct','Vertrag'],['st','Sterne']])}<span class="chip" style="padding:4px 9px;font-size:12px" data-a="fltT" data-v="${k}|dir">${f.dir<0?'↓':'↑'}</span>${fltActive(k)?`<span class="chip" style="padding:4px 9px;font-size:12px" data-a="fltR" data-v="${k}">✕</span>`:''}</div>`;}
+document.addEventListener('change',e=>{const el=e.target;if(!el||!el.dataset||!el.dataset.flt)return;const [k,f]=el.dataset.flt.split('|');fltSet(k,f,f==='pos'||f==='sort'?el.value:+el.value);render();});
+ACT.fltT=function(v){const [k,f]=String(v).split('|');const c=fltGet(k);fltSet(k,f,f==='dir'?-c.dir:(c[f]?0:1));render();};
+ACT.fltR=function(k){const o=LS.get('kc:flt',{});delete o[k];LS.set('kc:flt',o);render();};
+// ---------- Karten-Raster ----------
+function viewMode(){return LS.get('kc:sqv','cards');}
+ACT.sqv=function(v){LS.set('kc:sqv',v);render();};
+function fcardMini(p,c,o){o=o||{};const f=fltGet(o.k||'sq');const v=fltRat(f,p);const fr=p.fr==null?100:Math.round(p.fr);const st=starsOf(p);
+  const ic=(p.ct===1&&!p.loan?'📝':'')+(p.inj>0?'🚑':'')+(p.sus>0?'🟥':'')+(p.fire>0?'🔥':'')+(p.tr&&TRAITS[p.tr]?TRAITS[p.tr].i:'')+(p.loan?'🔁':'');
+  const tier=st>=6?'dia':v>=78?'gold':v>=65?'silver':'bronze';
+  return `<div class="fut ${tier}${o.xi?' xi':''}" data-a="pl" data-v="${p.id}"><div class="fut-t"><b>${v}</b><span>${f.pos||posL(p).replace('+','')}</span></div><div class="fut-s">${st>=6?'💎':'★'.repeat(st)}</div><div class="fut-n">${esc(p.name.split(' ').slice(-1)[0])}</div>
+  <div class="fut-m"><span>${p.age} J.</span><span>FIT ${fitOf(p)}</span></div>${c.cond&&!p.loan?`<div class="fut-fr"><i style="width:${fr}%;background:${frCol(fr)}"></i></div>`:''}${ic?`<div class="fut-i">${ic}</div>`:''}</div>`;}
+function squadOverview(c){
+  const sal=c.squad.reduce((t,p)=>t+salary(p),0);const mode=viewMode();
+  let xi=new Set();if(['matchday','halftime'].includes(ST.phase)){const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),ui.form||c.form);for(const k of ['G','D','M','A'])for(const x of X[k])if(x.p)xi.add(x.p.id);}
+  let h=`<div class="row small mut" style="margin:8px 2px 4px"><span>${c.squad.length}/${SQUAD_MAX} Spieler · Gehälter ${fm(sal)}/Saison</span><span class="sp"></span><div class="chips" style="gap:4px"><span class="chip ${mode==='cards'?'on':''}" style="padding:4px 9px;font-size:12px" data-a="sqv" data-v="cards">🃏 Karten</span><span class="chip ${mode==='list'?'on':''}" style="padding:4px 9px;font-size:12px" data-a="sqv" data-v="list">☰ Liste</span></div></div>`;
+  h+=fltBar('sq',false);
+  const L=fltApply('sq',c.squad,c);const grouped=!fltActive('sq');
+  const render1=ps=>mode==='cards'?`<div class="futg">${ps.map(p=>fcardMini(p,c,{xi:xi.has(p.id)})).join('')}</div>`:ps.map(p=>crow(p,{tap:1,xi:xi.has(p.id),sub:undefined})).join('');
+  if(grouped){for(const pos of ['G','D','M','A']){const ps=L.filter(p=>p.pos===pos);h+=`<div class="card" style="padding:8px 12px"><h4 style="margin:2px 0 6px">${{G:'Torhüter',D:'Abwehr',M:'Mittelfeld',A:'Sturm'}[pos]} <span class="mut tiny">${ps.length}</span></h4>${render1(ps)||'<div class="mut small">—</div>'}</div>`;}}
+  else h+=`<div class="card" style="padding:8px 12px">${render1(L)||'<div class="empty small">Kein Spieler passt zum Filter.</div>'}</div>`;
+  return h;}
+const _squadC=VIEWS.squad;VIEWS.squad=function(){const h=_squadC.apply(this,arguments);if(!ST.career||sub('squad')!=='sp'||ui.pl)return h;const c=myC();const i=h.indexOf('<div class="row small mut" style="margin:10px 2px">');if(i<0)return h;return h.slice(0,i)+squadOverview(c);};
+// NLZ: Karten statt Zeilen
+// ---------- Spielerübersicht im Querformat: links Steckbrief, rechts Positionen ----------
+const _cardHtmlC=cardHtml;cardHtml=function(){const h=_cardHtmlC();if(!h||!isLand())return h;
+  const mk='<div class="tiny mut" style="margin:14px 0 6px;letter-spacing:.6px;text-transform:uppercase">';const parts=h.split(mk);const head=parts[0];
+  const seg={};for(const x of parts.slice(1)){const t=x.slice(0,x.indexOf('</div>'));seg[t]=mk+x;}
+  const gi=head.indexOf('<div class="pgrid">');let grid='',hd=head;if(gi>=0){let d=0,j=gi;const re=/<\/?div\b/g;re.lastIndex=gi;let m;while((m=re.exec(head))){if(m[0]==='<div')d++;else{d--;if(d===0){j=head.indexOf('>',m.index)+1;break;}}}grid=head.slice(gi,j);hd=head.slice(0,gi)+head.slice(j);}
+  const c=myC();const p=c.squad.find(x=>x.id===ui.card);
+  const big=p?`<div class="row" style="gap:14px;margin-bottom:6px"><div class="kpi" style="flex:1;text-align:center"><span>Stärke</span><b>${p.rat}</b></div><div class="kpi" style="flex:1;text-align:center"><span>Potenzial</span><b>${p.pot}</b></div><div class="kpi" style="flex:1;text-align:center"><span>Marktwert</span><b style="font-size:20px">${fm(value(p))}</b></div></div>`:'';
+  const L=hd+(seg['Zustand']||'')+(seg['Saison']||'')+(seg['Vertrag']||'');const R=big+grid+(seg['Aktionen']||'')+(seg['Entwicklung']||'');
+  return `<div class="pcl"><div>${L}</div><div>${R}</div></div>`;};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
