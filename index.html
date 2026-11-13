@@ -259,6 +259,10 @@ input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;ba
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #d8f34e;margin-top:-9px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#3fd0a0,#d8f34e,#ff6b5b)}
 input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid #d8f34e}
+
+body.land.startv{overflow:auto;height:auto}
+body.land.startv #app{padding:12px 16px 24px!important;max-width:760px;margin:0 auto}
+body.land.startv #app h1,body.land.startv .logo{text-align:center}
 </style>
 </head>
 <body>
@@ -3634,7 +3638,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='124',APP_RV=13;
+const APP_BUILD='125',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4884,6 +4888,8 @@ ACT.ypTr=function(v){const c=myC();send('NLZ_TR',{player:c&&c.nlzTr===v?null:v})
 
 document.addEventListener('input',e=>{const el=e.target;if(!el||el.id!=='slRange')return;const v=+el.value/100;ui.slPct=v;const v0=+el.dataset.v0,y=+el.dataset.young;
   const set=(id,t)=>{const x=document.getElementById(id);if(x)x.textContent=t;};set('slPctT',Math.round(v*100)+' %');set('slPrice',fm(r2(v0*v)));set('slCh','ca. '+Math.round(clamp(0.42-(v-1)*0.9+(y?0.08:0),0.06,0.6)*100)+' %');});
+// Startseite im Querformat: zentriert, eigenes Layout
+{const _rSt=render;render=function(){document.body.classList.toggle('startv',ui.view==='start');_rSt.apply(this,arguments);};}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
