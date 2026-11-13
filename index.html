@@ -155,6 +155,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 #infoPop{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
 #infoPop.on{display:flex}
 #infoPop .ipb{background:var(--card,#16261d);border:1px solid var(--line);border-radius:14px;padding:14px 16px;max-width:420px;font-size:14px;line-height:1.45}
+
+body.land .calL{display:grid;grid-template-columns:1.35fr 1fr;gap:10px;align-items:start}
+body.land .calL .cd{aspect-ratio:auto;height:46px}
+body.land .calL>.card{margin:0}
 </style>
 </head>
 <body>
@@ -1229,6 +1233,7 @@ function careerOffseason(st,first){
   ];
   if(st.freeAg){for(const p of st.freeAg){p.tier=1;st.market.push(p);}st.freeAg=null;}
   c.spon=null;c.buys=0;c.hires=0;c.camp=null;c.bid=null;
+  jerseyOffers(st,r,c,base);c.jers=null;c.jersE=0;boardsSeason(st,r,c);
   st.tlog=(st.tlog||[]).filter(x=>x.s>=st.season);
   careerWindow(st,r,false);
   boardSet(st);nlzFill(st,r,c);
@@ -1371,6 +1376,24 @@ function careerFire(st,r){
 }
 function premCost(c){return r2(SPON[c.lg]*(c.prem===2?0.08:0.03));}
 function tlogAdd(st,p,from,to,fee,loan){(st.tlog||(st.tlog=[])).push({s:st.season,w:!!st.winter,lg:st.clubs.me.lg,n:p.name,pos:p.pos,rat:p.rat,from,to,fee:Math.max(0,fee||0),loan:!!loan,me:1});}
+// ---------- Paket E: Trikotsponsor & Bandenwerbung ----------
+const JNAMES=['Sportwetten','Mobilfunk','Autohaus','Brauerei','Logistik','Software','Energie','Versand','Fitnessstudio','Pizzeria','Solartechnik','Immobilien'];
+function sponName(st,r,L){return r.pick(L||SPONSN)+' '+r.pick(regTowns(st));}
+function jerseyOffers(st,r,c,base){const t=c.lg;
+  st.jOffers=[
+    {id:'j1',n:sponName(st,r,JNAMES),type:'fix',amount:r2(base*0.4),d:`${fm(base*0.4)} sofort – sicher.`},
+    {id:'j2',n:sponName(st,r,JNAMES),type:'goal',amount:r2(base*0.12),perGoal:Math.round(base*0.011*1000)/1000,d:`${fm(base*0.12)} sofort + ${fm(base*0.011)} pro Ligator.`},
+    {id:'j3',n:sponName(st,r,JNAMES),type:'fan',amount:r2(base*0.1),per1k:Math.round(base*0.035/Math.max(1,EXPFANS[t]/1000)*1e5)/1e5,d:`${fm(base*0.1)} sofort + Bonus pro Heimspiel je nach Zuschauern.`}];}
+function boardSlots(c){const l=c.up.stadium||1;return l>=5?6:l>=4?4:0;}
+function boardPay(c,big){return Math.round(SPON[c.lg]*(big?0.022:0.01)*1000)/1000;}
+function boardsSeason(st,r,c){if(!c.boards)c.boards=[];c.boards=c.boards.filter(b=>b&&b.t==='l');// lokale Partner bleiben, große verhandeln neu
+  const n=boardSlots(c);while(c.boards.length>n)c.boards.pop();st.bOffers={l:sponName(st,r),b:sponName(st,r,JNAMES)};}
+function myPlace(st){const t=careerTable(st,st.clubs.me.lg);return t.findIndex(x=>x.id==='me')+1;}
+function payAcc(me,x){me.payAcc=(me.payAcc||0)+x;const p=Math.floor(me.payAcc*100+1e-6)/100;if(p>0){money(me,p);me.payAcc=Math.round((me.payAcc-p)*1e5)/1e5;}}
+function sponTick(st,r,results){const me=st.clubs.me;const lm=results.find(m=>!m.cup&&(m.h==='me'||m.a==='me'));if(!lm)return;const home=lm.h==='me';const g=home?lm.gh:lm.ga;
+  if(me.jers){let x=0;if(me.jers.type==='goal'&&g)x=r2(me.jers.perGoal*g);if(me.jers.type==='fan'&&home)x=Math.round(me.jers.per1k*Math.min(me.fans,EXPFANS[me.lg]*3)/1000*1000)/1000;if(x>0){payAcc(me,x);me.jersE=Math.round(((me.jersE||0)+x)*1000)/1000;}}
+  if(home&&me.boards&&me.boards.length){let x=0;for(const b of me.boards)x+=b.pay;x=Math.round(x*1000)/1000;payAcc(me,x);me.boardE=Math.round(((me.boardE||0)+x)*1000)/1000;}
+  if(me.boards&&st.md>=3){const n=st.order[me.lg].length;const pl=myPlace(st);if(pl>n/2){for(const b of me.boards.filter(b=>b.t==='b'))if(r.chance(0.2)){me.boards=me.boards.filter(x=>x!==b);feed(st,`📉 ${b.n} kündigt die Bandenwerbung – Platz ${pl} ist ihnen zu wenig.`,'me');}}}}
 function addFreeAg(st,r,t,n){for(let i=0;i<n;i++){const pos=r.wpick([{v:'G',w:1},{v:'D',w:3},{v:'M',w:3},{v:'A',w:3}]).v;const p=genPlayer(st,r,pos,TMEAN[t]-1,6,26,34);cName(st,r,p);p.free=true;p.tier=1;p.ct=null;st.market.push(p);}}
 // ---------- Transfers während der Saison ----------
 function seasonFree(st,a){const c=st.clubs.me;const p=st.market.find(x=>x.id===a.player);if(!p)rej('Der Spieler ist schon vergeben.');if(!p.free)rej('Vertragsspieler kannst du während der Saison nur fürs nächste Transferfenster verpflichten.');
@@ -1427,6 +1450,8 @@ function careerMigrate5(st){
 }
 function careerEnsurePrep(st){
   SQUAD_MAX=25;
+  if(st.career&&st.clubs&&st.clubs.me&&!st.jOffers&&!st.clubs.me.jers&&st.phase!=='seasonEnd'){const c=st.clubs.me;const r=RNG(st.seed,'jo'+st.season);const ff=Math.sqrt(clamp(c.fans/EXPFANS[c.lg],0.5,2.5));jerseyOffers(st,r,c,r2(SPON[c.lg]*ff));}
+  if(st.career&&st.clubs&&st.clubs.me&&!st.bOffers){const r=RNG(st.seed,'bo'+st.season);st.bOffers={l:sponName(st,r),b:sponName(st,r,JNAMES)};}
   if(!st.nl5&&st.phase!=='seasonEnd'&&st.order&&st.order[4]&&!st.order[5])careerMigrate5(st);
   if(st.clubs.me&&!st.clubs.me.sp)st.clubs.me.sp=true;
   try{frCatchUp(st);}catch(e){}
@@ -1645,6 +1670,7 @@ function careerResolve(st,myCtx,fat){
   for(const m of results.concat(other))if(!m.cup){for(const [id,g1,g2] of [[m.h,m.gh,m.ga],[m.a,m.ga,m.gh]]){const f=st.formTab[id]||(st.formTab[id]=[]);f.push(g1>g2?'S':g1===g2?'U':'N');if(f.length>5)f.shift();}}
   if(me.prem){const wins=results.filter(m=>m.w==='me').length;if(wins){const cost=r2(premCost(me)*wins);money(me,-cost);me.premPaid=r2((me.premPaid||0)+cost);}}
   if(me.spon&&me.spon.type==='win'&&me.spon.perWin){const lw=results.filter(m=>!m.cup&&m.w==='me').length;if(lw){const x=r2(me.spon.perWin*lw);me.sponWin=r2((me.sponWin||0)+x);feed(st,`💶 Siegprämie von ${me.spon.n}: +${fm(x)}`,'me');}}
+  sponTick(st,r,results);
   st.last={season:st.season,md:st.md,results,other,cards};
   st.md++;st.ready={};
   if(st.md===14||st.md===17){const ex=me.squad.filter(p=>p.ct===1&&!p.loan);if(ex.length)feed(st,`📝 ${st.md===17?'Letzter Spieltag':'Noch '+(18-st.md)+' Spieltage'} – Verträge laufen aus: ${ex.map(p=>p.name).join(', ')}. Jetzt verlängern (Mannschaft › Verträge), sonst gehen sie ablösefrei!`,'me');}
@@ -1743,6 +1769,10 @@ const CH={
     for(let i=0;i<(big?4:2);i++){const pos=fp||r.wpick([{v:'G',w:1},{v:'D',w:3},{v:'M',w:3},{v:'A',w:3}]).v;let rat=r.int(34,58)+Math.round((TMEAN[c.lg]-50)*0.6);if(r.chance(0.18))rat+=r.int(10,24);rat=clamp(rat,34,84);{const k={id:newId(st),name:pname(r),pos,age:r.int(16,19),rat,pot:Math.min(94,rat+r.int(0,26)),inj:0};cName(st,r,k);youthStars(st,r,c,k);kids.push(k);}}
     money(c,-cost);c.campSeason=st.season;c.campKey=campKey(st);c.camp={kids};feed(st,`${c.name} veranstaltet ein Sichtungscamp.`,c.id);},
   CHOOSE(st,a){const c=st.clubs.me;const pd=c.pending;if(!pd)rej('Keine offene Entscheidung.');const card=CCARDS.find(x=>x.k===pd.k);c.pending=null;c.lastChoice={t:pd.t,x:card.choose(c,a.opt===0?0:1,st,pd.data)};},
+  JERSEY(st,a){if(st.phase==='halftime')rej('Nicht in der Halbzeit.');const c=st.clubs.me;if(c.jers)rej('Du hast schon einen Trikotsponsor.');const o=(st.jOffers||[]).find(x=>x.id===a.offer);if(!o)rej('?');c.jers=Object.assign({},o);c.jersE=0;money(c,o.amount);feed(st,`👕 ${o.n} wird Trikotsponsor von ${c.name}.`,'me');},
+  BOARD(st,a){const c=st.clubs.me;if(st.phase==='halftime')rej('Nicht in der Halbzeit.');const n=boardSlots(c);if(!n)rej('Bandenwerbung gibt es ab Stadion Stufe 4.');c.boards=c.boards||[];if(c.boards.length>=n)rej('Alle Banden sind vergeben.');
+    const big=a.t==='b';const O=st.bOffers||(st.bOffers={l:sponName(st,CR(st)),b:sponName(st,CR(st),JNAMES)});c.boards.push({t:big?'b':'l',n:big?O.b:O.l,pay:boardPay(c,big)});const r=CR(st);st.bOffers={l:sponName(st,r),b:sponName(st,r,JNAMES)};feed(st,`🪧 Neue Bande: ${c.boards[c.boards.length-1].n}.`,'me');},
+  BOARD_END(st,a){const c=st.clubs.me;const i=+a.i;if(!c.boards||!c.boards[i])rej('?');c.boards.splice(i,1);},
   SPONSOR(st,a){needPhase(st,'offseason');if(st.winter)rej('Sponsoren gibt es nur in der Sommerpause.');const o=st.spOffers.find(x=>x.id===a.offer);if(!o)rej('?');if(st.clubs.me.spon)rej('Du hast schon einen Sponsor.');st.clubs.me.spon=Object.assign({},o,{paid:true});money(st.clubs.me,o.amount);st.clubs.me.sponWin=0;feed(st,`${st.clubs.me.name} unterschreibt bei ${o.n}.`,'me');},
   STAFF_EXT(st,a){needPhase(st,'offseason');const c=st.clubs.me;const x=c.staff.find(y=>y.id===a.staff);if(!x||!x.exp)rej('Kein auslaufender Vertrag.');const yrs=a.yrs===3?3:2;
     if(c.cash<x.bonus)rej('Nicht genug Geld für das Handgeld.');money(c,-x.bonus);x.sal=x.newSal;x.ct=yrs;delete x.exp;delete x.newSal;delete x.bonus;feed(st,`${c.name} verlängert mit ${x.name} (${STAFF[x.type].n}) um ${yrs} Jahre.`,c.id);},
@@ -3436,7 +3466,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='107',APP_RV=13;
+const APP_BUILD='108',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3894,7 +3924,7 @@ function calPage(c){
   const byDay={};for(const e of E)(byDay[e.d]=byDay[e.d]||[]).push(e);
   const resCol=e=>{if(e.gh==null)return '';const my=e.h?e.gh:e.ga,ot=e.h?e.ga:e.gh;return my>ot?'#3fd0a0':my<ot?'#ff6b5b':'#93ab9c';};
   const scoreTxt=e=>e.gh==null?'':(e.h?e.gh+':'+e.ga:e.ga+':'+e.gh);
-  let h=`<div class="card" style="padding:10px 10px 12px"><div class="row" style="margin-bottom:8px"><button class="btn sm" data-a="calM" data-v="-1" ${ui.calM<=0?'disabled':''}>‹</button><b style="flex:1;text-align:center;font-size:16px">${MON[m]} ${y}</b><button class="btn sm" data-a="calM" data-v="1" ${ui.calM>=9?'disabled':''}>›</button></div>`;
+  let h=(isLand()?'<div class="calL">':'')+`<div class="card" style="padding:10px 10px 12px"><div class="row" style="margin-bottom:8px"><button class="btn sm" data-a="calM" data-v="-1" ${ui.calM<=0?'disabled':''}>‹</button><b style="flex:1;text-align:center;font-size:16px">${MON[m]} ${y}</b><button class="btn sm" data-a="calM" data-v="1" ${ui.calM>=9?'disabled':''}>›</button></div>`;
   h+=`<div class="cal">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(x=>`<div class="cw">${x}</div>`).join('')}`;
   const off=(calD(first).w+6)%7;for(let i=0;i<off;i++)h+='<div></div>';
   for(let d=first;d<=last;d++){const evs=byDay[d]||[];const mk=M[d]||[];const pause=(d>=w0&&d<=w1)||d<s0||d>s1;
@@ -3910,6 +3940,7 @@ function calPage(c){
     return `<div style="padding:7px 0;border-top:1px solid var(--line);${ui.calD===d?'background:rgba(216,243,78,.07);margin:0 -14px;padding:7px 14px;':''}" data-a="calD" data-v="${d}"><div class="tiny mut">${calFmt(d,true)}${d===T?' · <b style="color:var(--acc)">nächstes Spiel</b>':''}</div>${evs.map(e=>{const o=ST.clubs[e.o];const col=resCol(e);
       return `<div class="row small" style="gap:8px;margin-top:3px"><span style="width:8px;height:8px;border-radius:2px;background:${CAL_COL[e.k]};flex:none"></span><span class="mut" style="min-width:76px">${CAL_N[e.k]}${e.k==='L'?' '+(e.md+1)+'.':''}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.h?'vs':'@'} <b>${esc(o?o.name:'offen')}</b></span><b style="color:${col||'var(--mut)'}">${e.gh!=null?scoreTxt(e)+(e.k!=='L'&&e.k!=='eurog'&&e.gh===e.ga?' n.E.':''):e.done?'–':e.h?'Heim':'Ausw.'}</b></div>`;}).join('')}${mk.map(t=>`<div class="small" style="margin-top:3px">${esc(t)}</div>`).join('')}</div>`;}).join('')}</div>`;}
   else h+=`<div class="card small mut">${first>s1?'Sommerpause – die neue Saison startet im August.':'In diesem Monat keine Spiele (Winterpause).'}</div>`;
+  if(isLand())h+='</div>';
   if(c.cond)h+=`<p class="tiny mut" style="margin:0 2px 8px">Frische: pro gespielter Minute −0,5 % der Start-Frische (90 Min. = −45 %). Pro freiem Tag holt jeder ${Math.round(frPct(c)*100)} % der fehlenden Frische auf${has(c,'fit')?' (mit Fitnesstrainer)':' – mit Fitnesstrainer 16 %'}. Nach zwei Wochen Pause fehlen nach einem vollen Spiel nur noch rund ${has(c,'fit')?5:10} %.</p>`;
   return h;}
 ACT.calM=function(v){ui.calM=Math.max(0,Math.min(9,(ui.calM||0)+(+v)));ui.calD=null;render();};
@@ -4055,6 +4086,9 @@ function clubGround(c){
   if(st>=2)stand(px,py-gp-t,pw,t,h,0);
   if(st>=3){stand(px-gp-t,py,t,pd,h,0);stand(px+pw+gp,py,t,pd,h,0);}
   if(st>=5)for(const [x,y] of [[px-gp-t,py-gp-t],[px+pw,py-gp-t],[px-gp-t,py+pd],[px+pw,py+pd]])box(x,y,0,t+gp,t+gp,h,shade(seat,0.8),conc);
+  // Bandenwerbung (ab Stufe 4)
+  {const B=c.boards||[];const n=boardSlots(c);if(n){for(let i=0;i<n;i++){const b=B[i];const front=false;const w=(pw-8)/n;const x=px+4+i*w;const y=py+0.8;
+    box(x+0.6,y,0,w-1.2,1,3.2,b?(b.t==='b'?'#f2c94c':'#e8e3d0'):'#3a4a40',b?(b.t==='b'?'#c99a1e':'#b9b29a'):'#2c3a31',{bias:front?0.5:-0.5});}}}
   if(st>=4){const r='#c9d0cc';if(st>=2)box(px-2,py-gp-t-1,h,pw+4,t*0.8,1.2,r,'#7c847f',{bias:5});box(px-2,py+pd+gp+t*0.2,h,pw+4,t*0.8+1,1.2,r,'#7c847f',{bias:5});}
   if(st>=4)for(const [x,y] of [[px-gp-t-4,py-gp-t-4],[px+pw+gp+t+2,py-gp-t-4],[px-gp-t-4,py+pd+gp+t+2],[px+pw+gp+t+2,py+pd+gp+t+2]]){box(x,y,0,1.2,1.2,h+16,'#d9dcd6','#b7bdb9');box(x-2,y-2,h+16,5,5,2.5,'#fff7c2','#e0d48a',{bias:2});}
   lbl(px+pw/2,py+pd+gp+t,h+4,'Stadion '+st+(bOn('stadium')?' 🚧':''));
@@ -4279,7 +4313,7 @@ function lmMenu(){const ph=ST.phase;const off=ph==='offseason',md=ph==='matchday
   if(!ht){M.push(['tm','🔁','Transfers',off?[mk('Kaufen','buy'),mk('Angebote'+((myC().offers||[]).length?' ('+myC().offers.length+')':''),'off'),mk('Leihen','loan'),mk('Verlauf','tl')]:[mk('Kaufen','buy'),mk('Verlauf','tl')]]);
     M.push(['nlz','🎓','NLZ',[['Talente & Camp','znlz',null],['Auslandsscout'+(myC().scout&&(myC().scout.rep||[]).length?' ❗':''),'zscout',null]]]);}
   M.push(['comp','🏆','Wettbewerbe',[lg('Tabelle','tab'),lg('Pokale','cup'),lg('Statistik','st'),lg('Chronik','ch')]]);
-  if(md||off){M.push(['gel','🏟️','Gelände',[of('Vereinsgelände','ausbau')]]);M.push(['fin','💶','Finanzen',[of('Übersicht','finanzen'),of('Sponsor','sponsor')]]);
+  if(md||off){M.push(['gel','🏟️','Gelände',[of('Vereinsgelände','ausbau')]]);M.push(['fin','💶','Finanzen',[of('Übersicht','finanzen'),of('Sponsoren','sponsor'),of('Gehälter','gehalt')]]);
     M.push(['vor','🏛️','Vorstand',[of('Ziele','vorstand'),of('Staff','staff')].concat(sum?[of('Vorbereitung'+(myC().prepS===ST.season?'':' ❗'),'vorb'),of('Bericht','bericht')]:[])]);}
   if(!ht)M.push(['set','⚙️','Optionen',[['Einstellungen','settings',null]]]);
   return M;}
@@ -4401,6 +4435,30 @@ ACT.pbPct=function(v){ui.pbPct=+v;render();};
 ACT.preBuy=function(v){const c0=myC();if(c0)c0.lastNeg=null;send('PRE_BUY',{player:v,pct:(ui.pbPct||100)/100});};
 ACT.release=function(v){if(conf('rel'+v)){send('RELEASE',{player:v});ui.card=null;}};
 ACT.nlzNo=function(v){if(conf('nn'+v))send('NLZ_NO',{player:v});};
+
+// ---------- Paket E: Sponsoren-Seite (Haupt + Trikot + Banden), Gehälter ----------
+function jerseyCard(c){if(c.jers){const J=c.jers;return `<div class="card"><div class="row"><b>👕 Trikotsponsor</b><span class="sp"></span><span class="pill">${esc(J.n)}</span></div><div class="small" style="margin-top:6px">${esc(J.d)}</div>${J.type!=='fix'?`<div class="tiny mut" style="margin-top:4px">Bisher an Boni: +${fm(c.jersE||0)}</div>`:''}</div>`;}
+  const O=ST.jOffers||[];if(!O.length)return '';const ic={fix:'🔒',goal:'⚽',fan:'📣'};
+  return `<div class="card"><h3>👕 Trikotsponsor wählen ${inf('Zusätzlich zum Hauptsponsor. Sicher (fester Betrag), torabhängig (pro Ligator) oder fanabhängig (pro Heimspiel je nach Zuschauern – wächst mit deinen Fans). Gilt bis Saisonende.')}</h3><div class="${isLand()?'g2':''}" style="gap:6px">${O.map(o=>`<div class="tac" data-a="jersey" data-v="${o.id}" style="cursor:pointer"><b>${ic[o.type]} ${esc(o.n)}</b><span class="small">${esc(o.d)}</span></div>`).join('')}</div></div>`;}
+function boardsCard(c){const n=boardSlots(c);const B=c.boards||[];
+  if(!n)return `<div class="card"><div class="row"><b>🪧 Bandenwerbung</b>${inf('Ab Stadion Stufe 4 kannst du 4 Banden verkaufen, ab Stufe 5 sechs. Lokale Partner zahlen wenig, bleiben aber. Große Partner zahlen mehr – springen aber ab, wenn du in der unteren Tabellenhälfte stehst.')}<span class="sp"></span><span class="pill">ab Stadion Stufe 4</span></div></div>`;
+  const O=ST.bOffers||{};let h=`<div class="card"><div class="row"><b>🪧 Bandenwerbung</b>${inf('Geld gibt es nach jedem Liga-Heimspiel. Lokale Partner zahlen wenig, bleiben aber (auch in der nächsten Saison). Große Partner zahlen gut das Doppelte, kündigen aber mit 20 % Chance pro Spieltag, solange du in der unteren Tabellenhälfte stehst.')}<span class="sp"></span><span class="pill">${B.length}/${n}</span></div>`;
+  h+=`<div class="tiny mut" style="margin:4px 0 6px">Pro Heimspiel: ${fm(B.reduce((s,b)=>s+b.pay,0))} · bisher +${fm(c.boardE||0)}</div>`;
+  h+=B.map((b,i)=>`<div class="pl"><span class="pos ${b.t==='b'?'A':'M'}">${b.t==='b'?'GROSS':'LOKAL'}</span><div class="pn"><b>${esc(b.n)}</b><span>${fm(b.pay)} pro Heimspiel</span></div><button class="btn sm" data-a="boardEnd" data-v="${i}">${cl('be'+i,'✕','Kündigen?')}</button></div>`).join('');
+  if(B.length<n&&ST.phase!=='halftime')h+=`<div class="${isLand()?'g2':''}" style="gap:6px;margin-top:8px"><div class="tac" data-a="board" data-v="l" style="cursor:pointer"><b>🏠 ${esc(O.l||'Lokaler Partner')}</b><span class="small">${fm(boardPay(c,false))}/Heimspiel · bleibt treu</span></div><div class="tac" data-a="board" data-v="b" style="cursor:pointer"><b>🏢 ${esc(O.b||'Großer Partner')}</b><span class="small">${fm(boardPay(c,true))}/Heimspiel · springt ab bei unterer Tabellenhälfte</span></div></div>`;
+  return h+'</div>';}
+function salaryPage(c){const ps=c.squad.slice().sort((a,b)=>salary(b)-salary(a));const tot=ps.reduce((s,p)=>s+salary(p),0);const stf=(c.staff||[]).reduce((s,x)=>s+(x.sal||0),0);
+  return `<div class="card"><div class="row"><b>💶 Gehälter</b><span class="sp"></span><span class="pill">${fm(tot+stf)}/Saison</span></div><div class="tiny mut" style="margin:4px 0 8px">Spieler ${fm(tot)} · Staff ${fm(stf)}</div>${ps.map(p=>crow(p,{tap:1,sub:`${p.age} J. · Vertrag ${p.loan?'Leihe':p.ct!=null?p.ct+' J.':'–'}`,right:`<b>${fm(salary(p))}</b>`})).join('')}</div>`;}
+ACT.jersey=function(v){send('JERSEY',{offer:v});};
+ACT.board=function(v){send('BOARD',{t:v});};
+ACT.boardEnd=function(v){if(conf('be'+v))send('BOARD_END',{i:+v});};
+{const _cofE=VIEWS.coffice;VIEWS.coffice=function(){if(ST.career&&ui.sub==='gehalt'){return salaryPage(myC());}let h=_cofE.apply(this,arguments);if(ST.career&&ui.sub==='sponsor'){const c=myC();h+=jerseyCard(c)+boardsCard(c);}return h;};}
+// Tabelle im Querformat: mehr Spalten (Diff, Form, Stärke)
+{const _ctab=ctable;ctable=function(L){if(!isLand()||!ST.tables[L])return _ctab(L);const t=careerTable(ST,L);
+  const fd=f=>(f||[]).map(x=>`<span style="display:inline-block;width:14px;height:14px;line-height:14px;border-radius:3px;font-size:9px;font-weight:700;margin-right:2px;text-align:center;background:${x==='S'?'#2fb36a':x==='U'?'#8b8f85':'#d0453f'};color:#fff">${x}</span>`).join('');
+  const str=c=>{try{return c.human?Math.round(teamStrength(c)):Math.round((c.A+c.M+c.D)/3);}catch(e){return '–';}};
+  return `<table><tr><th class="l">#</th><th class="l">Verein</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Diff</th><th class="l">Form</th><th>Stärke</th><th>Pkt</th></tr>${t.map((r,i)=>{const c=ST.clubs[r.id];const z=(L>1&&i<2)?'border-left:3px solid var(--acc2)':(L<NL&&i>=t.length-2)?'border-left:3px solid var(--bad)':'border-left:3px solid transparent';const d=r.gf-r.ga;
+    return `<tr class="${r.id==='me'?'me':''}"><td class="l" style="${z}">${i+1}</td><td class="l"><span class="row" style="gap:6px">${dot(c)}<span data-a="clubInfo" data-v="${r.id}" style="cursor:pointer;${c.human?'font-weight:700':''}">${esc(c.name)} <span class="mut" style="font-size:10px">ⓘ</span></span></span></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}:${r.ga}</td><td style="color:${d>0?'var(--ok)':d<0?'var(--bad)':''}">${d>0?'+':''}${d}</td><td class="l">${fd(ST.formTab&&ST.formTab[r.id])}</td><td>${str(c)}</td><td><b>${r.pts}</b></td></tr>${ui.clubInfo===r.id?clubInfoRow(r.id,11):''}`;}).join('')}</table>`;};}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
