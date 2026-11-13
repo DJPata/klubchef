@@ -250,6 +250,8 @@ body.land .shb.mod .mg{grid-template-columns:1fr 1.15fr;align-items:start}
 .g3d svg{transform:rotateX(30deg) scale(1.06);transform-origin:50% 62%;filter:drop-shadow(0 18px 18px rgba(0,0,0,.45))}
 body.land .gland .g3d{height:100%}
 body.land .gland .g3d svg{height:100%;width:auto!important;max-width:100%}
+
+.ypg .pgrid{margin:0}.ypg .pg{padding:3px 2px!important;font-size:10px}.ypg .pg b{font-size:13px}
 </style>
 </head>
 <body>
@@ -3489,14 +3491,14 @@ function nlzPage(c){
   let h='';
   if(c.poach){const p=N.find(x=>x.id===c.poach.id);if(p)h+=`<div class="evc bad" style="padding:10px"><b>👀 ${esc(c.poach.club)} will ${esc(p.name)} abwerben!</b><div class="small" style="margin:4px 0 8px">Zieh ihn hoch (Handgeld ${fm(nlzFee(p))}) oder lass ihn gehen und kassiere ${fm(c.poach.comp)} Ausbildungsentschädigung. Ohne Entscheidung wechselt er nach dem nächsten Spieltag.</div><div class="row"><button class="btn sm ok" data-a="nlzUp" data-v="${p.id}" ${c.cash<nlzFee(p)||c.squad.length>=SQUAD_MAX?'disabled':''}>Hochziehen</button><button class="btn sm" data-a="poachLet">Ziehen lassen</button></div></div>`;}
   h+=`<div class="card" style="padding:10px 14px"><div class="row"><b>🎓 Nachwuchsleistungszentrum</b><span class="sp"></span><span class="pill">${N.length}/${slots}</span></div><p class="tiny mut" style="margin:6px 0 0">Talente entwickeln sich hier jede Saison weiter. Hochziehen kostet ein kleines Handgeld, dann spielen sie bei den Profis (Vertrag 3 Jahre). Mit 19 verlassen sie das NLZ. Mehr Plätze und bessere Talente: Büro › Ausbau › Jugendakademie.</p></div>`;
-  h+=`<div class="card" style="padding:8px 14px">${N.length?N.slice().sort((a,b)=>b.pot-a.pot).map(p=>crow(p,{mk:1,sub:`${p.age} J. · Pot. ${p.pot}`,right:`<button class="btn sm" style="padding:6px 9px" data-a="nlzNo" data-v="${p.id}" title="Ablehnen">${cl('nn'+p.id,'✕','Weg?')}</button> <button class="btn sm ok" data-a="nlzUp" data-v="${p.id}" ${ST.phase==='halftime'||c.cash<nlzFee(p)||c.squad.length>=SQUAD_MAX?'disabled':''}>${cl('nu'+p.id,'↑ '+fm(nlzFee(p)))}</button>`})).join(''):'<div class="empty small">Gerade keine Talente.</div>'}</div>`;
+  h+=`<div class="card" style="padding:8px 14px">${N.length?N.slice().sort((a,b)=>b.pot-a.pot).map(p=>crow(p,{mk:1,tap:1,sub:`${p.age} J. · Pot. ${p.pot}`,right:`<button class="btn sm" style="padding:6px 9px" data-a="nlzNo" data-v="${p.id}" title="Ablehnen">${cl('nn'+p.id,'✕','Weg?')}</button> <button class="btn sm ok" data-a="nlzUp" data-v="${p.id}" ${ST.phase==='halftime'||c.cash<nlzFee(p)||c.squad.length>=SQUAD_MAX?'disabled':''}>${cl('nu'+p.id,'↑ '+fm(nlzFee(p)))}</button>`})).join(''):'<div class="empty small">Gerade keine Talente.</div>'}</div>`;
   h+=nlzTrCard(c);
   h+=campCardC(c);
   if(!isLand())h+=scoutPage(c);
   return h;
 }
 function campCardC(c){
-  if(c.camp)return `<div class="card"><h3>🏕 Sichtungscamp – Talente</h3><p class="small mut">Wer dir gefällt, kommt kostenlos ins NLZ.</p>${c.camp.kids.map(p=>crow(p,{mk:1,sub:`${p.age} J. · Pot. ${p.pot}`,right:`<button class="btn sm ok" data-a="campSign" data-v="${p.id}">Ins NLZ</button>`})).join('')}<button class="btn sm" style="margin-top:8px" data-a="campSkip">${cl('campSkip','Fertig')}</button></div>`;
+  if(c.camp)return `<div class="card"><h3>🏕 Sichtungscamp – Talente</h3><p class="small mut">Wer dir gefällt, kommt kostenlos ins NLZ.</p>${c.camp.kids.map(p=>crow(p,{mk:1,tap:1,sub:`${p.age} J. · Pot. ${p.pot}`,right:`<button class="btn sm ok" data-a="campSign" data-v="${p.id}">Ins NLZ</button>`})).join('')}<button class="btn sm" style="margin-top:8px" data-a="campSkip">${cl('campSkip','Fertig')}</button></div>`;
   if(campUsed(ST,c))return `<div class="card small mut">🏕 Das Sichtungscamp ${campKey(ST).endsWith('H')?'der Hinrunde ist gelaufen – das nächste geht ab der Winterpause':'der Rückrunde ist gelaufen – das nächste gibt es nächste Saison'}.</div>`;
   const pos=ui.campPos||'';const f=pos?1.25:1;const cost=n=>r2(CAMPC[c.lg]*n*f);const ok=['matchday','offseason'].includes(ST.phase);
   return `<div class="card"><h3>🏕 Sichtungscamp</h3><p class="small">Talente (16–19) zum Probetraining einladen – vom Rohdiamanten bis zur Niete ist alles dabei. Einmal pro Saison, die Talente kommen ins NLZ.</p><h4>Position</h4><div class="chips">${[['','Egal'],['G','TW'],['D','AB'],['M','MF'],['A','ST']].map(([v,l])=>`<span class="chip ${pos===v?'on':''}" data-a="campPos" data-v="${v}">${l}</span>`).join('')}</div>${pos?'<p class="tiny mut">Mit fester Position 25 % teurer.</p>':''}<div class="row wrap" style="margin-top:8px"><button class="btn sm" data-a="campC" data-v="1" ${!ok||c.cash<cost(1)?'disabled':''}>${cl('campC1','Klein · 2 Talente · '+fm(cost(1)))}</button><button class="btn sm" data-a="campC" data-v="2" ${!ok||c.cash<cost(2)?'disabled':''}>${cl('campC2','Groß · 4 Talente · '+fm(cost(2)))}</button></div></div>`;
@@ -3625,7 +3627,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='120',APP_RV=13;
+const APP_BUILD='121',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4450,7 +4452,7 @@ function scoutPage(c){const S=c.scout;let h='';
   if(S){const R=SCREG[S.reg];const nl=(c.nlz||[]).length,mx=nlzSlots(c)+2;
     h+=`<div class="card" style="padding:10px 14px"><div class="row"><b>${R.e} Scout in ${R.n}</b><span class="sp"></span><span class="pill">${S.done?'Abschlussbericht':`Monat ${S.mon+1}/${S.months}`}</span></div>
       <p class="tiny mut" style="margin:4px 0 0">${S.pos?'Suche: '+S.pos+' · ':''}${S.done?'Die 3 besten Talente der Reise – jetzt oder nie.':`Nächster Bericht in ca. ${Math.max(1,Math.ceil((S.next-mdDay(ST,ST.md))/14))} Spieltag(en) · ${fm(scoutCost(c,S.reg))}/Monat`} · NLZ ${nl}/${mx}</p></div>`;
-    if((S.rep||[]).length)h+=`<div class="card" style="padding:8px 14px"><h4 style="margin:4px 0">${S.done?'🏁 Die Besten':'📋 Monatsbericht'}</h4>${S.rep.map(p=>crow(p,{mk:1,sub:`${p.age} J. · ${p.sp} · Stärke ${scRat(c,p)} · Pot. ${potTxt(p)}${p.fit?' · FIT '+p.fit:''}${p.tb?' · 📈 Trainingsbonus':''}`,right:`<button class="btn sm ok" data-a="scSign" data-v="${p.id}" ${c.cash<scoutFee(p)||nl>=mx?'disabled':''}>${cl('ss'+p.id,fm(scoutFee(p)))}</button>`})).join('')}<p class="tiny mut" style="margin:6px 0 0">${S.done?'':'Nicht zugegriffen? Der Scout sucht weiter – die Talente kommen im Abschlussbericht evtl. wieder.'}</p></div>`;
+    if((S.rep||[]).length)h+=`<div class="card" style="padding:8px 14px"><h4 style="margin:4px 0">${S.done?'🏁 Die Besten':'📋 Monatsbericht'}</h4>${S.rep.map(p=>crow(p,{mk:1,tap:1,sub:`${p.age} J. · ${p.sp} · Stärke ${scRat(c,p)} · Pot. ${potTxt(p)}${p.fit?' · FIT '+p.fit:''}${p.tb?' · 📈 Trainingsbonus':''}`,right:`<button class="btn sm ok" data-a="scSign" data-v="${p.id}" ${c.cash<scoutFee(p)||nl>=mx?'disabled':''}>${cl('ss'+p.id,fm(scoutFee(p)))}</button>`})).join('')}<p class="tiny mut" style="margin:6px 0 0">${S.done?'':'Nicht zugegriffen? Der Scout sucht weiter – die Talente kommen im Abschlussbericht evtl. wieder.'}</p></div>`;
     h+=`<button class="btn sm" data-a="scEnd">${cl('scEnd',S.done?'Bericht schließen':'Auftrag abbrechen (keine Erstattung)')}</button>`;
     return h;}
   const reg=ui.scReg||'sa',mon=ui.scMon||3,pos=ui.scPos||'';const ok=ST.phase==='matchday';const k=scoutCost(c,reg);
@@ -4855,6 +4857,20 @@ ACT.moNo=function(v){send('MO_NO',{offer:v});};
    <div><div class="card"><h4 style="margin-top:0">Wunschpreis</h4><div class="chips">${[0.8,0.9,1,1.2,1.5].map(v=>`<span class="chip ${Math.abs(pct-v)<0.001?'on':''}" data-a="slPct" data-v="${v}">${Math.round(v*100)} %</span>`).join('')}</div>
    <div class="grid2" style="margin-top:10px"><div class="kpi"><span>Preis</span><b>${fm(r2(value(p)*pct))}</b></div><div class="kpi"><span>Angebot pro Spieltag</span><b>ca. ${ch(pct)} %</b></div></div>
    <p class="tiny mut" style="margin:8px 0">Er spielt weiter für dich und wechselt erst zur ${W}.</p><button class="btn pri block" data-a="slGo" data-v="${p.id}">Auf die Transferliste</button></div></div></div>`;};}
+// ---------- Nachwuchsspieler ansehen (NLZ, Camp, Scoutbericht) ----------
+function youthFind(c,id){const n=(c.nlz||[]).find(p=>p.id===id);if(n)return [n,'nlz'];const k=c.camp&&c.camp.kids.find(p=>p.id===id);if(k)return [k,'camp'];const s=c.scout&&(c.scout.rep||[]).find(p=>p.id===id);if(s)return [s,'scout'];return [null,null];}
+{const _plY=ACT.pl;ACT.pl=function(v){const c=myC();if(ST&&ST.career&&c){const [p]=youthFind(c,v);if(p){ui.modal={t:'yp',id:v};render();return;}}_plY(v);};}
+{const _mhY=modalHtml;modalHtml=function(){const M=ui.modal;const c=myC();if(!M||M.t!=='yp'||!c)return _mhY();const [p,src]=youthFind(c,M.id);if(!p)return '';
+  const head=`<div class="mh"><div class="mhc">${fcardMini(p,c,{k:'sq'})}</div><div class="mhi"><b class="mhn">${esc(p.name)}</b><div class="small mut">${p.age} J. · ${spOfC(p)}${(p.xsp||[]).length?' / '+p.xsp.join(', '):''} · ${starsTxt(p)}${p.from?' · aus '+esc(p.from):''}</div>
+    <div class="mhk"><span>Stärke <b>${src==='scout'?scRat(c,p):p.rat}</b></span><span>Potenzial <b>${potTxt(p)}</b></span><span>Marktwert <b>${fm(value(p))}</b></span><span>Fitness <b>${fitOf(p)}</b></span><span>Fuß <b>${{L:'links',R:'rechts',B:'beidfüßig'}[footOf(p)]}</b></span><span>Größe <b>${heightOf(p)} cm</b></span>${src==='nlz'?`<span>Training bei Profis <b>${Math.round(nlzTrChance(p,c)*100)} %</b></span>`:''}${p.tb?'<span>📈 <b>Trainingsbonus</b></span>':''}</div></div></div>`;
+  let act='';
+  if(src==='nlz'){const fee=nlzFee(p);act=`<button class="btn ok block" data-a="nlzUp" data-v="${p.id}" ${ST.phase==='halftime'||c.cash<fee||c.squad.length>=SQUAD_MAX?'disabled':''}>${cl('nu'+p.id,'↑ Zu den Profis hochziehen · '+fm(fee))}</button>
+    <button class="btn block" style="margin-top:6px" data-a="ypTr" data-v="${p.id}">${c.nlzTr===p.id?'✅ Trainiert bei den Profis':'🏋 Auf den Trainingsplatz bei den Profis'}</button>
+    <button class="btn bad block" style="margin-top:6px;opacity:.85" data-a="nlzNo" data-v="${p.id}">${cl('nn'+p.id,'✕ Aus dem NLZ entlassen','Wirklich entlassen?')}</button>`;}
+  else if(src==='camp')act=`<button class="btn ok block" data-a="campSign" data-v="${p.id}">Ins NLZ holen</button>`;
+  else if(src==='scout'){const fee=scoutFee(p);act=`<button class="btn ok block" data-a="scSign" data-v="${p.id}" ${c.cash<fee?'disabled':''}>${cl('ss'+p.id,'Verpflichten · '+fm(fee))}</button>`;}
+  return `<button class="ic mx" data-a="sheetX">✕</button><div class="mt">🎓 ${src==='nlz'?'NLZ-Talent':src==='camp'?'Camp-Talent':'Scoutbericht'}</div><div class="mg"><div>${head}<div style="margin-top:10px">${act}</div></div><div class="ypg">${posGrid(p)}</div></div>`;};}
+ACT.ypTr=function(v){const c=myC();send('NLZ_TR',{player:c&&c.nlzTr===v?null:v});};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
