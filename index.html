@@ -193,7 +193,8 @@ body.land{overflow:hidden;height:100vh;height:100dvh;overscroll-behavior:none}
 body.land .lbody{position:fixed;top:0;bottom:50px;left:calc(150px + env(safe-area-inset-left));right:env(safe-area-inset-right);padding:6px 10px 6px;overflow:hidden;display:flex;flex-direction:column;gap:6px}
 body.land .lbody>*{flex:none;margin-top:0!important;margin-bottom:0!important}
 body.land .lbody>.grow,body.land .lcol>.grow{flex:1 1 auto;min-height:0;overflow:auto;scrollbar-width:thin}
-body.land .lbody.lcols{flex-direction:row;align-items:stretch}
+body.land .lbody.lcols{flex-direction:column}
+body.land .lrow{flex:1 1 auto;min-height:0;display:flex;gap:10px;align-items:stretch}
 body.land .lcol{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:6px;overflow:hidden}
 body.land .lcol>*{flex:none;margin:0!important}
 
@@ -3633,7 +3634,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='122',APP_RV=13;
+const APP_BUILD='124',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4697,12 +4698,14 @@ function landFit(){if(!document.body.classList.contains('land'))return;const lb=
   const kids=[...lb.children].filter(k=>k.offsetParent!==null||k.tagName!=='SCRIPT');if(!kids.length)return;
   const H=lb.clientHeight-12;const multi=lb.classList.contains('lb2');
   if(multi&&kids.length>1){lb.classList.remove('lb2');
-    const hs=kids.map(k=>k.getBoundingClientRect().height+6);const tot=hs.reduce((a,b)=>a+b,0);
-    const ncol=tot>2*H&&lb.clientWidth>600&&kids.length>2?3:tot>H?2:1;
-    if(ncol>1){lb.classList.add('lcols');const cols=[];for(let i=0;i<ncol;i++){const d=document.createElement('div');d.className='lcol';cols.push(d);}
-      // Reihenfolge behalten, Spalten möglichst gleich hoch
-      let ci=0,acc=0;const tgt=tot/ncol;kids.forEach((k,i)=>{if(ci<ncol-1&&acc>0&&acc+hs[i]/2>tgt){ci++;acc=0;}cols[ci].appendChild(k);acc+=hs[i];});
-      for(const d of cols)lb.appendChild(d);
+    // Kopfzeilen (Liga-Auswahl, Filter …) bleiben oben über die volle Breite
+    const head=[];while(kids.length>1&&!kids[0].classList.contains('card')&&!kids[0].querySelector('.card')){head.push(kids.shift());}
+    const hs=kids.map(k=>k.getBoundingClientRect().height+6);const tot=hs.reduce((a,b)=>a+b,0);const Hh=H-head.reduce((a,k)=>a+k.getBoundingClientRect().height+6,0);
+    let ncol=tot>2*Hh&&lb.clientWidth>600&&kids.length>2?3:tot>Hh?2:1;if(ui.tab==='cleague'&&kids.length>=2&&kids.length<=3&&lb.clientWidth>600)ncol=kids.length;
+    if(ncol>1||head.length){lb.classList.add('lcols');const row=document.createElement('div');row.className='lrow';const cols=[];for(let i=0;i<ncol;i++){const d=document.createElement('div');d.className='lcol';cols.push(d);}
+      if(kids.length===ncol)kids.forEach((k,i)=>cols[i].appendChild(k));
+      else{let ci=0,acc=0;const tgt=tot/ncol;kids.forEach((k,i)=>{if(ci<ncol-1&&acc>0&&acc+hs[i]/2>tgt){ci++;acc=0;}cols[ci].appendChild(k);acc+=hs[i];});}
+      for(const d of cols)row.appendChild(d);lb.appendChild(row);
       for(const d of cols)fitCol(d);return;}}
   fitCol(lb);}
 function fitCol(box){const H=box.clientHeight;if(box.scrollHeight<=H+2)return;const kids=[...box.children];if(!kids.length)return;
