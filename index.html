@@ -221,6 +221,11 @@ body.land .swc .ic{width:24px;height:24px;font-size:12px}
 .swr{display:flex;align-items:center;gap:6px;padding:5px 2px;border-top:1px solid var(--line);cursor:pointer;font-size:12.5px}
 .swr .pos{font-size:9.5px;min-width:30px;padding:2px 3px}.swr .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.swr b{width:22px;text-align:right}.swr .df{width:26px;text-align:right;font-size:11px;font-weight:700}
 .swr:active{background:rgba(216,243,78,.08)}
+
+.bwrap{display:flex;flex-wrap:wrap;gap:5px}
+.bchip{touch-action:none;user-select:none;-webkit-user-select:none;display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:9px;background:rgba(255,255,255,.08);font-size:12.5px;cursor:grab;max-width:100%}
+.bchip .pos{min-width:0;padding:1px 4px;font-size:9.5px}.bchip .bn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}.bchip i{font-style:normal;opacity:.6;margin-left:2px;font-size:11px}
+.trib .bchip{opacity:.65;background:rgba(255,255,255,.04)}
 </style>
 </head>
 <body>
@@ -1110,9 +1115,15 @@ function posPen1(p,k,slot){if(k===slot)return 0;if(k==='TW'||slot==='TW')return 
   if(c===1&&(f==='B'||f===sd))v=0;else if(sd&&f!=='B'&&f!==sd)v+=2;return Math.round(v);}
 function posPenC(p,slot){if(!p)return 0;if(p.pos==='G')return slot==='TW'?0:25;let b=99;for(const k of knownSp(p)){const v=posPen1(p,k,slot);if(v<b)b=v;}return b;}
 function posVal(p,slot){return Math.max(1,Math.round(p.rat-posPenC(p,slot)));}
+// Auswechselbank (Karriere): 6 Spieler, nur sie dürfen im Spiel rein
+const BENCH_N=6;
+function benchAuto(c,xi){const av=c.squad.filter(p=>!xi.has(p.id)&&!(p.inj>0)&&!(p.sus>0)&&!p.sent).sort((a,b)=>b.rat-a.rat);const out=[];
+  const g=av.find(p=>p.pos==='G');if(g)out.push(g);for(const k of ['D','M','A']){const p=av.find(q=>q.pos===k&&!out.includes(q));if(p)out.push(p);}
+  for(const p of av){if(out.length>=BENCH_N)break;if(!out.includes(p)&&p.pos!=='G')out.push(p);}return out.map(p=>p.id);}
+function benchOf(c,xi){if(!Array.isArray(c.bench))return benchAuto(c,xi);return c.bench.filter(id=>!xi.has(id)&&c.squad.some(p=>p.id===id&&!(p.inj>0)&&!(p.sus>0)&&!p.sent)).slice(0,BENCH_N);}
 function pickXIc(c,form){
   const F=FORM[form]||FORM['4-4-2'];const S=slotsOf(form);const E=p=>effRat(c,p);
-  const avail=c.squad.filter(p=>!(p.inj>0)&&!(p.sus>0)&&!p.sent).sort((a,b)=>E(b)-E(a)||(a.id<b.id?-1:1));
+  const avail=c.squad.filter(p=>!(p.inj>0)&&!(p.sus>0)&&!p.sent&&(!c._pool||c._pool.includes(p.id))).sort((a,b)=>E(b)-E(a)||(a.id<b.id?-1:1));
   const used=new Set();const need={D:F[0],M:F[1],A:F[2]};const pl={G:[],D:[],M:[],A:[]};const redN={D:0,M:0,A:0};
   for(const p of c.squad.filter(q=>q.red)){let k=p.pos==='G'?'D':p.pos;if(c.lineup)for(const kk of ['D','M','A'])if((c.lineup[kk]||[]).includes(p.id))k=kk;if(redN[k]<need[k])redN[k]++;}
   const cap=k=>k==='G'?1:need[k]-redN[k];
@@ -1612,7 +1623,7 @@ function careerKickoff(st){
   liveSetup(st,ctx,null);
 }
 function careerCupKick(st){const P=st.cupPend;const r=CR(st);const ctx=mStart(st,P.h,P.a,r);liveSetup(st,ctx,P);}
-function liveSetup(st,ctx,cupP){const me=st.clubs.me;st.ht={ctx,xi1:[...xiIds(me)],brk:{t:'live'},cup:cupP||null};me.pre={lineup:me.lineup?JSON.parse(JSON.stringify(me.lineup)):null,form:me.form,tac:me.tac};ctx.onAt={};ctx.pm={};for(const id of st.ht.xi1)ctx.onAt[id]=0;ctx.seg0=0;ctx.lm=0;st.phase='halftime';}
+function liveSetup(st,ctx,cupP){const me=st.clubs.me;const X1=xiIds(me);const bench=benchOf(me,X1);st.ht={ctx,xi1:[...X1],bench,brk:{t:'live'},cup:cupP||null};me._pool=[...X1,...bench];me.pre={lineup:me.lineup?JSON.parse(JSON.stringify(me.lineup)):null,form:me.form,tac:me.tac};ctx.onAt={};ctx.pm={};for(const id of st.ht.xi1)ctx.onAt[id]=0;ctx.seg0=0;ctx.lm=0;st.phase='halftime';}
 // Ein Spielabschnitt (7,5 Min.) live – die App ruft das Schritt für Schritt auf
 function liveStep(st){
   if(st.phase!=='halftime'||!st.ht)rej('Kein Spiel läuft.');const ht=st.ht,ctx=ht.ctx,me=st.clubs.me;
@@ -1635,7 +1646,7 @@ function liveFinish(st){
   const x1=new Set(st.ht.xi1||[]),x2=xiIds(me);
   let mins=null;if(ctx.onAt){mins=Object.assign({},ctx.pm||{});for(const id in ctx.onAt)if(x2.has(id)||!me.squad.find(p=>p.id===id&&p.sent))mins[id]=(mins[id]||0)+Math.max(0,90-ctx.onAt[id]);}
   try{const X=pickXI(me,me.form);for(const k of ['D','M','A'])for(const x of X[k]){const p=x.p;if(p&&x.slot&&p.pos!=='G'&&x1.has(p.id)&&!knownSp(p).includes(x.slot))posPlay(st,p,x.slot);}}catch(e){}
-  for(const p of me.squad){delete p.sent;delete p.liveInj;delete p.red;}
+  delete me._pool;for(const p of me.squad){delete p.sent;delete p.liveInj;delete p.red;}
   const cupP=st.ht.cup;st.ht=null;st.phase='matchday';ctx.seg0=90;
   if(me.pre){me.lineup=me.pre.lineup;me.form=me.pre.form;me.tac=me.pre.tac;delete me.pre;}
   const full=new Set([...x1].filter(i=>x2.has(i))),half=new Set([...x1,...x2].filter(i=>!(x1.has(i)&&x2.has(i))));
@@ -1879,6 +1890,7 @@ const CH={
   POACH_LET(st,a){const c=st.clubs.me;if(!c.poach)rej('?');const p=(c.nlz||[]).find(x=>x.id===c.poach.id);if(p){c.nlz=c.nlz.filter(x=>x!==p);money(c,c.poach.comp);feed(st,`${p.name} wechselt zu ${c.poach.club} – Entschädigung ${fm(c.poach.comp)}.`,'me');}c.poach=null;},
   STYLE(st,a){applyStyle(st.clubs.me,a);},
   PREM(st,a){st.clubs.me.prem=clamp(a.v|0,0,2);},
+  BENCH(st,a){if(st.phase!=='matchday')rej('Die Bank stellst du vor dem Anpfiff auf.');const c=st.clubs.me;const ids=[];for(const id of (Array.isArray(a.ids)?a.ids:[]))if(c.squad.some(p=>p.id===id)&&!ids.includes(id))ids.push(id);c.bench=ids.slice(0,BENCH_N);},
   ROLE(st,a){const c=st.clubs.me;if(!ROLEK[a.k])rej('?');c.roles=c.roles||{};if(!a.player){delete c.roles[a.k];return;}const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.pos==='G'&&a.k!=='cap')rej('Torhüter schießen keine Standards.');c.roles[a.k]=p.id;},
   ROLE_AUTO(st,a){const c=st.clubs.me;c.roles={};for(const k in ROLEK){const p=roleAuto(c,k,c.squad.filter(x=>!x.loan||k!=='cap'));if(p)c.roles[k]=p.id;}},
   SCOUT_GO(st,a){needPhase(st,'matchday');const c=st.clubs.me;if(c.scout&&!c.scout.done)rej('Es läuft schon ein Scout-Auftrag.');if(!SCREG[a.reg])rej('Region?');const m=clamp(a.months|0,3,6);const k=scoutCost(c,a.reg);if(c.cash<k)rej('Nicht genug Geld.');
@@ -2670,7 +2682,7 @@ function xiSwapCard(c,form,X){
   const cur=all.find(a=>a.p.id===S.id);if(!cur){ui.xiSel=null;return '';}
   if(ST.career&&isLand()){let slot=null;for(const k of ['G','D','M','A'])for(const x of X[k])if(x.p&&x.p.id===S.id)slot=x.slot||(k==='G'?'TW':null);
     const inX=new Set(all.map(a=>a.p.id));const ef=p=>Math.round(effRat(c,p)-(slot&&slot!=='TW'&&p.pos!=='G'?posPenC(p,slot):(slot==='TW')!==(p.pos==='G')?25:0));const e0=ef(cur.p);
-    const L=c.squad.filter(p=>!inX.has(p.id)&&!(p.inj>0)&&!(p.sus>0)&&!p.sent&&(slot==='TW')===(p.pos==='G')).sort((a,b)=>ef(b)-ef(a)).slice(0,5);
+    const LB=ST.phase==='halftime'&&ST.ht&&ST.ht.bench?new Set(ST.ht.bench):null;const L=c.squad.filter(p=>!inX.has(p.id)&&(!LB||LB.has(p.id))&&!(p.inj>0)&&!(p.sus>0)&&!p.sent&&(slot==='TW')===(p.pos==='G')).sort((a,b)=>ef(b)-ef(a)).slice(0,5);
     const R=(curLu(c)||{}).R||{};const v=R[S.id]||0;
     return `<div id="xiswap" class="card swc"><div class="row"><b>⇄ ${esc(cur.p.name.split(' ').slice(-1)[0])} · ${slot||POSL[S.k]} <span class="mut">${e0}</span></b><span class="sp"></span><button class="ic" data-a="xiTap" data-v="x|">✕</button></div>
       ${subOn()&&S.k!=='G'?`<div class="row" style="gap:4px;margin:5px 0 3px">${[[-1,'⬇'],[0,'•'],[1,'⬆']].map(([k,l])=>`<span class="chip ${v===k?'on':''}" style="padding:2px 9px!important;flex:1;text-align:center" data-a="xiRole" data-v="${S.id}|${k}" title="${['Defensiv','Normal','Offensiv'][k+1]}">${l}</span>`).join('')}</div>`:''}
@@ -2681,7 +2693,7 @@ function xiSwapCard(c,form,X){
   const cands=c.squad.filter(p=>p.id!==S.id&&!(p.inj>0)&&!(p.sus>0)&&!p.sent).sort((a,b)=>(inXI.has(a.id)-inXI.has(b.id))||eff(b)-eff(a));
   const row=p=>{const e=eff(p);const w=inXI.get(p.id);
     return `<div class="pl" data-a="xiSwap" data-v="${p.id}" style="cursor:pointer"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(e)}">${e}</span><div class="pn"><b>${esc(p.name)}${p.pos!==S.k?' <span class="tag" style="background:#ff9a3d;color:#13210f">fremde Pos.</span>':''}</b><span>${p.age} J. · Stärke ${p.rat}${c.cond&&p.fr!=null?` · ⚡ ${Math.round(p.fr)} %`:''}${w?` · spielt jetzt ${POSL[w]} – Positionen tauschen`:''}</span></div><b style="color:${e-e0>=0?'#3fd0a0':'#ff5b4d'};margin-right:6px">${e-e0>0?'+':''}${e-e0}</b><span class="mut">⇄</span></div>`;};
-  const bench=cands.filter(p=>!inXI.has(p.id)),xi=cands.filter(p=>inXI.has(p.id)&&inXI.get(p.id)!==S.k&&(p.pos===S.k||cur.p.pos===inXI.get(p.id)));
+  const LB2=ST.career&&ST.phase==='halftime'&&ST.ht&&ST.ht.bench?new Set(ST.ht.bench):null;const bench=cands.filter(p=>!inXI.has(p.id)&&(!LB2||LB2.has(p.id))),xi=cands.filter(p=>inXI.has(p.id)&&inXI.get(p.id)!==S.k&&(p.pos===S.k||cur.p.pos===inXI.get(p.id)));
   return `<div id="xiswap" class="card" style="margin:10px 0 0;padding:10px 12px;border:1px solid #d8f24a"><div class="row"><b>${esc(cur.p.name)} (${POSL[S.k]}, ${cur.p.rat}) ersetzen durch …</b><span class="sp"></span><button class="ic" data-a="xiTap" data-v="x|">✕</button></div>${subOn()&&S.k!=='G'?(()=>{const R=(curLu(c)||{}).R||{};const v=R[S.id]||0;return `<div class="row" style="gap:6px;margin:8px 0 2px"><span class="small mut">Ausrichtung</span><span class="sp"></span>${[[-1,'⬇ Def.'],[0,'Normal'],[1,'⬆ Off.']].map(([k,l])=>`<span class="chip ${v===k?'on':''}" style="padding:5px 9px;font-size:12px" data-a="xiRole" data-v="${S.id}|${k}">${l}</span>`).join('')}</div><div class="tiny mut">${esc(ROLE_TXT[S.k][v+1])}</div>`;})():''}
   ${bench.length?`<h4 style="margin:8px 0 2px">Bank</h4>${bench.map(row).join('')}`:'<div class="mut small">Keine Bankspieler verfügbar.</div>'}
   ${xi.length?`<h4 style="margin:10px 0 2px">Positionen tauschen</h4>${xi.map(row).join('')}`:''}</div>`;
@@ -3570,7 +3582,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='115',APP_RV=13;
+const APP_BUILD='116',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4724,6 +4736,20 @@ function xiSlotDrop(e){try{if(!XD.k||!['D','M','A'].includes(XD.k))return false;
   {const R0=(curLu(c)||{}).R;if(R0)lu.R=Object.assign({},R0);}
   if(typeof undoSave==='function')undoSave();ui.lu=lu;ui.form=nf;ui.xiSel=null;const p=c.squad.find(q=>q.id===XD.id);
   toast(`🔁 ${p?p.name.split(' ').slice(-1)[0]:'Spieler'} spielt jetzt ${SLN[tgt]} → ${fname(nf)}`,true);render();return true;}catch(err){console.error(err);return false;}}
+// ---------- Auswechselbank (6) & Tribüne ----------
+{const _xiB=xiBench;xiBench=function(c,X){if(!ST.career)return _xiB(c,X);
+  const inXI=new Set();for(const k of ['G','D','M','A'])X[k].forEach(x=>{if(x.p)inXI.add(x.p.id);});
+  const ok=p=>!(p.inj>0)&&!(p.sus>0)&&!p.sent;const ord=(a,b)=>'GDMA'.indexOf(a.pos)-'GDMA'.indexOf(b.pos)||b.rat-a.rat;
+  const live=ST.phase==='halftime'&&ST.ht;const bIds=live?(ST.ht.bench||[]):benchOf(c,inXI);
+  const bench=bIds.map(id=>c.squad.find(p=>p.id===id)).filter(p=>p&&ok(p)&&!inXI.has(p.id)).sort(ord);
+  const chip=(p,act)=>`<span data-drag="B|${p.id}" ${act?`data-a="${act}" data-v="${p.id}"`:''} class="bchip"><span class="pos ${p.pos}">${posL(p)}</span><b>${p.rat}</b><span class="bn">${esc(p.name.split(' ').slice(-1)[0])}</span>${act==='benchOut'?'<i>✕</i>':act==='benchIn'?'<i>+</i>':''}</span>`;
+  let h=`<div style="margin-top:8px"><div class="tiny mut" style="margin-bottom:4px">🪑 Auswechselbank ${bench.length}/${BENCH_N}${live?' – nur sie dürfen rein':''} ${inf('Nur diese 6 Spieler kannst du im Spiel einwechseln (auch bei Verletzungen). Vor dem Anpfiff: ✕ schickt einen Spieler auf die Tribüne, + holt ihn auf die Bank. Ziehen aufs Feld stellt ihn in die Startelf.')}</div><div class="bwrap">${bench.map(p=>chip(p,live?null:'benchOut')).join('')||'<span class="tiny mut">leer</span>'}</div>`;
+  if(!live){const rest=c.squad.filter(p=>ok(p)&&!inXI.has(p.id)&&!bench.includes(p)).sort(ord);
+    if(rest.length)h+=`<div class="tiny mut" style="margin:8px 0 4px">🎟️ Tribüne</div><div class="bwrap trib">${rest.map(p=>chip(p,bench.length<BENCH_N?'benchIn':null)).join('')}</div>`;}
+  return h+'</div>';};}
+function benchCur(c){const lu=curLu(c);const X=pickXI(Object.assign({},c,{lineup:lu}),ui.form||c.form);const s=new Set();for(const k of ['G','D','M','A'])X[k].forEach(x=>{if(x.p)s.add(x.p.id);});return benchOf(c,s);}
+ACT.benchOut=function(v){if(XD.blockClick&&Date.now()-XD.blockClick<400)return;const c=myC();send('BENCH',{ids:benchCur(c).filter(id=>id!==v)});};
+ACT.benchIn=function(v){if(XD.blockClick&&Date.now()-XD.blockClick<400)return;const c=myC();const b=benchCur(c);if(b.length>=BENCH_N)return;send('BENCH',{ids:b.concat([v])});};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
