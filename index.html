@@ -207,6 +207,14 @@ body.land .grow>*{flex-shrink:0}
 
 #rotHint{display:none;position:fixed;inset:0;z-index:99999;background:#0b1a13;align-items:center;justify-content:center;text-align:center;padding:30px}
 @media (orientation:portrait){body.land #rotHint{display:flex}}
+
+body.land .lbody>.card:has(.l3),body.land .lbody>.l3{flex:1 1 auto;min-height:0;display:flex;padding:6px 8px;overflow:hidden}
+body.land .l3{flex:1;min-height:0;height:100%;grid-template-columns:minmax(0,1fr) auto minmax(0,1.05fr)!important;gap:10px;align-items:stretch}
+body.land .l3a,body.land .l3c{min-height:0;overflow-y:auto;scrollbar-width:none}body.land .l3a::-webkit-scrollbar,body.land .l3c::-webkit-scrollbar{display:none}
+body.land .l3b{min-height:0;height:100%;display:flex;align-items:center;justify-content:center}
+body.land .l3b #xipitch{height:100%!important;width:auto!important;max-height:none!important;aspect-ratio:1/1;margin:0}
+body.land .l3c select{font-size:13px;padding:6px 8px}
+body.land .l3 .chip{padding:4px 9px!important;font-size:12px!important}
 </style>
 </head>
 <body>
@@ -3546,7 +3554,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='112',APP_RV=13;
+const APP_BUILD='113',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4320,7 +4328,8 @@ const _pitchSvgLand=pitchSvg;pitchSvg=function(c,form){const h=_pitchSvgLand(c,f
   const i=h.indexOf('<svg id="xipitch"');if(i<0)return h;const top=h.slice(0,i),bot=h.slice(i);
   const f=top.indexOf('<!--F-->'),t=top.indexOf('<!--T-->'),sx=top.indexOf('<!--S-->');
   const fsel=f>=0?top.slice(0,f):'',tac=f>=0&&t>=0?top.slice(f,t):'',tk=t>=0&&sx>=0?top.slice(t,sx):'',str=sx>=0?top.slice(sx):top;
-  return `<div class="l3"><div class="l3a">${ui.l3left||''}${tk}</div><div class="l3b">${bot}</div><div class="l3c">${fsel}${tac}${str}</div></div>`;};
+  const e=bot.indexOf('</svg>')+6;const svg=bot.slice(0,e),rest=bot.slice(e);
+  return `<div class="l3"><div class="l3a">${ui.l3left||''}${tk}${rest}</div><div class="l3b">${svg}</div><div class="l3c">${fsel}${tac}${str}</div></div>`;};
 function chtLand(c,ctx,H,A,form){const brk=ST.ht.brk;const myRed=ctx.red?ctx.red[ctx.h==='me'?'h':'a']:0;const n=ST.ht.xi1?htSubs(c,curLu(c),form):0;
   let left=`<div class="card" style="padding:8px 10px;text-align:center;margin:0 0 8px"><div class="tiny mut">${brk?(brk.t==='inj'?'🚑 Unterbrechung · '+brk.m+'′':brk.t==='pen'?'⚽ Elfmeter · '+brk.m+'′':'⏸ Pause · '+(ctx.lm||0)+'′'):'Halbzeit'}</div><div class="row" style="justify-content:center;gap:8px;margin:4px 0">${crest(H,22)}<b style="font-size:22px">${ctx.gh}:${ctx.ga}</b>${crest(A,22)}</div><div class="tiny mut">${esc(H.name)} – ${esc(A.name)}</div>${myRed?`<div class="tiny" style="color:var(--bad);margin-top:4px">🟥 Unterzahl</div>`:''}<div class="small" style="margin-top:6px"><b>Wechsel ${n}/3</b></div></div>`;
   const ev=ctx.ev.slice().sort((a,b)=>b.m-a.m).slice(0,4);if(ev.length)left+=`<div class="card" style="padding:6px 10px;margin:0 0 8px">${ev.map(evLine).join('')}</div>`;
@@ -4548,7 +4557,7 @@ ACT.boardEnd=function(v){if(conf('be'+v))send('BOARD_END',{i:+v});};
 
 // Realistische Positionen je Slot (Karriere)
 function realXY(arr,i,k){const sl=arr.map(x=>x.slot);if(sl.some(x=>!x))return null;const me=sl[i];
-  const Y={LV:67,RV:67,IV:71,ZDM:54,ZM:45,ZOM:32,LM:40,RM:40,LA:19,RA:19,ST:13};
+  const Y={LV:66,RV:66,IV:73,ZDM:51,ZM:42,ZOM:30,LM:38,RM:38,LA:18,RA:18,ST:12};
   const same=sl.map((x,j)=>[x,j]).filter(z=>z[0]===me);const idx=same.findIndex(z=>z[1]===i);const m=same.length;
   let x;if(me==='LV')x=12;else if(me==='RV')x=88;else if(me==='LM')x=12;else if(me==='RM')x=88;else if(me==='LA')x=18;else if(me==='RA')x=82;
   else{const spread={IV:[[50],[36,64],[27,50,73]],ZDM:[[50],[38,62],[28,50,72]],ZM:[[50],[34,66],[26,50,74]],ZOM:[[50],[36,64],[28,50,72]],ST:[[50],[38,62],[30,50,70]]}[me]||[[50]];x=(spread[Math.min(m,3)-1]||[50])[Math.min(idx,2)];}
