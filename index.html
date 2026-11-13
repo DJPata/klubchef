@@ -272,14 +272,14 @@ function arrangeSlots(xi,form){const S=SLOTS[form]||SLOTS['4-4-2'];
   for(const k of ['D','M','A']){const sl=S[k];if(!sl||sl.length!==xi[k].length)continue;const ord=permBest(xi[k],sl);
     xi[k]=ord.map((j,i)=>{const x=Object.assign({},xi[k][j]);x.slot=sl[i];if(x.p&&!x.oop){const pe=spPenP(x.p,sl[i]);if(pe){x.r-=pe;x.sw=pe;}}return x;});}
   if(xi.G[0])xi.G[0].slot='TW';return xi;}
-const FORM={'4-4-2':[4,4,2],'4-3-3':[4,3,3],'3-5-2':[3,5,2],'5-3-2':[5,3,2],'4-5-1':[4,5,1],'3-4-3':[3,4,3],'4-4-2R':[4,4,2],'3-5-2O':[3,5,2],'3-5-2D':[3,5,2],'5-4-1':[5,4,1],'5-2-3':[5,2,3],'4-2-3-1':[4,5,1],'4-4-2D':[4,4,2],'4-3-3O':[4,3,3],'4-3-3D':[4,3,3],'4-1-4-1':[4,5,1],'3-5-2B':[3,5,2]};
+const FORM={'4-4-2':[4,4,2],'4-3-3':[4,3,3],'3-5-2':[3,5,2],'5-3-2':[5,3,2],'4-5-1':[4,5,1],'3-4-3':[3,4,3],'4-4-2R':[4,4,2],'3-5-2O':[3,5,2],'3-5-2D':[3,5,2],'5-4-1':[5,4,1],'5-2-3':[5,2,3],'4-2-3-1':[4,5,1],'4-4-2D':[4,4,2],'4-3-3O':[4,3,3],'4-3-3D':[4,3,3],'4-1-4-1':[4,5,1],'3-5-2B':[3,5,2],'4-3-3Z':[4,3,3],'4-4-2Z':[4,4,2],'3-5-2Z':[3,5,2],'5-3-2O':[5,3,2]};
 const FBASE=['4-4-2','4-3-3','3-5-2','5-3-2','4-5-1','3-4-3'];
 const FNAME={'4-4-2R':'4-4-2 Raute','3-5-2O':'3-5-2 offensiv','3-5-2D':'3-5-2 defensiv'};
-const FMOD={'4-4-2R':{A:1,M:1.5,D:-1.5},'3-5-2O':{A:1.5,M:0,D:-1.5},'4-4-2D':{A:-1,M:0,D:1.5},'4-3-3O':{A:1.5,M:0,D:-1.5},'4-3-3D':{A:-1.5,M:0,D:1.5},'4-1-4-1':{A:-0.5,M:0,D:1},'3-5-2B':{A:0.5,M:-0.5,D:0.5},'3-5-2D':{A:-2.5,M:0,D:2.5},'5-2-3':{A:-1.5,M:0,D:-1.5}};
+const FMOD={'4-4-2R':{A:1,M:1.5,D:-1.5},'3-5-2O':{A:1.5,M:0,D:-1.5},'4-4-2D':{A:-1,M:0,D:1.5},'4-3-3O':{A:1.5,M:0,D:-1.5},'4-3-3D':{A:-1.5,M:0,D:1.5},'4-1-4-1':{A:-0.5,M:0,D:1},'3-5-2B':{A:0.5,M:-0.5,D:0.5},'4-3-3Z':{A:0.5,M:0,D:0},'4-4-2Z':{A:0.5,M:0,D:0},'3-5-2Z':{A:0.5,M:0,D:0},'5-3-2O':{A:1,M:0,D:-1},'3-5-2D':{A:-2.5,M:0,D:2.5},'5-2-3':{A:-1.5,M:0,D:-1.5}};
 const FBASEN={'4-4-2R':'4-4-2 Raute','4-2-3-1':'4-2-3-1','4-1-4-1':'4-1-4-1'};
 function fname(f){if(CAREER_VAL&&SLOTS2[f]){const F=FORM[f];const b=FBASEN[f]||F.join('-');const M=SLOTS2[f].M;const cnt=k=>M.filter(x=>x===k).length;const parts=[];for(const k of ['ZDM','ZM','ZOM']){const n=cnt(k);if(n)parts.push((n>1?n+' ':'')+k);}
   if(f==='4-4-2R'||f==='4-2-3-1')return b;return b+(parts.length?' · '+parts.join(' + '):'');}return FNAME[f]||f;}
-function formOk(st,f){if(['5-4-1','5-2-3','4-2-3-1','4-4-2D','4-3-3O','4-3-3D','4-1-4-1','3-5-2B'].includes(f))return !!(st&&st.career);return !!FORM[f]&&(FBASE.includes(f)||!!(st&&(st.career||st.rv>=12)));}
+function formOk(st,f){if(['5-4-1','5-2-3','4-2-3-1','4-4-2D','4-3-3O','4-3-3D','4-1-4-1','3-5-2B','4-3-3Z','4-4-2Z','3-5-2Z','5-3-2O'].includes(f))return !!(st&&st.career);return !!FORM[f]&&(FBASE.includes(f)||!!(st&&(st.career||st.rv>=12)));}
 function formsFor(st){const L=Object.keys(FORM).filter(f=>formOk(st,f));if(st&&st.career)L.sort((a,b)=>FORM[b][0]-FORM[a][0]?FORM[a][0]-FORM[b][0]:fname(a).localeCompare(fname(b)));return L;}
 const TAC={
   bal:{n:'Ausgeglichen',d:'Keine Stärken, keine Schwächen.'},
@@ -1078,7 +1078,9 @@ const SLOTS2={'4-4-2':{D:['LV','IV','IV','RV'],M:['LM','ZM','ZM','RM'],A:['ST','
   '4-4-2R':{D:['LV','IV','IV','RV'],M:['ZM','ZDM','ZOM','ZM'],A:['ST','ST']},'3-5-2O':{D:['IV','IV','IV'],M:['LM','ZM','ZOM','ZM','RM'],A:['ST','ST']},'3-5-2D':{D:['IV','IV','IV'],M:['LM','ZDM','ZM','ZDM','RM'],A:['ST','ST']},
   '5-4-1':{D:['LV','IV','IV','IV','RV'],M:['LM','ZM','ZM','RM'],A:['ST']},'5-2-3':{D:['LV','IV','IV','IV','RV'],M:['ZM','ZM'],A:['LA','ST','RA']},'4-2-3-1':{D:['LV','IV','IV','RV'],M:['LM','ZDM','ZOM','ZDM','RM'],A:['ST']},
   '4-4-2D':{D:['LV','IV','IV','RV'],M:['LM','ZDM','ZDM','RM'],A:['ST','ST']},'4-3-3O':{D:['LV','IV','IV','RV'],M:['ZM','ZOM','ZM'],A:['LA','ST','RA']},'4-3-3D':{D:['LV','IV','IV','RV'],M:['ZDM','ZM','ZDM'],A:['LA','ST','RA']},
-  '4-1-4-1':{D:['LV','IV','IV','RV'],M:['LM','ZM','ZDM','ZM','RM'],A:['ST']},'3-5-2B':{D:['IV','IV','IV'],M:['LM','ZDM','ZOM','ZDM','RM'],A:['ST','ST']}};
+  '4-1-4-1':{D:['LV','IV','IV','RV'],M:['LM','ZM','ZDM','ZM','RM'],A:['ST']},'3-5-2B':{D:['IV','IV','IV'],M:['LM','ZDM','ZOM','ZDM','RM'],A:['ST','ST']},
+  '4-3-3Z':{D:['LV','IV','IV','RV'],M:['ZM','ZDM','ZOM'],A:['LA','ST','RA']},'4-4-2Z':{D:['LV','IV','IV','RV'],M:['LM','ZDM','ZOM','RM'],A:['ST','ST']},
+  '3-5-2Z':{D:['IV','IV','IV'],M:['LM','ZDM','ZM','ZOM','RM'],A:['ST','ST']},'5-3-2O':{D:['LV','IV','IV','IV','RV'],M:['ZM','ZOM','ZM'],A:['ST','ST']}};
 function slotsOf(form){const T=CAREER_VAL?SLOTS2:SLOTS;return T[form]||T['4-4-2'];}
 const PARTN={LV:['RV','LM','IV'],RV:['LV','RM','IV'],IV:['ZDM','LV','RV'],ZDM:['ZM','IV'],ZM:['ZDM','ZOM'],ZOM:['ZM','ST'],LM:['RM','LA','LV'],RM:['LM','RA','RV'],LA:['RA','LM'],RA:['LA','RM'],ST:['ZOM','LA','RA']};
 function h01(s){return (h32(s)%10000)/10000;}
@@ -3250,7 +3252,7 @@ function xiDragEnd(e){
   if(XD.ghost)XD.ghost.remove();
   XD.blockClick=Date.now();
   const t=document.elementFromPoint(e.clientX,e.clientY);const tg=t&&t.closest&&t.closest('#xipitch g[data-drag]');
-  if(!tg){if(xiLineDrop(e))return;render();return;}
+  if(!tg){if(ST.career&&xiSlotDrop(e))return;if(xiLineDrop(e))return;render();return;}
   const [k2,id2]=tg.dataset.drag.split('|');if(id2===XD.id){render();return;}
   if(XD.k==='B'){ui.xiSel={k:k2,id:id2};ACT.xiSwap(XD.id);}
   else{ui.xiSel={k:XD.k,id:XD.id};ACT.xiSwap(id2);}
@@ -3554,7 +3556,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='113',APP_RV=13;
+const APP_BUILD='114',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4561,6 +4563,7 @@ function realXY(arr,i,k){const sl=arr.map(x=>x.slot);if(sl.some(x=>!x))return nu
   const same=sl.map((x,j)=>[x,j]).filter(z=>z[0]===me);const idx=same.findIndex(z=>z[1]===i);const m=same.length;
   let x;if(me==='LV')x=12;else if(me==='RV')x=88;else if(me==='LM')x=12;else if(me==='RM')x=88;else if(me==='LA')x=18;else if(me==='RA')x=82;
   else{const spread={IV:[[50],[36,64],[27,50,73]],ZDM:[[50],[38,62],[28,50,72]],ZM:[[50],[34,66],[26,50,74]],ZOM:[[50],[36,64],[28,50,72]],ST:[[50],[38,62],[30,50,70]]}[me]||[[50]];x=(spread[Math.min(m,3)-1]||[50])[Math.min(idx,2)];}
+  if(k==='M'&&m===1&&(me==='ZM'||me==='ZOM')&&sl.includes('ZM')&&sl.includes('ZOM')&&sl.filter(z=>['ZM','ZOM','ZDM'].includes(z)).length>=3)x=me==='ZM'?36:64;
   let y=Y[me]||40;if(k==='D'&&sl.length===5&&(me==='LV'||me==='RV'))y=62;if(k==='M'&&me==='ZM'&&sl.includes('ZDM')&&!sl.includes('ZOM')&&m===1)y=42;
   return [x,y];}
 
@@ -4688,6 +4691,25 @@ clubGround=clubGround2;
 {const _cofG2=VIEWS.coffice;VIEWS.coffice=function(){if(ST.career&&ui.sub==='ausbau'&&isLand()){const c=myC();
   return `<div class="gland"><div class="card" style="padding:6px;background:#0c2418;display:flex;align-items:center;justify-content:center">${clubGround2(c)}</div><div class="card"><div class="row"><b>🏟️ ${esc(c.stadium||'Vereinsgelände')}</b>${inf('Tippe auf ein Gebäude, um es anzusehen und auszubauen. ⬆ = Ausbau bezahlbar. Bauen geht jederzeit – je höher die Stufe, desto länger die Bauzeit. Während des Stadionausbaus gibt es weniger Ticket- und Fanshop-Einnahmen.')}<span class="sp"></span><span class="tiny mut">${num(CCAP[c.up.stadium||1])} Plätze</span></div><div>${facRows(c)}</div></div></div>`;}
   return _cofG2.apply(this,arguments);};}
+
+// ---------- Spieler auf freie Position ziehen → System passt sich an ----------
+function zoneSlot(x,y){const L=x<22,R=x>78;if(y<24)return x<33?'LA':x>67?'RA':'ST';if(y<35)return L?'LA':R?'RA':'ZOM';if(y<47)return L?'LM':R?'RM':'ZM';if(y<60)return L?(y<53?'LM':'LV'):R?(y<53?'RM':'RV'):'ZDM';if(y<81)return L?'LV':R?'RV':'IV';return null;}
+const SLN={TW:'Torwart',LV:'LV',RV:'RV',IV:'IV',ZDM:'ZDM',ZM:'ZM',ZOM:'ZOM',LM:'LM',RM:'RM',LA:'LA',RA:'RA',ST:'ST'};
+function xiSlotDrop(e){try{if(!XD.k||!['D','M','A'].includes(XD.k))return false;const svg=document.getElementById('xipitch');if(!svg)return false;const R=svg.getBoundingClientRect();
+  if(e.clientX<R.left||e.clientX>R.right||e.clientY<R.top||e.clientY>R.bottom)return false;
+  const x=(e.clientX-R.left)/R.width*100,y=(e.clientY-R.top)/R.height*100;const tgt=zoneSlot(x,y);if(!tgt)return false;
+  const c=myC();const old=ui.form||c.form;const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),old);
+  const cur=[];for(const k of ['D','M','A'])for(const it of X[k])if(it.p)cur.push({id:it.p.id,slot:it.slot});
+  const me0=cur.find(q=>q.id===XD.id);if(!me0||me0.slot===tgt)return false;
+  const want=cur.map(q=>q.id===XD.id?tgt:q.slot).sort().join(',');
+  const cands=formsFor(ST).filter(f=>{const S=slotsOf(f);return S.D.concat(S.M,S.A).slice().sort().join(',')===want;});
+  if(!cands.length){toast(`Kein System mit ${SLN[tgt]} statt ${SLN[me0.slot]} – probier eine andere Stelle.`);render();return true;}
+  const nf=cands.includes(old)?old:cands[0];const S=slotsOf(nf);const pool=cur.map(q=>q.id===XD.id?{id:q.id,slot:tgt,me:1}:q);
+  const lu={G:X.G.filter(i=>i.p).map(i=>i.p.id),D:[],M:[],A:[],fx:1};
+  for(const k of ['D','M','A'])for(const sl of S[k]){let i=pool.findIndex(q=>q.slot===sl&&q.me);if(i<0)i=pool.findIndex(q=>q.slot===sl);if(i>=0){lu[k].push(pool[i].id);pool.splice(i,1);}}
+  {const R0=(curLu(c)||{}).R;if(R0)lu.R=Object.assign({},R0);}
+  if(typeof undoSave==='function')undoSave();ui.lu=lu;ui.form=nf;ui.xiSel=null;const p=c.squad.find(q=>q.id===XD.id);
+  toast(`🔁 ${p?p.name.split(' ').slice(-1)[0]:'Spieler'} spielt jetzt ${SLN[tgt]} → ${fname(nf)}`,true);render();return true;}catch(err){console.error(err);return false;}}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
