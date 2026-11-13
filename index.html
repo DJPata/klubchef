@@ -204,6 +204,9 @@ body.land .gland .cg2{width:auto!important;height:100%;max-width:100%}
 
 body.land .grow{align-content:start;grid-auto-rows:max-content}
 body.land .grow>*{flex-shrink:0}
+
+#rotHint{display:none;position:fixed;inset:0;z-index:99999;background:#0b1a13;align-items:center;justify-content:center;text-align:center;padding:30px}
+@media (orientation:portrait){body.land #rotHint{display:flex}}
 </style>
 </head>
 <body>
@@ -3543,7 +3546,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='111',APP_RV=13;
+const APP_BUILD='112',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4307,9 +4310,12 @@ ACT.tkSet=function(v){send('TK',{v});};
 
 // ================= Querformat =================
 const LANDQ=window.matchMedia?window.matchMedia('(orientation: landscape) and (max-height: 560px)'):null;
-function isLand(){return !!(LANDQ&&LANDQ.matches);}
+function orientGet(){let v=LS.get('kc:orient',null);if(v!=='land'&&v!=='port'){v=LANDQ&&LANDQ.matches?'land':'port';LS.set('kc:orient',v);}return v;}
+function isLand(){return orientGet()==='land';}
 function landApply(){document.body.classList.toggle('land',isLand());}
-landApply();if(LANDQ){const f=()=>{landApply();try{render();}catch(e){}};if(LANDQ.addEventListener)LANDQ.addEventListener('change',f);else if(LANDQ.addListener)LANDQ.addListener(f);}
+landApply();
+{const d=document.createElement('div');d.id='rotHint';d.innerHTML='<div><div style="font-size:42px">📱↻</div><b>Bitte das Handy quer halten</b><div class="small mut" style="margin:6px 0 12px">Querformat ist in den Einstellungen aktiv.</div><button class="btn sm" data-a="orient" data-v="port">Zum Hochformat wechseln</button></div>';document.body.appendChild(d);}
+ACT.orient=function(v){LS.set('kc:orient',v==='land'?'land':'port');landApply();ui.tab=null;ui.sub=null;render();scrollTo(0,0);};
 const _pitchSvgLand=pitchSvg;pitchSvg=function(c,form){const h=_pitchSvgLand(c,form);if(!isLand())return h;
   const i=h.indexOf('<svg id="xipitch"');if(i<0)return h;const top=h.slice(0,i),bot=h.slice(i);
   const f=top.indexOf('<!--F-->'),t=top.indexOf('<!--T-->'),sx=top.indexOf('<!--S-->');
@@ -4422,7 +4428,7 @@ function vsGet(){return LS.get('kc:vs','s');}
 function vsApply(){const v=vsGet();document.body.classList.remove('vs-s','vs-m','vs-l');document.body.classList.add('vs-'+v);}
 vsApply();
 ACT.vsSet=function(v){LS.set('kc:vs',v);vsApply();render();};
-const _settingsVs=VIEWS.settings;VIEWS.settings=function(){const v=vsGet();return `<div class="card"><div class="row"><b>🔍 Ansichtsgröße (Querformat)</b><span class="sp"></span><div class="chips" style="gap:4px">${[['s','S'],['m','M'],['l','L']].map(([k,l])=>`<span class="chip ${v===k?'on':''}" data-a="vsSet" data-v="${k}">${l}</span>`).join('')}</div></div><p class="tiny mut" style="margin:6px 0 0">Dreh das Handy quer für die große Manager-Ansicht. S zeigt am meisten auf einmal.</p></div>`+_settingsVs();};
+const _settingsVs=VIEWS.settings;VIEWS.settings=function(){const v=vsGet();const o=orientGet();return `<div class="card"><div class="row"><b>📱 Ansicht</b>${inf('Die Ansicht wechselt nicht mehr automatisch beim Drehen. Querformat = große Manager-Ansicht (Handy quer halten), Hochformat = klassische Ansicht.')}<span class="sp"></span><div class="chips" style="gap:4px"><span class="chip ${o==='port'?'on':''}" data-a="orient" data-v="port">Hochformat</span><span class="chip ${o==='land'?'on':''}" data-a="orient" data-v="land">Querformat</span></div></div></div><div class="card"><div class="row"><b>🔍 Ansichtsgröße (Querformat)</b><span class="sp"></span><div class="chips" style="gap:4px">${[['s','S'],['m','M'],['l','L']].map(([k,l])=>`<span class="chip ${v===k?'on':''}" data-a="vsSet" data-v="${k}">${l}</span>`).join('')}</div></div><p class="tiny mut" style="margin:6px 0 0">Dreh das Handy quer für die große Manager-Ansicht. S zeigt am meisten auf einmal.</p></div>`+_settingsVs();};
 const _vGameSide=vGame;vGame=function(){if(isLand()&&ST&&ST.career&&myC())return vGameLand();let h=_vGameSide();if(!isLand()||!ST)return h;return h.replace('<nav><div class="in">','<nav>'+sideHead()+'<div class="in">');};
 
 // ---------- Rückgängig für automatische Aufstellung/Taktik ----------
