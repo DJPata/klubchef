@@ -252,6 +252,12 @@ body.land .gland .g3d{height:100%}
 body.land .gland .g3d svg{height:100%;width:auto!important;max-width:100%}
 
 .ypg .pgrid{margin:0}.ypg .pg{padding:3px 2px!important;font-size:10px}.ypg .pg b{font-size:13px}
+
+input[type=range]{-webkit-appearance:none;appearance:none;height:28px;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#3fd0a0,#d8f34e,#ff6b5b)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #d8f34e;margin-top:-9px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#3fd0a0,#d8f34e,#ff6b5b)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid #d8f34e}
 </style>
 </head>
 <body>
@@ -1930,7 +1936,7 @@ const CH={
   POACH_LET(st,a){const c=st.clubs.me;if(!c.poach)rej('?');const p=(c.nlz||[]).find(x=>x.id===c.poach.id);if(p){c.nlz=c.nlz.filter(x=>x!==p);money(c,c.poach.comp);feed(st,`${p.name} wechselt zu ${c.poach.club} – Entschädigung ${fm(c.poach.comp)}.`,'me');}c.poach=null;},
   STYLE(st,a){applyStyle(st.clubs.me,a);},
   PREM(st,a){st.clubs.me.prem=clamp(a.v|0,0,2);},
-  LIST(st,a){const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler kannst du nicht anbieten.');if(p.sold)rej('Er ist schon verkauft.');if(!a.pct){delete p.listed;c.mOff=(c.mOff||[]).filter(o=>o.pid!==p.id);return;}p.listed={pct:clamp(+a.pct,0.8,1.5)};},
+  LIST(st,a){const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler kannst du nicht anbieten.');if(p.sold)rej('Er ist schon verkauft.');if(!a.pct){delete p.listed;c.mOff=(c.mOff||[]).filter(o=>o.pid!==p.id);return;}p.listed={pct:clamp(+a.pct,0.5,2)};},
   MO_OK(st,a){const c=st.clubs.me;const o=(c.mOff||[]).find(x=>x.id===a.offer);if(!o)rej('Angebot nicht mehr gültig.');const p=c.squad.find(x=>x.id===o.pid);if(!p)rej('?');
     if(c.squad.filter(x=>!x.sold).length<=SQUAD_MIN)rej('Mindestens 12 Spieler im Kader.');if(p.pos==='G'&&c.squad.filter(x=>x.pos==='G'&&!x.sold).length<2)rej('Du brauchst einen Torwart.');
     p.sold={club:o.club,price:o.price};delete p.listed;c.mOff=c.mOff.filter(x=>x.pid!==p.id);c.lastNeg={ok:true,t:`🤝 Deal! ${p.name} wechselt zur ${st.md<9?'Winterpause':'Sommerpause'} für ${fm(o.price)} zu ${o.club}.`};feed(st,c.lastNeg.t,'me');},
@@ -3627,7 +3633,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='121',APP_RV=13;
+const APP_BUILD='122',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4854,8 +4860,9 @@ ACT.moNo=function(v){send('MO_NO',{offer:v});};
 {const _mh=modalHtml;modalHtml=function(){const M=ui.modal;const c=myC();if(!M||M.t!=='sell'||!c)return _mh();const p=c.squad.find(x=>x.id===M.id);if(!p)return '';const pct=ui.slPct||1;
   const ch=v=>Math.round(clamp(0.42-(v-1)*0.9+(p.age<=24?0.08:0),0.06,0.6)*100);const W=ST.md<9?'Winterpause':'Sommerpause';
   return `<button class="ic mx" data-a="sheetX">✕</button><div class="mt">📤 Spieler anbieten</div><div class="mg"><div>${plHead(p,c,true)}<div class="tip">💼 <b>Sportdirektor:</b> ${p.age>=30?'Mit dem Alter sinkt sein Wert – jetzt wäre ein guter Zeitpunkt.':p.age<=21?'Junge Spieler sind gefragt – du kannst ruhig etwas mehr verlangen.':'Ein fairer Preis bringt schnell Interessenten.'}</div></div>
-   <div><div class="card"><h4 style="margin-top:0">Wunschpreis</h4><div class="chips">${[0.8,0.9,1,1.2,1.5].map(v=>`<span class="chip ${Math.abs(pct-v)<0.001?'on':''}" data-a="slPct" data-v="${v}">${Math.round(v*100)} %</span>`).join('')}</div>
-   <div class="grid2" style="margin-top:10px"><div class="kpi"><span>Preis</span><b>${fm(r2(value(p)*pct))}</b></div><div class="kpi"><span>Angebot pro Spieltag</span><b>ca. ${ch(pct)} %</b></div></div>
+   <div><div class="card"><h4 style="margin-top:0">Wunschpreis</h4><div class="row" style="gap:10px"><input type="range" id="slRange" min="50" max="200" step="5" value="${Math.round(pct*100)}" data-v0="${value(p)}" data-young="${p.age<=24?1:0}" style="flex:1"><b id="slPctT" style="min-width:52px;text-align:right">${Math.round(pct*100)} %</b></div>
+   <div class="row tiny mut" style="justify-content:space-between;margin-top:2px"><span>50 %</span><span>Marktwert ${fm(value(p))}</span><span>200 %</span></div>
+   <div class="grid2" style="margin-top:10px"><div class="kpi"><span>Preis</span><b id="slPrice">${fm(r2(value(p)*pct))}</b></div><div class="kpi"><span>Angebot pro Spieltag</span><b id="slCh">ca. ${ch(pct)} %</b></div></div>
    <p class="tiny mut" style="margin:8px 0">Er spielt weiter für dich und wechselt erst zur ${W}.</p><button class="btn pri block" data-a="slGo" data-v="${p.id}">Auf die Transferliste</button></div></div></div>`;};}
 // ---------- Nachwuchsspieler ansehen (NLZ, Camp, Scoutbericht) ----------
 function youthFind(c,id){const n=(c.nlz||[]).find(p=>p.id===id);if(n)return [n,'nlz'];const k=c.camp&&c.camp.kids.find(p=>p.id===id);if(k)return [k,'camp'];const s=c.scout&&(c.scout.rep||[]).find(p=>p.id===id);if(s)return [s,'scout'];return [null,null];}
@@ -4871,6 +4878,9 @@ function youthFind(c,id){const n=(c.nlz||[]).find(p=>p.id===id);if(n)return [n,'
   else if(src==='scout'){const fee=scoutFee(p);act=`<button class="btn ok block" data-a="scSign" data-v="${p.id}" ${c.cash<fee?'disabled':''}>${cl('ss'+p.id,'Verpflichten · '+fm(fee))}</button>`;}
   return `<button class="ic mx" data-a="sheetX">✕</button><div class="mt">🎓 ${src==='nlz'?'NLZ-Talent':src==='camp'?'Camp-Talent':'Scoutbericht'}</div><div class="mg"><div>${head}<div style="margin-top:10px">${act}</div></div><div class="ypg">${posGrid(p)}</div></div>`;};}
 ACT.ypTr=function(v){const c=myC();send('NLZ_TR',{player:c&&c.nlzTr===v?null:v});};
+
+document.addEventListener('input',e=>{const el=e.target;if(!el||el.id!=='slRange')return;const v=+el.value/100;ui.slPct=v;const v0=+el.dataset.v0,y=+el.dataset.young;
+  const set=(id,t)=>{const x=document.getElementById(id);if(x)x.textContent=t;};set('slPctT',Math.round(v*100)+' %');set('slPrice',fm(r2(v0*v)));set('slCh','ca. '+Math.round(clamp(0.42-(v-1)*0.9+(y?0.08:0),0.06,0.6)*100)+' %');});
 
 // ---------- Start ----------
 async function initFirebase(cfg){
