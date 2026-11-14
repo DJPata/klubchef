@@ -931,7 +931,7 @@ const dev=[],gone=[];
       if(p.age>=34&&(p.age>=36||r.chance(0.5))){gone.push(`${p.name} (Karriereende mit ${p.age})`);continue;}
       let d=p.age<=21?r.int(1,4):p.age<=24?r.int(0,3):p.age<=28?r.int(-1,2):p.age<=31?r.int(-2,1):r.int(-4,0);
       if(p.tr==='tal'&&p.age<=24)d+=1;if(p.tr==='rou'&&p.age>=29&&d<0)d+=1;
-      if(p.age<=26){const b=(c.up.training-1)*0.5;d+=Math.floor(b)+(r.f()<b-Math.floor(b)?1:0);if(st.career)d+=[0,-1,0,1,2,3,4][starsOf(p)]||0;}
+      if(p.age<=26){const b=(c.up.training-1)*0.5;d+=Math.floor(b)+(r.f()<b-Math.floor(b)?1:0);if(st.career)d+=Math.round((devOf(p)-1)*5)+(isDia(p)?3:0);}
       if(statsOn(st)){p.gs=0;p.as=0;}
       let eb=0;if(st.rv>=5){const share=(p.apps||0)/Math.max(1,st.schedule.length);if(p.age<=24)eb=share>=0.7?2:share>=0.4?1:0;d+=eb;p.apps=0;}
       const before=p.rat;let nr=p.rat+d;if(d>0)nr=Math.min(nr,Math.max(p.pot,p.rat));nr=clamp(nr,35,95);
@@ -1149,7 +1149,14 @@ function footOf(p){if(!p)return 'R';if(p.foot)return p.foot;const s=p.pos==='G'?
   p.foot=u<0.1?'B':left?(u<0.8?'L':'R'):right?(u<0.92?'R':'L'):(u<0.32?'L':'R');return p.foot;}
 function heightOf(p){if(!p)return 180;if(p.hgt)return p.hgt;const s=p.pos==='G'?'TW':spOfC(p);const u=h01(p.id+'|hg');const [a,b]=s==='TW'?[185,199]:s==='IV'?[181,196]:s==='ST'||s==='ZDM'?[175,194]:[166,188];p.hgt=Math.round(a+u*(b-a));return p.hgt;}
 function fitOf(p){if(!p)return 60;if(p.fit!=null)return p.fit;const u=h01(p.id+'|fi');p.fit=Math.round(clamp(76-Math.max(0,p.age-28)*3+(u*32-18),30,99));return p.fit;}
-function starsOf(p){if(!p)return 2;if(p.st)return p.st;const gap=(p.pot||p.rat)-p.rat;const eg=p.age<=19?20:p.age<=21?10:p.age<=24?4:1;const v=h01(p.id+'|st')+clamp((gap-eg)/20,-0.25,0.25);
+// Star-Potenzial (Karriere): Potenzial relativ zur eigenen Liga (70 %) + Entwicklungstempo (30 %)
+let STAR_LG=3;const STAR_T=[0,78,70,63,56,50];
+function devOf(p){if(!p)return 1;if(p.dv!=null)return p.dv;p.dv=Math.round((0.7+h01(p.id+'|dv')*0.6)*100)/100;return p.dv;}
+function isDia(p){return !!(p&&(p.dia||p.st===6));}
+function starLg(){try{if(typeof ST!=='undefined'&&ST&&ST.career&&ST.clubs&&ST.clubs.me)return ST.clubs.me.lg;}catch(e){}return STAR_LG;}
+function starScore(p){const T=STAR_T[starLg()]||63;const pot=p.pot||p.rat;const s1=clamp((pot-T+14)/7,0,5);const left=pot-p.rat;const s2=left<=1?0:(devOf(p)-0.7)/0.6*5;return 0.7*s1+0.3*s2;}
+function devMul(p){return isDia(p)?2:0.6+(devOf(p)-0.7)/0.6*0.9;}
+function starsOf(p){if(!p)return 2;if(CAREER_VAL){if(isDia(p))return 6;return clamp(Math.round(starScore(p)),1,5);}if(p.st)return p.st;const gap=(p.pot||p.rat)-p.rat;const eg=p.age<=19?20:p.age<=21?10:p.age<=24?4:1;const v=h01(p.id+'|st')+clamp((gap-eg)/20,-0.25,0.25);
   p.st=v<0.25?1:v<0.60?2:v<0.85?3:v<0.97?4:5;return p.st;}
 const PSIDE={LV:'L',LM:'L',LA:'L',RV:'R',RM:'R',RA:'R'};
 const PCAT={};for(const k of ['LV|RV','LM|RM','LA|RA'])PCAT[k]=1;for(const k of ['RA|RM','LA|LM','ZDM|ZM','ZM|ZOM','ST|ZOM','IV|ZDM','LM|LV','RM|RV'])PCAT[k]=2;
@@ -1606,6 +1613,7 @@ function careerMigrate5(st){
 }
 function careerEnsurePrep(st){
   SQUAD_MAX=25;
+  if(st.clubs&&st.clubs.me)STAR_LG=st.clubs.me.lg;
   if(st.career&&st.clubs&&st.clubs.me&&st.phase!=='seasonEnd'){try{rivalEnsure(st);taskEnsure(st);}catch(e){}}
   if(st.career&&st.clubs&&st.clubs.me&&!st.jOffers&&!st.clubs.me.jers&&st.phase!=='seasonEnd'){const c=st.clubs.me;const r=RNG(st.seed,'jo'+st.season);const ff=Math.sqrt(clamp(c.fans/EXPFANS[c.lg],0.5,2.5));jerseyOffers(st,r,c,r2(SPON[c.lg]*ff));}
   if(st.career&&st.clubs&&st.clubs.me&&!st.bOffers){const r=RNG(st.seed,'bo'+st.season);st.bOffers={l:sponName(st,r),b:sponName(st,r,JNAMES)};}
@@ -1635,7 +1643,7 @@ function trnMul(c){const l=(c&&c.up&&c.up.training)||1;return l>=5?1.5:l>=4?1.25
 function posChance(p,c){return Math.min(0.95,Math.max(0.3,Math.min(0.75,0.75-(p.age-18)*0.02))*trnMul(c));}
 const STARM=[1,0.6,0.8,1,1.25,1.5,2];
 function nlzTrChance(p,c){return trainChance(p,c)*0.45;}
-function trainChance(p,c){return Math.min(0.92,Math.max(5,Math.min(60,60-(p.age-17)*4))/100*trnMul(c)*(STARM[starsOf(p)]||1)*(p.tb?1.3:1));}
+function trainChance(p,c){return Math.min(0.92,Math.max(5,Math.min(60,60-(p.age-17)*4))/100*trnMul(c)*devMul(p)*(p.tb?1.3:1));}
 function soKick(st,zone){
   const so=st.so;if(!so)rej('Kein Elfmeterschießen.');const r=CR(st);
   const n=so.kicks.length;const side=n%2===0?'h':'a';const meSide=so.h==='me'?'h':'a';const shooting=side===meSide;
@@ -3638,7 +3646,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='125',APP_RV=13;
+const APP_BUILD='126',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4683,16 +4691,17 @@ function msCard(c){const M=c.ms&&c.ms.s===ST.season?c.ms:{d:{}};const n=MSD.filt
 {const _cmF=VIEWS.cmatch;VIEWS.cmatch=function(){let h=_cmF.apply(this,arguments);if(!ST.career||ST.phase!=='matchday')return h;const c=myC();if(!c)return h;try{h=isLand()?derbyCard(c)+h:derbyCard(c)+h+taskCard(c)+msCard(c);}catch(e){}return h;};}
 // ---------- Level-up- & Meilenstein-Momente ----------
 function celebrate(){if(!ST||!ST.career||ui.view!=='game'||ui.quick)return;if(!['matchday','offseason','seasonEnd'].includes(ST.phase))return;const c=myC();if(!c)return;
-  const key='kc:cel:'+ST.seed;const S=LS.get(key,null);const now={r:{},x:{},m:{}};for(const p of c.squad.concat(c.nlz||[])){now.r[p.id]=p.rat;now.x[p.id]=(p.xsp||[]).length;}
+  const key='kc:cel:'+ST.seed;const S=LS.get(key,null);const now={r:{},x:{},m:{},s:{},lg:c.lg};for(const p of c.squad.concat(c.nlz||[])){now.r[p.id]=p.rat;now.x[p.id]=(p.xsp||[]).length;now.s[p.id]=starsOf(p);}
   const M=c.ms&&c.ms.s===ST.season?c.ms.d:{};for(const k in M)now.m[ST.season+k]=1;
   if(!S){LS.set(key,now);return;}
-  const ups=[],pos=[],ms=[];for(const p of c.squad.concat(c.nlz||[])){const a=S.r[p.id];if(a!=null&&p.rat>a)ups.push([p,a]);if(S.x[p.id]!=null&&now.x[p.id]>S.x[p.id])pos.push(p);}
+  const ups=[],pos=[],ms=[],sts=[];for(const p of c.squad.concat(c.nlz||[])){if(S.s&&S.lg===c.lg&&S.s[p.id]!=null&&now.s[p.id]>S.s[p.id])sts.push([p,S.s[p.id]]);const a=S.r[p.id];if(a!=null&&p.rat>a)ups.push([p,a]);if(S.x[p.id]!=null&&now.x[p.id]>S.x[p.id])pos.push(p);}
   for(const k in now.m)if(!S.m||!S.m[k]){const d=MSD.find(x=>ST.season+x.k===k);if(d)ms.push(d);}
-  if(!ups.length&&!pos.length&&!ms.length){LS.set(key,now);return;}
+  if(!ups.length&&!pos.length&&!ms.length&&!sts.length){LS.set(key,now);return;}
   let el=document.getElementById('infoPop');if(!el){el=document.createElement('div');el.id='infoPop';document.body.appendChild(el);el.addEventListener('click',()=>{el.classList.remove('on');});}
   if(el.classList.contains('on')||document.querySelector('#ov.on,#sheet.on'))return;LS.set(key,now);
   el.innerHTML=`<div class="ipb lvup">${ms.length?`<div style="text-align:center;font-size:30px">🏅</div><div style="text-align:center;font-weight:800;color:var(--gold)">MEILENSTEIN!</div>${ms.map(d=>`<div style="text-align:center">${d.e} ${d.t}</div>`).join('')}`:''}
     ${ups.length?`<div style="text-align:center;font-size:28px;margin-top:${ms.length?10:0}px">⬆️</div><div style="text-align:center;font-weight:800;color:var(--acc)">LEVEL UP!</div>${ups.sort((a,b)=>(b[0].rat-b[1])-(a[0].rat-a[1])).slice(0,6).map(([p,a])=>`<div class="row" style="gap:8px;margin-top:4px"><span class="pos ${p.pos}">${posL(p)}</span><b style="flex:1">${esc(p.name)}</b><span class="mut">${a}</span><span>→</span><b style="color:var(--acc)">${p.rat}</b></div>`).join('')}${ups.length>6?`<div class="tiny mut" style="text-align:center">+${ups.length-6} weitere</div>`:''}`:''}
+    ${sts.length?`<div style="text-align:center;font-size:28px;margin-top:8px">⭐</div><div style="text-align:center;font-weight:800;color:var(--gold)">STERN-AUFSTIEG!</div>${sts.map(([p,a])=>`<div class="row" style="gap:8px;margin-top:4px;justify-content:center"><b>${esc(p.name)}</b><span class="mut">${a}★</span><span>→</span><b style="color:var(--gold)">${starsOf(p)>=6?'💎':starsOf(p)+'★'}</b></div>`).join('')}`:''}
     ${pos.map(p=>`<div style="text-align:center;margin-top:6px">🎓 ${esc(p.name)} beherrscht jetzt ${esc((p.xsp||[]).slice(-1)[0]||'')}</div>`).join('')}
     <div class="tiny mut" style="margin-top:10px;text-align:center">Tippen zum Schließen</div></div>`;el.classList.add('on');}
 {const _rCel=render;render=function(){_rCel.apply(this,arguments);try{setTimeout(celebrate,30);}catch(e){}};}
