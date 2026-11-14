@@ -248,9 +248,10 @@ body.land .shb.mod .mg{grid-template-columns:1fr 1.15fr;align-items:start}
 .swpop{position:fixed!important;z-index:40;margin:0!important;box-shadow:0 12px 30px rgba(0,0,0,.55);background:var(--panel)!important;animation:mpop .22s cubic-bezier(.2,1.4,.4,1)}
 
 .g3d{perspective:950px;perspective-origin:50% 20%;width:100%;display:flex;justify-content:center;align-items:center;overflow:visible}
-.g3d svg{transform:rotateX(30deg) scale(1.06);transform-origin:50% 62%;filter:drop-shadow(0 18px 18px rgba(0,0,0,.45))}
+.g3d .g3i{transform:rotateX(40deg) scale(1.0);-webkit-transform:rotateX(40deg) scale(1.0);transform-origin:50% 60%;width:100%}
+.g3d svg{filter:drop-shadow(0 14px 14px rgba(0,0,0,.45))}
 body.land .gland .g3d{height:100%}
-body.land .gland .g3d svg{height:100%;width:auto!important;max-width:100%}
+body.land .gland .g3d .g3i{height:100%;display:flex;justify-content:center}body.land .gland .g3d svg{height:100%;width:auto!important;max-width:100%}
 
 .ypg .pgrid{margin:0}.ypg .pg{padding:3px 2px!important;font-size:10px}.ypg .pg b{font-size:13px}
 
@@ -1989,7 +1990,7 @@ const CH={
   COND(st,a){const c=st.clubs.me;c.cond=!!a.on;for(const p of c.squad){if(c.cond){if(p.fr==null)p.fr=100;}else delete p.fr;}},
   PEN_KICK(st,a){penKick(st,a.zone);},
   STEP(st){liveStep(st);},
-  REST(st,a){needPhase(st,'matchday');const c=st.clubs.me;if(!c.cond)rej('Kondition ist aus.');const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');let n=Math.round(+a.n||0);if(n<1)rej('Mindestens 1 %.');if(!c.rest||c.rest.md!==st.md||c.rest.s!==st.season)c.rest={md:st.md,s:st.season,used:0};if(c.rest.used>=20)rej('Keine Erholung mehr übrig.');n=Math.min(n,20-c.rest.used);if(p.fr==null)p.fr=100;if(p.fr>=100)rej('Schon topfit.');const add=Math.min(n,100-p.fr);p.fr=Math.min(100,p.fr+add);c.rest.used+=add;},
+  REST(st,a){needPhase(st,'matchday');const c=st.clubs.me;if(!c.cond)rej('Kondition ist aus.');const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');let n=Math.round(+a.n||0);if(n<1)rej('Mindestens 1 %.');if(!c.rest||c.rest.md!==st.md||c.rest.s!==st.season)c.rest={md:st.md,s:st.season,used:0};if(c.rest.used>=10)rej('Keine Erholung mehr übrig.');n=Math.min(n,10,10-c.rest.used);if(p.fr==null)p.fr=100;if(p.fr>=100)rej('Schon topfit.');const add=Math.min(n,100-p.fr);p.fr=Math.min(100,p.fr+add);c.rest.used+=add;},
   MERCH(st,a){const c=st.clubs.me;const m=MERCH.find(x=>x[0]===a.k);if(!m)rej('?');c.merch=c.merch||[];if(c.merch.includes(m[0]))rej('Gibt es schon im Fanshop.');const i=MERCH.indexOf(m);if(i>0&&!c.merch.includes(MERCH[i-1][0]))rej('Erst den vorherigen Artikel ins Sortiment nehmen.');if(c.cash<m[3])rej('Nicht genug Geld.');money(c,-m[3]);c.merch.push(m[0]);feed(st,`🛍️ Neu im Fanshop: ${m[2]}.`,'me');},
   EXT_OFFER(st,a){const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler.');if(p.ct==null||p.ct>2)rej('Vertrag läuft noch lange.');
     if((p.negN||0)>=3)rej(`${p.name} will diese Saison nicht mehr verhandeln.`);
@@ -3646,7 +3647,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='126',APP_RV=13;
+const APP_BUILD='127',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -3884,13 +3885,13 @@ function merchCard(c){const own=c.merch||[];const inc=merchIncome(c);const next=
 ACT.merchBuy=function(v){send('MERCH',{k:v});};
 const _cofficeMerch=VIEWS.coffice;VIEWS.coffice=function(){const c=myC();let h=_cofficeMerch.apply(this,arguments);if(ui.sub==='ausbau')h+=merchCard(c);return h;};
 
-// ---------- Erholung: 20 % Frische pro Spieltag verteilen ----------
-function restPage(c){const can=ST.phase==='matchday'&&c.cond;const used=c.rest&&c.rest.md===ST.md&&c.rest.s===ST.season?c.rest.used:0;const left=20-used;
-  let h=`<div class="card" style="padding:10px 14px"><div class="row"><b>🧘 Erholung</b><span class="sp"></span><span class="pill">${left} % übrig</span></div><p class="tiny mut" style="margin:6px 0 0">Pro Spieltag kannst du <b>20 % Frische</b> verteilen – alles auf einen Spieler oder aufgeteilt (mindestens 1 % pro Spieler). Zählt nicht als Trainingsplatz.</p></div>`;
+// ---------- Erholung: 10 % Frische pro Spieltag verteilen ----------
+function restPage(c){const can=ST.phase==='matchday'&&c.cond;const used=c.rest&&c.rest.md===ST.md&&c.rest.s===ST.season?c.rest.used:0;const left=10-used;
+  let h=`<div class="card" style="padding:10px 14px"><div class="row"><b>🧘 Erholung</b><span class="sp"></span><span class="pill">${left} % übrig</span></div><p class="tiny mut" style="margin:6px 0 0">Pro Spieltag kannst du <b>10 % Frische</b> verteilen – in Schritten von 1 bis 10 % pro Spieler. Zählt nicht als Trainingsplatz.</p></div>`;
   if(!c.cond)return h+'<div class="card small mut">Kondition ist ausgeschaltet.</div>';
   const ps=c.squad.filter(p=>!p.loan).slice().sort((a,b)=>(a.fr==null?100:a.fr)-(b.fr==null?100:b.fr));
   h+=`<div class="card" style="padding:8px 14px">${ps.map(p=>{const fr=p.fr==null?100:Math.round(p.fr);const full=fr>=100;
-    return `<div class="pl"><span class="pos ${p.pos}">${posL(p)}</span><div class="pn" data-a="card" data-v="${p.id}" style="cursor:pointer"><b>${esc(p.name)}</b><span>${frTag(p)}</span></div>${[5,10,20].map(n=>`<button class="btn sm ${!can||full||left<1?'':'ok'}" style="margin-left:4px;padding:6px 8px;min-height:32px" data-a="restGo" data-v="${p.id}|${n}" ${!can||full||left<1?'disabled':''}>+${n}</button>`).join('')}</div>`;}).join('')}</div>`;
+    return `<div class="pl"><span class="pos ${p.pos}">${posL(p)}</span><div class="pn" data-a="card" data-v="${p.id}" style="cursor:pointer"><b>${esc(p.name)}</b><span>${frTag(p)}</span></div>${[1,2,5,10].filter(n=>n<=Math.max(1,left)).map(n=>`<button class="btn sm ${!can||full||left<1?'':'ok'}" style="margin-left:4px;padding:6px 8px;min-height:32px" data-a="restGo" data-v="${p.id}|${n}" ${!can||full||left<1?'disabled':''}>+${n}</button>`).join('')}</div>`;}).join('')}</div>`;
   return h;}
 ACT.restGo=function(v){const [id,n]=String(v).split('|');send('REST',{player:id,n:+n});};
 
@@ -3913,7 +3914,7 @@ const _tabCard=ACT.tab;ACT.tab=function(v){ui.card=null;ui.ask=null;ui.facil=nul
 
 // ---------- Spielerkarte ----------
 function noteCol(n){return n<=2.5?'#3fd0a0':n<=3.5?'#f5c542':'#ff5b4d';}
-function restLeft(c){return 20-(c.rest&&c.rest.md===ST.md&&c.rest.s===ST.season?c.rest.used:0);}
+function restLeft(c){return 10-(c.rest&&c.rest.md===ST.md&&c.rest.s===ST.season?c.rest.used:0);}
 function trnFree(c){const slots=trnSlots(c);const used=c.trn&&c.trn.md===ST.md&&c.trn.s===ST.season?c.trn.n:0;return {slots,used,ids:used?c.trn.ids:[]};}
 function cardHtml(){
   const c=myC();if(!c||!ST.career)return '';const p=c.squad.find(x=>x.id===ui.card);if(!p)return '';
@@ -3929,7 +3930,7 @@ function cardHtml(){
   // Aktionen
   let act='';
   if(md&&c.cond){const left=restLeft(c);const dis=fr>=100||left<1;
-    act+=`<div class="pl"><div class="pn"><b>🧘 Erholung</b><span>${fr>=100?'Schon topfit':left+' % übrig für diesen Spieltag'}</span></div>${[5,10,20].map(n=>`<button class="btn sm ${dis?'':'ok'}" style="margin-left:4px;padding:6px 8px;min-height:32px" data-a="restGo" data-v="${p.id}|${n}" ${dis?'disabled':''}>+${n}</button>`).join('')}</div>`;}
+    act+=`<div class="pl"><div class="pn"><b>🧘 Erholung</b><span>${fr>=100?'Schon topfit':left+' % übrig für diesen Spieltag'}</span></div>${[1,2,5,10].filter(n=>n<=Math.max(1,left)).map(n=>`<button class="btn sm ${dis?'':'ok'}" style="margin-left:4px;padding:6px 8px;min-height:32px" data-a="restGo" data-v="${p.id}|${n}" ${dis?'disabled':''}>+${n}</button>`).join('')}</div>`;}
   if(md&&!p.loan){const T=trnFree(c);const done=T.ids.includes(p.id);const tired=c.cond&&p.fr!=null&&p.fr<20;const dis=done||T.used>=T.slots||tired;
     act+=`<div class="pl"><div class="pn"><b>🏋️ Training</b><span>${done?'Heute schon trainiert':tired?'Zu müde':T.used>=T.slots?'Keine Plätze mehr frei':'Plätze '+T.used+'/'+T.slots+' · kostet 5 % Frische'}</span></div>${p.pos==='G'?'':`<button class="btn sm" style="margin-right:4px" data-a="todoGo" data-v="squad|tr|pos">🎓 Position</button>`}<button class="btn sm ${dis?'':'ok'}" data-a="train" data-v="${p.id}" ${dis?'disabled':''}>${done?'✓':'Stärke'}</button></div>`;}
   if(act)h+=sec('Aktionen')+`<div class="card" style="padding:4px 12px;margin:0">${act}</div>`;
@@ -4763,14 +4764,22 @@ function clubGround2(c){const up=c.up||{},col=c.color||'#d8f34e',st=up.stadium||
   g+=tag(cx,cy+ry+9,'stadium','Stadion '+st+(bOn('stadium')?' 🚧':''));
   // Gebäude als weiche Karten
   const dk=(hex,f)=>{const n=parseInt(hex.slice(1),16);const r=Math.round((n>>16)*f),g2=Math.round((n>>8&255)*f),b=Math.round((n&255)*f);return '#'+((1<<24)+(r<<16)+(g2<<8)+b).toString(16).slice(1);};
-  const bld=(k,x,y,w,h,fill,icon,lv,lbl)=>{const dep=5+lv*1.4;let o=`<g data-a="facil" data-v="${k}" style="cursor:pointer"><rect x="${x+2}" y="${y+dep+2}" width="${w}" height="${h}" rx="7" fill="#000" opacity=".3"/><rect x="${x}" y="${y+dep}" width="${w}" height="${h}" rx="7" fill="${dk(fill,0.55)}"/>${[...Array(Math.max(1,lv))].map((_,i)=>`<rect x="${x+4+i*((w-8)/Math.max(1,lv))}" y="${y+h+dep*0.35}" width="${Math.max(2,(w-8)/Math.max(1,lv)-3)}" height="${dep*0.4}" rx="1" fill="#fff6c4" opacity=".55"/>`).join('')}<g filter="url(#sh)"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${fill}"/><rect x="${x}" y="${y}" width="${w}" height="${h*0.45}" rx="7" fill="#fff" opacity=".13"/></g>`;
-    o+=`<text x="${x+w/2}" y="${y+h/2+5}" text-anchor="middle" font-size="${Math.min(15,h*0.5)}">${icon}</text>`;
-    for(let i=0;i<5;i++)o+=`<circle cx="${x+w/2-8+i*4}" cy="${y+h-4}" r="1.3" fill="${i<lv?'#d8f34e':'rgba(0,0,0,.35)'}"/>`;
-    if(bOn(k))o+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="url(#hatch)"/><text x="${x+w-4}" y="${y+4}" font-size="11">🏗️</text>`;
-    return o+tag(x+w/2,y+h+9,k,lbl+(bOn(k)?' 🚧':''))+'</g>';};
-  g+=bld('analysis',16,14,46+an*3,30,'#4f86d6','🔎',an,'Analyse '+an);
-  g+=bld('scouting',16,76,44+sc*3,28,'#b58a4a','🔭',sc,'Scouting '+sc);
-  g+=bld('youth',14,138,48+yo*4,32,'#8a7bd1','🎓',yo,'NLZ '+yo);
+  const bld=(k,x,y,w,h,fill,icon,lv,lbl,extra)=>{const FH=5.5;const top=y-(lv-1)*FH;let o=`<g data-a="facil" data-v="${k}" style="cursor:pointer"><rect x="${x+3}" y="${y+5}" width="${w}" height="${h}" rx="7" fill="#000" opacity=".32"/>`;
+    // Stockwerke: jede Stufe ein Geschoss mehr
+    for(let f=0;f<lv;f++){const yy=y-f*FH;o+=`<rect x="${x}" y="${yy+4}" width="${w}" height="${h}" rx="7" fill="${dk(fill,0.42)}"/><rect x="${x}" y="${yy}" width="${w}" height="${h}" rx="7" fill="${dk(fill,0.6+f*0.06)}"/>`;
+      for(let wi=0;wi<Math.floor((w-10)/7);wi++)o+=`<rect x="${x+6+wi*7}" y="${yy+h-1}" width="3.5" height="3" rx=".6" fill="#fff3b0" opacity="${(wi+f)%3===0?0.25:0.75}"/>`;}
+    o+=`<g filter="url(#sh)"><rect x="${x}" y="${top}" width="${w}" height="${h}" rx="7" fill="${fill}"/><rect x="${x}" y="${top}" width="${w}" height="${h*0.45}" rx="7" fill="#fff" opacity=".14"/></g>`;
+    o+=`<text x="${x+w/2}" y="${top+h/2+5}" text-anchor="middle" font-size="${Math.min(15,h*0.5)}">${icon}</text>`;
+    for(let i=0;i<5;i++)o+=`<circle cx="${x+w/2-8+i*4}" cy="${top+h-4}" r="1.3" fill="${i<lv?'#d8f34e':'rgba(0,0,0,.35)'}"/>`;
+    if(extra)o+=extra(x,top,w,h);
+    if(bOn(k))o+=`<rect x="${x}" y="${top}" width="${w}" height="${h}" rx="7" fill="url(#hatch)"/><text x="${x+w-4}" y="${top+4}" font-size="11">🏗️</text>`;
+    return o+tag(x+w/2,y+h+11,k,lbl+(bOn(k)?' 🚧':''))+'</g>';};
+  const antennas=n=>(x,t,w)=>{let o='';for(let i=0;i<n;i++){const ax=x+w-8-i*7;o+=`<line x1="${ax}" y1="${t}" x2="${ax}" y2="${t-9-i*2}" stroke="#cfd6d2" stroke-width="1"/><circle cx="${ax}" cy="${t-9-i*2}" r="1.4" fill="#ff5b4d"/>`;}return o;};
+  const dish=n=>(x,t,w)=>{let o='';if(n>=3)o+=`<ellipse cx="${x+10}" cy="${t-2}" rx="6" ry="3" fill="#e8eef7" stroke="#8aa0b8" stroke-width=".6"/><line x1="${x+10}" y1="${t-2}" x2="${x+13}" y2="${t-7}" stroke="#8aa0b8" stroke-width=".8"/>`;if(n>=5)o+=`<ellipse cx="${x+24}" cy="${t-2}" rx="5" ry="2.5" fill="#e8eef7" stroke="#8aa0b8" stroke-width=".6"/>`;return o;};
+  const youthX=n=>(x,t,w,h)=>{let o='';for(let i=0;i<Math.min(3,n-1);i++)o+=`<rect x="${x+w+4}" y="${t+2+i*11}" width="16" height="9" rx="2" fill="#47a857" stroke="rgba(255,255,255,.55)" stroke-width=".5"/><line x1="${x+w+12}" y1="${t+2+i*11}" x2="${x+w+12}" y2="${t+11+i*11}" stroke="rgba(255,255,255,.55)" stroke-width=".5"/>`;return o;};
+  g+=bld('analysis',20,30,40+an*4,26,'#4f86d6','🔎',an,'Analyse '+an,dish(an));
+  g+=bld('scouting',20,92,38+sc*4,24,'#b58a4a','🔭',sc,'Scouting '+sc,antennas(sc));
+  g+=bld('youth',18,160,38+yo*3,26,'#8a7bd1','🎓',yo,'NLZ '+yo,youthX(yo));
   // Trainingsplätze
   {const n=[0,1,2,2,3,4][tr];let o=`<g data-a="facil" data-v="training" style="cursor:pointer">`;for(let i=0;i<Math.max(1,n);i++){const x=306,y=10+i*30;o+=`<rect x="${x}" y="${y+2.5}" width="44" height="24" rx="5" fill="#1d4a2c" opacity="${n?1:0.35}"/><g filter="url(#sh)"><rect x="${x}" y="${y}" width="44" height="24" rx="5" fill="url(#gpitch)" opacity="${n?1:0.35}"/></g><rect x="${x+2.5}" y="${y+2.5}" width="39" height="19" rx="2" fill="none" stroke="rgba(255,255,255,.6)" stroke-width=".6"/><line x1="${x+22}" y1="${y+2.5}" x2="${x+22}" y2="${y+21.5}" stroke="rgba(255,255,255,.6)" stroke-width=".6"/>`;}
     if(bOn('training'))o+=`<text x="340" y="14" font-size="11">🏗️</text>`;o+=tag(328,10+Math.max(1,n)*30+3,'training','Training '+tr+(bOn('training')?' 🚧':''))+'</g>';g+=o;}
@@ -4779,7 +4788,7 @@ function clubGround2(c){const up=c.up||{},col=c.color||'#d8f34e',st=up.stadium||
   // Parkplatz & Bäume
   g+=`<g opacity=".8"><rect x="112" y="204" width="56" height="20" rx="5" fill="#3b4540"/>${[0,1,2,3,4,5].map(i=>`<line x1="${118+i*9}" y1="206" x2="${118+i*9}" y2="214" stroke="#9aa39e" stroke-width=".6"/>`).join('')}<text x="140" y="221" text-anchor="middle" font-size="6" fill="#c9d1cc">P</text></g>`;
   for(const [x,y,r] of [[104,22,6],[116,14,4.5],[286,120,6],[292,134,4.5],[70,206,5],[250,214,5],[266,16,5],[110,184,4]])g+=`<ellipse cx="${x+2}" cy="${y+r+2}" rx="${r}" ry="${r*0.45}" fill="#000" opacity=".3"/><rect x="${x-0.8}" y="${y}" width="1.6" height="${r+1.5}" fill="#5b3d25"/><circle cx="${x}" cy="${y-2}" r="${r}" fill="#2f8a4c"/><circle cx="${x-r*0.3}" cy="${y-2-r*0.3}" r="${r*0.45}" fill="#5fc27a" opacity=".55"/>`;
-  return `<div class="g3d"><svg viewBox="0 0 360 236" class="cg2" style="width:100%;display:block">${g}</svg></div>`;}
+  return `<div class="g3d"><div class="g3i"><svg viewBox="0 0 360 236" class="cg2" style="width:100%;display:block">${g}</svg></div></div>`;}
 function facRows(c){return FAC.map(([k,i,n])=>{const isM=k==='merch';const l=isM?(c.merch||[]).length:(c.up[k]||1);const b=c.builds&&c.builds[k];const can=facCan(c,k);
   const sub=isM?`${l}/${MERCH.length} Artikel`:b?`🚧 Ausbau auf ${b.to} läuft`:l>=5?'Maximalstufe':`Ausbau ${fm(facCost(c,k))}`;
   return `<div class="pl" data-a="facil" data-v="${k}" style="cursor:pointer${ui.facil===k?';background:rgba(216,243,78,.07)':''}"><span style="font-size:18px;width:26px;text-align:center">${i}</span><div class="pn"><b>${n}${isM?'':' · Stufe '+l}</b><span>${sub}</span></div>${can?'<span class="pill" style="color:var(--acc)">⬆</span>':'<span class="mut">›</span>'}</div>`;}).join('');}
