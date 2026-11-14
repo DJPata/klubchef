@@ -1644,7 +1644,8 @@ function trnMul(c){const l=(c&&c.up&&c.up.training)||1;return l>=5?1.5:l>=4?1.25
 function posChance(p,c){return Math.min(0.95,Math.max(0.3,Math.min(0.75,0.75-(p.age-18)*0.02))*trnMul(c));}
 const STARM=[1,0.6,0.8,1,1.25,1.5,2];
 function nlzTrChance(p,c){return trainChance(p,c)*0.45;}
-function trainChance(p,c){return Math.min(0.92,Math.max(5,Math.min(60,60-(p.age-17)*4))/100*trnMul(c)*devMul(p)*(p.tb?1.3:1));}
+function trainChance(p,c){return Math.min(0.92,Math.max(5,Math.min(60,60-(p.age-17)*4))/100*trnMul(c)*devMul(p)*(p.tb?1.3:1)*potDiff(p));}
+function potDiff(p){const v=(p.pot||p.rat);return v<=60?1:Math.max(0.1,1-(v-60)/40);}
 function soKick(st,zone){
   const so=st.so;if(!so)rej('Kein Elfmeterschießen.');const r=CR(st);
   const n=so.kicks.length;const side=n%2===0?'h':'a';const meSide=so.h==='me'?'h':'a';const shooting=side===meSide;
@@ -3647,7 +3648,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='127',APP_RV=13;
+const APP_BUILD='128',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
