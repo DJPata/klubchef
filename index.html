@@ -3649,7 +3649,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='129',APP_RV=13;
+const APP_BUILD='130',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4910,6 +4910,13 @@ document.addEventListener('input',e=>{const el=e.target;if(!el||el.id!=='slRange
   const set=(id,t)=>{const x=document.getElementById(id);if(x)x.textContent=t;};set('slPctT',Math.round(v*100)+' %');set('slPrice',fm(r2(v0*v)));set('slCh','ca. '+Math.round(clamp(0.42-(v-1)*0.9+(y?0.08:0),0.06,0.6)*100)+' %');});
 // Startseite im Querformat: zentriert, eigenes Layout
 {const _rSt=render;render=function(){document.body.classList.toggle('startv',ui.view==='start');_rSt.apply(this,arguments);};}
+// Ausgewechselter Spieler (vor dem Anpfiff) rückt auf die Bank statt auf die Tribüne
+{const _xsB=ACT.xiSwap;ACT.xiSwap=function(v){const c=myC();const S=ui.xiSel;
+  if(!(ST&&ST.career&&ST.phase==='matchday'&&c&&S))return _xsB(v);
+  let b0=[];try{b0=benchCur(c);}catch(e){}const out=S.id;
+  _xsB(v);
+  try{const lu=curLu(c);const X=pickXI(Object.assign({},c,{lineup:lu}),ui.form||c.form);const inXI=new Set();for(const k of ['G','D','M','A'])X[k].forEach(x=>{if(x.p)inXI.add(x.p.id);});
+    if(b0.includes(v)&&inXI.has(v)&&!inXI.has(out)){const nb=b0.map(id=>id===v?out:id);send('BENCH',{ids:nb});}}catch(e){}};}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
