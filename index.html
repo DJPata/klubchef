@@ -1614,6 +1614,7 @@ function careerMigrate5(st){
 }
 function careerEnsurePrep(st){
   SQUAD_MAX=25;
+  if(st.clubs&&st.clubs.me&&st.clubs.me.mOff&&st.clubs.me.mOff.length){const me=st.clubs.me;me.mOff=me.mOff.filter(o=>me.squad.some(p=>p.id===o.pid&&!p.sold&&!p.loan));if(st.phase!=='matchday'&&st.phase!=='halftime')me.mOff=[];}
   if(st.clubs&&st.clubs.me)STAR_LG=st.clubs.me.lg;
   if(st.career&&st.clubs&&st.clubs.me&&st.phase!=='seasonEnd'){try{rivalEnsure(st);taskEnsure(st);}catch(e){}}
   if(st.career&&st.clubs&&st.clubs.me&&!st.jOffers&&!st.clubs.me.jers&&st.phase!=='seasonEnd'){const c=st.clubs.me;const r=RNG(st.seed,'jo'+st.season);const ff=Math.sqrt(clamp(c.fans/EXPFANS[c.lg],0.5,2.5));jerseyOffers(st,r,c,r2(SPON[c.lg]*ff));}
@@ -2844,7 +2845,7 @@ VIEWS.market=function(){
   const rd=!!ST.ready[me()];const lim=ST.rv>=2&&(c.buys||0)>=buyMax(ST);
   const offs=(c.offers||[]).length;
   const inS=ST.career&&ST.phase==='matchday';
-  const nmo=(c.mOff||[]).length;const msubs=inS?[['buy','Kaufen'],['sell','Anbieten'+(nmo?' ('+nmo+')':'')],['tl','Transfers']]:[['buy','Kaufen'],['off',`Angebote${offs?' ('+offs+')':''}`]];if(ST.career&&!inS)msubs.push(['loan','Leihen'],['tl','Transfers']);if(inS&&!['buy','tl','sell'].includes(ui.subs.market))ui.subs.market='buy';if(inS&&ui.subs.market==='sell')return (isLand()?'':subNav('market',msubs))+sellPage(c);
+  const nmo=(c.mOff||[]).filter(o=>c.squad.some(p=>p.id===o.pid&&!p.sold)).length;const msubs=inS?[['buy','Kaufen'],['sell','Anbieten'+(nmo?' ('+nmo+')':'')],['tl','Transfers']]:[['buy','Kaufen'],['off',`Angebote${offs?' ('+offs+')':''}`]];if(ST.career&&!inS)msubs.push(['loan','Leihen'],['tl','Transfers']);if(inS&&!['buy','tl','sell'].includes(ui.subs.market))ui.subs.market='buy';if(inS&&ui.subs.market==='sell')return (isLand()?'':subNav('market',msubs))+sellPage(c);
   let h=feat(ST)?subNav('market',msubs):'';
   if(ST.career&&sub('market')==='loan')return h+loanPage(c);
   if(ST.career&&sub('market')==='tl')return h+tlogPage(c);
@@ -3648,7 +3649,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='128',APP_RV=13;
+const APP_BUILD='129',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4871,8 +4872,8 @@ function swPop(){const el=document.getElementById('xiswap');if(!el||!isLand()||!
 {const _rSw=render;render=function(){document.querySelectorAll('body>.swpop').forEach(e=>e.remove());_rSw.apply(this,arguments);try{swPop();}catch(e){}};}
 
 // ---------- Eigene Spieler anbieten ----------
-function sellPage(c){const W=ST.md<9?'Winterpause':'Sommerpause';const O=(c.mOff||[]);let h='';
-  if(O.length)h+=`<div class="card" style="border-color:var(--gold)"><div class="row"><b>📨 Angebote</b><span class="sp"></span><span class="pill">${O.length}</span></div>${O.map(o=>{const p=c.squad.find(x=>x.id===o.pid);if(!p)return '';return `<div class="pl"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}</b><span>${esc(o.club)} · <b style="color:var(--acc2)">${fm(o.price)}</b> · MW ${fm(value(p))}</span></div><button class="btn sm ok" data-a="moOk" data-v="${o.id}">${cl('mo'+o.id,'Annehmen','Sicher?')}</button><button class="btn sm" data-a="moNo" data-v="${o.id}">✕</button></div>`;}).join('')}</div>`;
+function sellPage(c){const W=ST.md<9?'Winterpause':'Sommerpause';const O=(c.mOff||[]).filter(o=>c.squad.some(p=>p.id===o.pid&&!p.sold));let h='';
+  if(O.length)h+=`<div class="card" style="border-color:var(--gold)"><div class="row"><b>📨 Angebote</b><span class="sp"></span><span class="pill">${O.length}</span></div>${O.map(o=>{const p=c.squad.find(x=>x.id===o.pid);if(!p)return '';return `<div class="pl" data-a="card" data-v="${p.id}" style="cursor:pointer"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)} ← ${esc(o.club)}</b><span><b style="color:var(--acc2)">${fm(o.price)}</b> · MW ${fm(value(p))} · Wechsel zur ${W}</span></div><button class="btn sm ok" data-a="moOk" data-v="${o.id}">${cl('mo'+o.id,'Annehmen','Sicher?')}</button><button class="btn sm" data-a="moNo" data-v="${o.id}">✕</button></div>`;}).join('')}</div>`;
   const L=c.squad.filter(p=>!p.loan).sort((a,b)=>(!!b.sold-!!a.sold)||(!!b.listed-!!a.listed)||b.rat-a.rat);
   h+=`<div class="card"><div class="row"><b>📤 Spieler anbieten</b>${inf('Setz Spieler auf die Transferliste. Andere Vereine melden sich mit Angeboten (gilt 3 Spieltage). Nimmst du an, bleibt der Spieler bis zur '+W+' und wechselt dann – das Geld kommt beim Wechsel. Je niedriger dein Preis, desto schneller kommen Angebote.')}<span class="sp"></span><span class="tiny mut">Wechsel zur ${W}</span></div>
   ${L.map(p=>crow(p,{tap:1,sub:p.sold?`🔜 wechselt zu ${esc(p.sold.club)} · ${fm(p.sold.price)}`:p.listed?`📤 gelistet für ${fm(r2(value(p)*p.listed.pct))} (${Math.round(p.listed.pct*100)} %)`:`MW ${fm(value(p))} · Vertrag ${p.ct!=null?p.ct+' J.':'–'}`,right:p.sold?'':p.listed?`<button class="btn sm" data-a="unlist" data-v="${p.id}">Zurückziehen</button>`:`<button class="btn sm" data-a="sellOpen" data-v="${p.id}">Anbieten</button>`})).join('')}</div>`;
