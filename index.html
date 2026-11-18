@@ -1124,6 +1124,57 @@ const EUN={
  nl:{f:['Daan','Bram','Sem','Lars','Thijs','Ruben','Jesse','Stijn'],l:['de Jong','Jansen','de Vries','van den Berg','Bakker','Visser','Smit','Meijer','de Boer','Mulder','Bos','Vos']},
  lv:{f:['Artūrs','Jānis','Kristaps','Dāvis','Roberts','Edgars','Mārtiņš','Rihards'],l:['Bērziņš','Kalniņš','Ozoliņš','Jansons','Liepiņš','Krūmiņš','Balodis','Eglītis','Zariņš','Petersons','Vītols','Kļaviņš']}};
 function euCountry(n){n=String(n||'');const M=[['Meseta','es'],['Bravura','es'],['Garonne','fr'],['Riviera','fr'],['Brabant','be'],['Moldau','cz'],['Donau','at'],['Highland','sco'],['Adria','hr'],['Tiber','it'],['Partenope','it'],['Lombardia','it'],['Lisboa','pt'],['Atlântico','pt'],['Sava','rs'],['Thames','en'],['Amstel','nl'],['Baltika','lv']];for(const [k,c] of M)if(n.includes(k))return c;return null;}
+// ---------- Nationalitäten (Karriere) ----------
+const NATS={de:['🇩🇪','Deutschland','EU'],at:['🇦🇹','Österreich','EU'],ch:['🇨🇭','Schweiz','EU'],fr:['🇫🇷','Frankreich','EU'],es:['🇪🇸','Spanien','EU'],it:['🇮🇹','Italien','EU'],pt:['🇵🇹','Portugal','EU'],nl:['🇳🇱','Niederlande','EU'],be:['🇧🇪','Belgien','EU'],en:['🏴󠁧󠁢󠁥󠁮󠁧󠁿','England','EU'],sco:['🏴󠁧󠁢󠁳󠁣󠁴󠁿','Schottland','EU'],dk:['🇩🇰','Dänemark','EU'],se:['🇸🇪','Schweden','EU'],no:['🇳🇴','Norwegen','EU'],fi:['🇫🇮','Finnland','EU'],pl:['🇵🇱','Polen','EU'],cz:['🇨🇿','Tschechien','EU'],hu:['🇭🇺','Ungarn','EU'],hr:['🇭🇷','Kroatien','EU'],rs:['🇷🇸','Serbien','EU'],si:['🇸🇮','Slowenien','EU'],ro:['🇷🇴','Rumänien','EU'],bg:['🇧🇬','Bulgarien','EU'],ua:['🇺🇦','Ukraine','EU'],tr:['🇹🇷','Türkei','EU'],ge:['🇬🇪','Georgien','EU'],az:['🇦🇿','Aserbaidschan','EU'],lv:['🇱🇻','Lettland','EU'],gr:['🇬🇷','Griechenland','EU'],
+ br:['🇧🇷','Brasilien','SA'],ar:['🇦🇷','Argentinien','SA'],uy:['🇺🇾','Uruguay','SA'],co:['🇨🇴','Kolumbien','SA'],pe:['🇵🇪','Peru','SA'],
+ us:['🇺🇸','USA','NA'],ca:['🇨🇦','Kanada','NA'],mx:['🇲🇽','Mexiko','NA'],
+ gh:['🇬🇭','Ghana','AF'],ng:['🇳🇬','Nigeria','AF'],sn:['🇸🇳','Senegal','AF'],ci:['🇨🇮','Elfenbeinküste','AF'],cm:['🇨🇲','Kamerun','AF'],ma:['🇲🇦','Marokko','AF'],eg:['🇪🇬','Ägypten','AF'],gn:['🇬🇳','Guinea','AF'],ml:['🇲🇱','Mali','AF'],cd:['🇨🇩','DR Kongo','AF'],lr:['🇱🇷','Liberia','AF'],
+ jp:['🇯🇵','Japan','AS'],kr:['🇰🇷','Südkorea','AS'],au:['🇦🇺','Australien','AS'],ir:['🇮🇷','Iran','AS'],sa:['🇸🇦','Saudi-Arabien','AS']};
+const NATPOOL={
+ br:{f:['Gabriel','Matheus','Lucas','Vinícius','Thiago','Felipe','Rafael','João'],l:['Silva','Souza','Oliveira','Pereira','Almeida','Barbosa','Cardoso','Ribeiro']},
+ ar:{f:['Santiago','Mateo','Facundo','Joaquín','Lautaro','Nicolás','Tomás','Franco'],l:['Fernández','González','Gómez','Acosta','Romero','Paredes','Álvarez','Molina']},
+ uy:{f:['Federico','Rodrigo','Agustín','Diego','Nahitan'],l:['Valverde','Bentancur','Araújo','Olivera','Cáceres']},
+ co:{f:['Juan','Luis','Jhon','Daniel','Yerry'],l:['Díaz','Ríos','Cuadrado','Arias','Mina']},
+ us:{f:['Tyler','Christian','Weston','Brenden','Gio','Josh','Chris','Ryan'],l:['Adams','Pulisic','McKennie','Aaronson','Reyna','Sargent','Richards','Turner']},
+ mx:{f:['Hirving','Edson','Raúl','Santiago','Luis'],l:['Lozano','Álvarez','Jiménez','Giménez','Chávez']},
+ gh:{f:['Kwame','Kofi','Yaw','Kwabena','Samuel'],l:['Mensah','Asante','Boateng','Ayew','Partey','Kudus']},
+ ng:{f:['Chidi','Emeka','Samuel','Victor','Alex'],l:['Okafor','Eze','Osimhen','Iwobi','Ndidi','Onyeka']},
+ sn:{f:['Moussa','Sadio','Ismaïla','Pape','Cheikh'],l:['Diallo','Ndiaye','Sow','Sarr','Gueye','Diatta']},
+ ci:{f:['Franck','Serge','Wilfried','Simon','Ibrahim'],l:['Koné','Touré','Kessié','Adingra','Sangaré']},
+ cm:{f:['André','Vincent','Bryan','Karl','Eric'],l:['Onana','Aboubakar','Mbeumo','Toko','Choupo']},
+ ma:{f:['Achraf','Youssef','Hakim','Sofyan','Azzedine'],l:['Hakimi','En-Nesyri','Ziyech','Amrabat','Ounahi']},
+ jp:{f:['Takumi','Daichi','Kaoru','Ritsu','Wataru','Ko','Hiroki','Takehiro'],l:['Tanaka','Suzuki','Sato','Watanabe','Nakamura','Yamada','Endo','Itakura']},
+ kr:{f:['Min-jun','Ji-ho','Hyun-woo','Seung-ho','Jae-sung','Kang-in'],l:['Kim','Park','Lee','Choi','Kang','Jung']},
+ au:{f:['Jackson','Harry','Mathew','Riley','Aiden'],l:['Irvine','Souttar','Ryan','McGree','Boyle']},
+ az:{f:['Emin','Mahir','Ramil','Toral','Renat'],l:['Mahmudov','Bayramov','Sheydaev','Dadashov','Huseynov','Aliyev']},
+ tr:{f:['Arda','Kerem','Ferdi','Orkun','Barış','Kenan'],l:['Yılmaz','Kaya','Aktürkoğlu','Kadıoğlu','Kökçü','Demir']},
+ pl:{f:['Jakub','Piotr','Kamil','Mateusz','Sebastian'],l:['Kowalski','Nowak','Zieliński','Kamiński','Lewandowski','Szymański']},
+ se:{f:['Erik','Oskar','Viktor','Emil','Alexander'],l:['Lindqvist','Larsson','Andersson','Johansson','Nilsson','Gyökeres']},
+ dk:{f:['Rasmus','Mikkel','Andreas','Christian','Jonas'],l:['Hansen','Sørensen','Nielsen','Jensen','Højbjerg','Andersen']},
+ no:{f:['Erling','Martin','Sander','Kristian','Oscar'],l:['Berg','Ødegaard','Solbakken','Thorsby','Strand']},
+ ch:{f:['Granit','Manuel','Nico','Ruben','Fabian'],l:['Xhaka','Akanji','Freuler','Vargas','Widmer','Elvedi']},
+ gr:{f:['Giorgos','Kostas','Dimitris','Nikos','Anastasios'],l:['Papadopoulos','Bakasetas','Mavropanos','Tsimikas','Pavlidis']},
+ ua:{f:['Andriy','Oleksandr','Mykhailo','Artem','Viktor'],l:['Shevchenko','Zinchenko','Mudryk','Dovbyk','Tsygankov']},
+ hu:{f:['Dominik','Ádám','Roland','Milos','Bendegúz'],l:['Szoboszlai','Nagy','Sallai','Varga','Kerkez']}};
+const SURN={};
+(function(){const add=(nat,arr)=>{for(const s of arr)SURN[String(s).toLowerCase()]=nat;};
+ add('de',['Musiala','Wirtz','Kimmich','Goretzka','Sané','Gnabry','Havertz','Rüdiger','Tah','Schlotterbeck','Raum','Mittelstädt','Undav','Füllkrug','Andrich','Gündogan','Kroos','Neuer','Ter Stegen','Baumann','Nübel','Brandt','Adeyemi','Stach','Woltemade','Kleindienst','Burkardt','Nmecha','Beier','Koch','Henrichs','Klostermann','Anton','Can','Ballack','Scholl','Effenberg','Matthäus','Klinsmann','Völler','Kahn','Lehmann','Klose','Podolski','Schweinsteiger','Lahm','Mertesacker','Frings','Häßler','Sammer','Möller','Basler','Bierhoff','Kuranyi','Kießling','Kuntz','Brehme','Littbarski','Rummenigge','Beckenbauer','Neuville','Jancker','Deisler','Ricken']);
+ const M={ch:['Kobel','Xhaka','Chapuisat','Sforza'],gn:['Guirassy','Camara'],fr:['Olise','Upamecano','Ekitiké','Mbappé','Dembélé','Griezmann','Barcola','Tchouaméni','Camavinga','Saliba','Kounde','Kolo Muani','Lizarazu','Zidane','Henry','Pirès','Vieira','Moreau','Laurent'],rs:['Pavlović','Kostić','Vlahović','Petrović'],at:['Laimer','Sabitzer','Herzog','Polster'],ca:['Davies'],en:['Kane','Bellingham','Saka','Foden','Rice','Palmer','Alexander-Arnold','Rashford','Mainoo','Sancho','Owen','Gerrard','Lampard','Scholes','Beckham','Shearer','Hargreaves'],es:['Grimaldo','Yamal','Olmo','Williams','Pedri','Gavi','Rodri','Hierro','Puyol','Iniesta','Butragueño','Raúl','Xavi','Guti','Martín','Delgado'],cz:['Schick','Hložek','Nedvěd','Rosický','Dvořák'],nl:['Frimpong','Simons','Van Dijk','Gakpo','De Jong','Bergkamp','Kluivert','Seedorf','Davids','Gullit','Rijkaard','Makaay','Bakker'],be:['Openda','De Bruyne','Lukaku','Courtois','Trossard','Doku'],si:['Šeško','Oblak'],jp:['Doan','Mitoma','Kubo'],no:['Haaland','Ødegaard'],eg:['Salah'],pl:['Lewandowski','Kowalski','Nowak'],uy:['Valverde'],hr:['Modrić','Šuker','Novak'],ge:['Kvaratskhelia'],ng:['Osimhen','Okocha','Okafor'],ar:['Martínez','Mac Allister','Dybala','Garnacho','Batistuta','Riquelme','Crespo','Zanetti'],se:['Isak','Gyökeres','Larsson','Lindqvist'],hu:['Szoboszlai','Varga'],ma:['Hakimi'],pt:['Vitinha','Leão','Fernandes','Figo','Costa','Silva'],it:['Bastoni','Barella','Donnarumma','Maldini','Baresi','Totti','Del Piero','Pirlo','Nesta','Cannavaro','Rossi','Esposito'],tr:['Çalhanoğlu','Kaya','Yilmaz'],dk:['Højlund','Laudrup','Schmeichel','Hansen','Sørensen'],kr:['Son','Kim'],cd:['Wissa'],ua:['Schewtschenko'],ro:['Hagi'],bg:['Stoichkov'],fi:['Litmanen'],ci:['Drogba'],gh:['Yeboah','Mensah'],lr:['Weah'],pe:['Pizarro'],br:['Elber','Vinícius','Rodrygo','Raphinha','Endrick','Casemiro','Alisson','Ederson','Marquinhos','Militão','Neymar','Richarlison','Bruno Guimarães','Ronaldinho','Rivaldo','Kaká','Romário','Bebeto','Cafu','Dunga','Juninho','Adriano','Ailton','Dedê','Marcelinho','Amoroso','Zé Roberto','Lúcio','Élber'],sn:['Diallo']};
+ for(const k in M)add(k,M[k]);
+ if(typeof EUN!=='undefined')for(const k in EUN){const nk=k==='rs'?'rs':k;for(const s of EUN[k].l)if(!SURN[s.toLowerCase()])SURN[s.toLowerCase()]=nk;}
+ for(const k in NATPOOL)for(const s of NATPOOL[k].l)if(!SURN[s.toLowerCase()])SURN[s.toLowerCase()]=k;
+ add('sn',['Ndiaye','Sow']);add('ml',['Traoré']);add('ci',['Koné','Touré']);add('gh',['Asante','Boateng']);add('ng',['Eze']);
+ add('jp',['Tanaka','Suzuki','Sato','Watanabe','Nakamura','Yamada']);add('kr',['Park','Lee','Choi','Kang','Jung']);
+ add('br',['Souza','Oliveira','Pereira','Almeida','Barbosa','Cardoso']);add('ar',['Fernández','González','Gómez','Acosta','Rodríguez']);add('co',['Díaz','Ríos']);})();
+function natGuess(name){const parts=String(name||'').trim().split(' ');for(let i=1;i<parts.length;i++){const s=parts.slice(i).join(' ').toLowerCase();if(SURN[s])return SURN[s];}
+  const s=(parts[parts.length-1]||'').toLowerCase();if(SURN[s])return SURN[s];
+  if(/(ski|wski|czyk|ak)$/.test(s))return 'pl';if(/(ović|vić|ić)$/.test(s))return 'hr';if(/sson$/.test(s))return 'se';if(/sen$/.test(s))return 'dk';if(/(inho|ão)$/.test(s))return 'br';if(/(elli|ini|etti|ucci)$/.test(s))return 'it';if(/oğlu$/.test(s))return 'tr';if(/(enko)$/.test(s))return 'ua';if(/(ov|ev)$/.test(s))return 'az';if(/ez$/.test(s))return 'es';
+  return null;}
+function natOf(p){if(!p)return 'de';if(p.nat&&NATS[p.nat])return p.nat;let n=natGuess(p.name);if(!n){const u=h01(String(p.id)+'|nat');n=u<0.88?'de':u<0.95?'at':'ch';}p.nat=n;return n;}
+function flagOf(p){const n=natOf(p);return NATS[n]?NATS[n][0]:'';}
+const NATW=[['br',6],['ar',4],['fr',6],['es',5],['it',4],['pt',4],['nl',4],['be',3],['en',4],['at',4],['ch',3],['dk',3],['se',3],['no',2],['pl',4],['cz',3],['hr',3],['rs',3],['tr',5],['gh',3],['ng',3],['sn',3],['ci',2],['cm',2],['ma',3],['us',3],['mx',2],['jp',3],['kr',3],['az',1],['ua',2],['hu',2],['gr',2],['uy',2],['co',2],['au',1]];
+function natRoll(r){return r.wpick(NATW.map(([v,w])=>({v,w}))).v;}
+function natName(r,nat){const P=NATPOOL[nat]||(typeof EUN!=='undefined'?EUN[nat]:null);if(!P)return null;return r.pick(P.f)+' '+r.pick(P.l);}
 function npcPN(c,r){const L=c&&c.eu&&EUN[euCountry(c.name)];if(L)return r.pick(L.f)[0]+'. '+r.pick(L.l);return r.pick(FIRST)[0]+'. '+r.pick(LAST);}
 
 // ================= Paket A: 12 Positionen, Fuß, Sterne, Fitness (nur Karriere) =================
@@ -1328,7 +1379,8 @@ function careerSetupSeason(st){
 // ---------- Namen: 40 % bekannte Profis, 10 % Legenden, 50 % erfunden ----------
 const KNOWN=['Musiala','Wirtz','Kimmich','Goretzka','Sané','Gnabry','Havertz','Rüdiger','Tah','Schlotterbeck','Raum','Mittelstädt','Undav','Füllkrug','Andrich','Gündogan','Kroos','Neuer','Ter Stegen','Baumann','Nübel','Kobel','Brandt','Adeyemi','Guirassy','Olise','Stach','Woltemade','Kleindienst','Burkardt','Nmecha','Beier','Pavlović','Upamecano','Laimer','Davies','Kane','Grimaldo','Xhaka','Schick','Hložek','Frimpong','Openda','Šeško','Simons','Koch','Doan','Ekitiké','Henrichs','Klostermann','Anton','Sabitzer','Can','Haaland','Mbappé','Bellingham','Saka','Foden','Rice','Palmer','Salah','De Bruyne','Lewandowski','Yamal','Olmo','Williams','Valverde','Modrić','Kvaratskhelia','Osimhen','Martínez','Dembélé','Griezmann','Barcola','Tchouaméni','Camavinga','Saliba','Ødegaard','Isak','Gyökeres','Szoboszlai','Van Dijk','Alexander-Arnold','Mac Allister','Gakpo','De Jong','Kounde','Hakimi','Vitinha','Kolo Muani','Lukaku','Leão','Bastoni','Barella','Çalhanoğlu','Donnarumma','Courtois','Oblak','Kostić','Vlahović','Dybala','Højlund','Rashford','Fernandes','Mainoo','Garnacho','Trossard','Mitoma','Kubo','Son','Kim','Doku','Wissa','Sancho'];
 const KNOWNM=['Vinícius','Rodrygo','Raphinha','Endrick','Pedri','Gavi','Rodri','Casemiro','Alisson','Ederson','Marquinhos','Militão','Neymar','Richarlison','Bruno Guimarães'];
-function cName(st,r,p){if(!st||!st.career)return;const u=r.f();
+function cName(st,r,p){if(!st||!st.career)return;const n0=p.name;cName0(st,r,p);if(!p.leg&&!p.nat&&p.name===n0&&r.chance(0.2)){const n=natRoll(r);const nm=natName(r,n);if(nm){p.name=nm;p.nat=n;}}natOf(p);}
+function cName0(st,r,p){const u=r.f();
   if(u<0.10){if(r.chance(0.25))p.name=r.pick(LEGM);else p.name=r.pick(FIRST)+' '+r.pick(LEGS);p.leg=1;p.rat=Math.min(90,p.rat+2);p.pot=Math.max(p.pot,p.rat);}
   else if(u<0.50){p.name=r.chance(0.12)?r.pick(KNOWNM):r.pick(FIRST)+' '+r.pick(KNOWN);}}
 // ---------- Kalender: Liga samstags, Pokal/Europa mittwochs; Frische nach freien Tagen ----------
@@ -2724,7 +2776,7 @@ function crestLogo(c,sz){sz=sz||28;const L=c.logo,col=c.color||'#888',c2=L.c2||'
 function crestBase(c,sz){sz=sz||28;const col=c.color||'#888';const ini=esc(initials(c.name));
   return `<svg class="crest" width="${sz}" height="${Math.round(sz*1.15)}" viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 34 29 41 20 44 C11 41 3 34 3 22 V8 Z" fill="${col}" stroke="rgba(255,255,255,.55)" stroke-width="2"/><path d="M3 20 H37" stroke="rgba(0,0,0,.18)" stroke-width="7"/><text x="20" y="28" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="17" fill="${col==='#f0f0f0'||col==='#f5c542'?'#13210f':'#fff'}">${ini}</text></svg>`;}
 function dot(c){return `<span class="dot" style="background:${c.color}"></span>`;}
-function ticons(p,mk){let s='';if(p.fire>0)s+=' <span title="on fire: +3 Stärke, +15 % Frische">🔥</span>';if(p.sold)s+=' <span class="tag" title="verkauft">🔜</span>';if(p.tr&&TRAITS[p.tr])s+=` <span title="${esc(TRAITS[p.tr].n)}">${TRAITS[p.tr].i}</span>`;if(p.inj>0)s+=` <span class="tag inj">🚑${p.inj}</span>`;if(p.sus>0)s+=' <span class="tag inj">🟥</span>';if(p.loan)s+=' <span class="tag">Leihe</span>';if(p.ct===1&&!mk)s+=' <span class="tag" style="color:var(--gold);border-color:#f5c54255">📝</span>';return s;}
+function ticons(p,mk){let s=ST&&ST.career?` <span class="flg" title="${NATS[natOf(p)]?NATS[natOf(p)][1]:''}">${flagOf(p)}</span>`:'';if(p.fire>0)s+=' <span title="on fire: +3 Stärke, +15 % Frische">🔥</span>';if(p.sold)s+=' <span class="tag" title="verkauft">🔜</span>';if(p.tr&&TRAITS[p.tr])s+=` <span title="${esc(TRAITS[p.tr].n)}">${TRAITS[p.tr].i}</span>`;if(p.inj>0)s+=` <span class="tag inj">🚑${p.inj}</span>`;if(p.sus>0)s+=' <span class="tag inj">🟥</span>';if(p.loan)s+=' <span class="tag">Leihe</span>';if(p.ct===1&&!mk)s+=' <span class="tag" style="color:var(--gold);border-color:#f5c54255">📝</span>';return s;}
 function crow(p,o){o=o||{};
   return `<div class="pl" ${o.tap?`data-a="pl" data-v="${p.id}" style="cursor:pointer"`:''}><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${ticons(p,o.mk)}${o.xi?'<span class="tag xi">Elf</span>':''}</b><span>${o.sub||`${p.age} J.${p.ct!=null?` · Vertrag ${p.ct} J.`:''}${p.fr!=null&&ST&&myC()&&myC().cond?' · '+frTag(p):''}${p.nn?' · Ø '+noteF(p.nts/p.nn):''}${p.yc?' · 🟨'+p.yc:''}${ST&&ST.career&&p.mood!=null&&!p.loan?' · '+moodI(p.mood):''}`}</span></div>${o.right||(o.tap?'<span class="mut">›</span>':'')}</div>`;}
 
@@ -3649,7 +3701,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='130',APP_RV=13;
+const APP_BUILD='131',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4551,20 +4603,20 @@ function fitTrainPage(c){const T=trnFree(c);const can=ST.phase==='matchday';
 ACT.ftrain=function(v){send('TRAIN',{player:v,fit:1});const c=myC();setTimeout(()=>{if(c&&c.lastTrain)toast((c.lastTrain.ok?'✓ ':'✗ ')+c.lastTrain.t,!!c.lastTrain.ok);},50);};
 
 // ================= Paket C: Filter, Karten-Raster, Spielerübersicht quer =================
-const FLT0={pos:'',minR:0,minF:0,maxA:0,minS:0,afford:0,sort:'rat',dir:-1};
+const FLT0={pos:'',minR:0,minF:0,maxA:0,minS:0,afford:0,nat:'',sort:'rat',dir:-1};
 function fltGet(k){const o=LS.get('kc:flt',{});return Object.assign({},FLT0,o[k]||{});}
 function fltSet(k,f,v){const o=LS.get('kc:flt',{});o[k]=Object.assign({},FLT0,o[k]||{});o[k][f]=v;LS.set('kc:flt',o);}
-function fltActive(k){const f=fltGet(k);return !!(f.pos||f.minR||f.minF||f.maxA||f.minS||f.afford||f.sort!=='rat');}
+function fltActive(k){const f=fltGet(k);return !!(f.pos||f.minR||f.minF||f.maxA||f.minS||f.afford||f.nat||f.sort!=='rat');}
 function fltRat(f,p){return f.pos?(f.pos==='TW'?(p.pos==='G'?p.rat:Math.max(1,p.rat-25)):(p.pos==='G'?Math.max(1,p.rat-25):posVal(p,f.pos))):p.rat;}
 function fltApply(k,list,c){const f=fltGet(k);const known=p=>!c.squad.includes(p)&&(c.up.scouting||1)<3;
-  let L=list.filter(p=>{if(f.pos&&(f.pos==='TW')!==(p.pos==='G'))return false;if(f.minR&&fltRat(f,p)<f.minR)return false;if(f.minF&&fitOf(p)<f.minF)return false;if(f.maxA&&p.age>f.maxA)return false;if(f.minS&&!known(p)&&starsOf(p)<f.minS)return false;if(f.afford&&c.cash<buyPrice(c,p))return false;return true;});
+  let L=list.filter(p=>{if(f.pos&&(f.pos==='TW')!==(p.pos==='G'))return false;if(f.minR&&fltRat(f,p)<f.minR)return false;if(f.minF&&fitOf(p)<f.minF)return false;if(f.maxA&&p.age>f.maxA)return false;if(f.minS&&!known(p)&&starsOf(p)<f.minS)return false;if(f.afford&&c.cash<buyPrice(c,p))return false;if(f.nat&&natOf(p)!==f.nat)return false;return true;});
   const key={rat:p=>fltRat(f,p),pot:p=>p.pot,fit:p=>fitOf(p),fr:p=>p.fr==null?100:p.fr,age:p=>p.age,val:p=>value(p),ct:p=>p.ct==null?9:p.ct,st:p=>starsOf(p)}[f.sort]||(p=>p.rat);
   return L.sort((a,b)=>(key(a)-key(b))*f.dir||b.rat-a.rat);}
 function fltPosTag(k,p){const f=fltGet(k);if(!f.pos)return '';const v=fltRat(f,p);return ` · <b style="color:${ratCol(v)}">${f.pos} ${v}</b>`;}
 function fltBar(k,mk){const f=fltGet(k);const sel=(fld,opts)=>`<select data-flt="${k}|${fld}" style="padding:4px 6px;font-size:12px;min-height:30px;border-radius:8px">${opts.map(([v,l])=>`<option value="${v}" ${String(f[fld])===String(v)?'selected':''}>${l}</option>`).join('')}</select>`;
-  return `<div class="fbar">${sel('pos',[['','Alle Pos.'],...POS12.map(x=>[x,x])])}${sel('minR',[[0,'Stärke'],[40,'ab 40'],[50,'ab 50'],[60,'ab 60'],[70,'ab 70'],[80,'ab 80']])}${sel('minF',[[0,'Fitness'],[50,'FIT ab 50'],[60,'FIT ab 60'],[70,'FIT ab 70'],[80,'FIT ab 80']])}${sel('maxA',[[0,'Alter'],[19,'bis 19'],[21,'bis 21'],[23,'bis 23'],[26,'bis 26'],[30,'bis 30']])}${sel('minS',[[0,'Sterne'],[3,'ab ★3'],[4,'ab ★4'],[5,'★5']])}${mk?`<span class="chip ${f.afford?'on':''}" style="padding:4px 9px;font-size:12px" data-a="fltT" data-v="${k}|afford">💶 bezahlbar</span>`:''}
+  return `<div class="fbar">${sel('pos',[['','Alle Pos.'],...POS12.map(x=>[x,x])])}${sel('minR',[[0,'Stärke'],[40,'ab 40'],[50,'ab 50'],[60,'ab 60'],[70,'ab 70'],[80,'ab 80']])}${sel('minF',[[0,'Fitness'],[50,'FIT ab 50'],[60,'FIT ab 60'],[70,'FIT ab 70'],[80,'FIT ab 80']])}${sel('maxA',[[0,'Alter'],[19,'bis 19'],[21,'bis 21'],[23,'bis 23'],[26,'bis 26'],[30,'bis 30']])}${sel('minS',[[0,'Sterne'],[3,'ab ★3'],[4,'ab ★4'],[5,'★5']])}${(()=>{const c=myC();if(!c||!ST.career)return '';const L=k==='mkt'?(ST.market||[]):c.squad;const ns=[...new Set(L.map(natOf))].filter(n=>NATS[n]).sort((a,b)=>NATS[a][1].localeCompare(NATS[b][1]));if(f.nat&&!ns.includes(f.nat))ns.unshift(f.nat);return sel('nat',[['','Nation']].concat(ns.map(n=>[n,NATS[n][0]+' '+NATS[n][1]])));})()}${mk?`<span class="chip ${f.afford?'on':''}" style="padding:4px 9px;font-size:12px" data-a="fltT" data-v="${k}|afford">💶 bezahlbar</span>`:''}
   <span class="sp"></span>${sel('sort',[['rat',f.pos?'Wert '+f.pos:'Stärke'],['pot','Potenzial'],['fit','Fitness'],['fr','Frische'],['age','Alter'],['val','Marktwert'],['ct','Vertrag'],['st','Sterne']])}<span class="chip" style="padding:4px 9px;font-size:12px" data-a="fltT" data-v="${k}|dir">${f.dir<0?'↓':'↑'}</span>${fltActive(k)?`<span class="chip" style="padding:4px 9px;font-size:12px" data-a="fltR" data-v="${k}">✕</span>`:''}</div>`;}
-document.addEventListener('change',e=>{const el=e.target;if(!el||!el.dataset||!el.dataset.flt)return;const [k,f]=el.dataset.flt.split('|');fltSet(k,f,f==='pos'||f==='sort'?el.value:+el.value);render();});
+document.addEventListener('change',e=>{const el=e.target;if(!el||!el.dataset||!el.dataset.flt)return;const [k,f]=el.dataset.flt.split('|');fltSet(k,f,f==='pos'||f==='sort'||f==='nat'?el.value:+el.value);render();});
 ACT.fltT=function(v){const [k,f]=String(v).split('|');const c=fltGet(k);fltSet(k,f,f==='dir'?-c.dir:(c[f]?0:1));render();};
 ACT.fltR=function(k){const o=LS.get('kc:flt',{});delete o[k];LS.set('kc:flt',o);render();};
 // ---------- Karten-Raster ----------
@@ -4573,7 +4625,7 @@ ACT.sqv=function(v){LS.set('kc:sqv',v);render();};
 function fcardMini(p,c,o){o=o||{};const f=fltGet(o.k||'sq');const v=fltRat(f,p);const fr=p.fr==null?100:Math.round(p.fr);const st=starsOf(p);
   const ic=(p.ct===1&&!p.loan?'📝':'')+(p.inj>0?'🚑':'')+(p.sus>0?'🟥':'')+(p.fire>0?'🔥':'')+(p.tr&&TRAITS[p.tr]?TRAITS[p.tr].i:'')+(p.loan?'🔁':'');
   const tier=st>=6?'dia':v>=78?'gold':v>=65?'silver':'bronze';
-  return `<div class="fut ${tier}${o.xi?' xi':''}" data-a="pl" data-v="${p.id}"><div class="fut-t"><b>${v}</b><span>${f.pos||posL(p).replace('+','')}</span></div><div class="fut-s">${st>=6?'💎':'★'.repeat(st)}</div><div class="fut-n">${esc(p.name.split(' ').slice(-1)[0])}</div>
+  return `<div class="fut ${tier}${o.xi?' xi':''}" data-a="pl" data-v="${p.id}"><div class="fut-t"><b>${v}</b><span>${f.pos||posL(p).replace('+','')}</span></div><div class="fut-s">${st>=6?'💎':'★'.repeat(st)}</div><div class="fut-n">${ST.career?'<span class="fut-f">'+flagOf(p)+'</span>':''}${esc(p.name.split(' ').slice(-1)[0])}</div>
   <div class="fut-m"><span>${p.age} J.</span><span>FIT ${fitOf(p)}</span></div>${c.cond&&!p.loan?`<div class="fut-fr"><i style="width:${fr}%;background:${frCol(fr)}"></i></div>`:''}${ic?`<div class="fut-i">${ic}</div>`:''}</div>`;}
 function squadOverview(c){
   const sal=c.squad.reduce((t,p)=>t+salary(p),0);const mode=viewMode();
@@ -4834,7 +4886,7 @@ ACT.benchIn=function(v){if(XD.blockClick&&Date.now()-XD.blockClick<400)return;co
 
 // ================= Pop-up-Fenster: Verhandlung, Vertrag, Bank =================
 function plHead(p,c,own){const r=potRange(c,p);const st=starsOf(p);
-  return `<div class="mh"><div class="mhc">${fcardMini(p,c,{k:'sq'})}</div><div class="mhi"><b class="mhn">${esc(p.name)}</b><div class="small mut">${p.age} J. · ${spOfC(p)}${(p.xsp||[]).length?' / '+p.xsp.join(', '):''} · ${starsTxt?starsTxt(p):'★'.repeat(st)}</div>
+  return `<div class="mh"><div class="mhc">${fcardMini(p,c,{k:'sq'})}</div><div class="mhi"><b class="mhn">${esc(p.name)} <span title="${NATS[natOf(p)]?NATS[natOf(p)][1]:''}">${flagOf(p)}</span></b><div class="small mut">${p.age} J. · ${spOfC(p)}${(p.xsp||[]).length?' / '+p.xsp.join(', '):''} · ${starsTxt?starsTxt(p):'★'.repeat(st)}</div>
     <div class="mhk"><span>Stärke <b>${p.rat}</b></span><span>Potenzial <b>${r[0]===r[1]?r[0]:r[0]+'–'+r[1]}</b></span><span>Marktwert <b>${fm(value(p))}</b></span><span>Gehalt <b>${fm(salary(p))}</b></span>${own?`<span>Vertrag <b>${p.ct!=null?p.ct+' J.':'–'}</b></span><span>Stimmung <b>${moodI(p.mood==null?70:p.mood)} ${p.mood==null?70:p.mood}</b></span>`:`<span>Fitness <b>${fitOf(p)}</b></span>`}</div></div></div>`;}
 function scoutTip(c,p){if(p.free)return '';if(ST.phase==='matchday'){return `<div class="tip">🔭 <b>Scout:</b> Ab ca. 105 % wird es wahrscheinlich – darunter wird gepokert.</div>`;}
   if(ST.phase!=='offseason')return '';let best=null;for(const v of [0.7,0.75,0.8,0.85,0.9,0.95,1,1.05,1.1]){const O=offerCalc(c,p,v,null);if(O.ch>=0.6){best=v;break;}}
@@ -4895,7 +4947,7 @@ ACT.moNo=function(v){send('MO_NO',{offer:v});};
 function youthFind(c,id){const n=(c.nlz||[]).find(p=>p.id===id);if(n)return [n,'nlz'];const k=c.camp&&c.camp.kids.find(p=>p.id===id);if(k)return [k,'camp'];const s=c.scout&&(c.scout.rep||[]).find(p=>p.id===id);if(s)return [s,'scout'];return [null,null];}
 {const _plY=ACT.pl;ACT.pl=function(v){const c=myC();if(ST&&ST.career&&c){const [p]=youthFind(c,v);if(p){ui.modal={t:'yp',id:v};render();return;}}_plY(v);};}
 {const _mhY=modalHtml;modalHtml=function(){const M=ui.modal;const c=myC();if(!M||M.t!=='yp'||!c)return _mhY();const [p,src]=youthFind(c,M.id);if(!p)return '';
-  const head=`<div class="mh"><div class="mhc">${fcardMini(p,c,{k:'sq'})}</div><div class="mhi"><b class="mhn">${esc(p.name)}</b><div class="small mut">${p.age} J. · ${spOfC(p)}${(p.xsp||[]).length?' / '+p.xsp.join(', '):''} · ${starsTxt(p)}${p.from?' · aus '+esc(p.from):''}</div>
+  const head=`<div class="mh"><div class="mhc">${fcardMini(p,c,{k:'sq'})}</div><div class="mhi"><b class="mhn">${esc(p.name)} <span title="${NATS[natOf(p)]?NATS[natOf(p)][1]:''}">${flagOf(p)}</span></b><div class="small mut">${p.age} J. · ${spOfC(p)}${(p.xsp||[]).length?' / '+p.xsp.join(', '):''} · ${starsTxt(p)}${p.from?' · aus '+esc(p.from):''}</div>
     <div class="mhk"><span>Stärke <b>${src==='scout'?scRat(c,p):p.rat}</b></span><span>Potenzial <b>${potTxt(p)}</b></span><span>Marktwert <b>${fm(value(p))}</b></span><span>Fitness <b>${fitOf(p)}</b></span><span>Fuß <b>${{L:'links',R:'rechts',B:'beidfüßig'}[footOf(p)]}</b></span><span>Größe <b>${heightOf(p)} cm</b></span>${src==='nlz'?`<span>Training bei Profis <b>${Math.round(nlzTrChance(p,c)*100)} %</b></span>`:''}${p.tb?'<span>📈 <b>Trainingsbonus</b></span>':''}</div></div></div>`;
   let act='';
   if(src==='nlz'){const fee=nlzFee(p);act=`<button class="btn ok block" data-a="nlzUp" data-v="${p.id}" ${ST.phase==='halftime'||c.cash<fee||c.squad.length>=SQUAD_MAX?'disabled':''}>${cl('nu'+p.id,'↑ Zu den Profis hochziehen · '+fm(fee))}</button>
