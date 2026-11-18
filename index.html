@@ -1498,7 +1498,7 @@ function careerOffseason(st,first){
   c.spon=null;c.buys=0;c.hires=0;c.camp=null;c.bid=null;
   jerseyOffers(st,r,c,base);c.jers=null;c.jersE=0;boardsSeason(st,r,c);
   st.tlog=(st.tlog||[]).filter(x=>x.s>=st.season);
-  careerWindow(st,r,false);
+  careerWindow(st,r,false);st.tw={w:1,n:5};c.mOff=[];
   boardSet(st);nlzFill(st,r,c);
   ensureAll(st);makeOffers(st);
   st.phase='offseason';st.offFirst=!!first;st.ready={};
@@ -1823,7 +1823,7 @@ function careerWinter(st){
   const r=CR(st);const me=st.clubs.me;const t=me.lg;
   st.winter=true;me.buys=0;me.wtr5=st.season;me.offers=[];me.bid=null;npcGrow(st,r,true);
   st.market=[];for(let i=0;i<10;i++){const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;const p=genPlayer(st,r,pos,TMEAN[t]+1,7,18,33);cName(st,r,p);p.tier=tierOf(r,p);st.market.push(p);}addFreeAg(st,r,t,2);
-  careerWindow(st,r,true);
+  careerWindow(st,r,true);st.tw={w:1,n:2};me.mOff=[];
   if(me.cond)for(const p of me.squad)p.fr=Math.min(100,(p.fr==null?100:p.fr)+30);
   ensureAll(st);
   st.phase='offseason';st.ready={};
@@ -1861,8 +1861,9 @@ function careerMigrate5(st){
   st.nl5=1;feed(st,'🆕 Neu: Die Regionalliga zwischen 2. Liga und Verbandsliga – jetzt sind es 5 Ligen bis ganz nach oben!','me');
 }
 function careerEnsurePrep(st){
+  if(st.career&&st.phase==='offseason'&&!st.tw&&st.clubs&&st.clubs.me)st.tw={w:1,n:st.winter?2:5};
   SQUAD_MAX=25;
-  if(st.clubs&&st.clubs.me&&st.clubs.me.mOff&&st.clubs.me.mOff.length){const me=st.clubs.me;me.mOff=me.mOff.filter(o=>me.squad.some(p=>p.id===o.pid&&!p.sold&&!p.loan));if(st.phase!=='matchday'&&st.phase!=='halftime')me.mOff=[];}
+  if(st.clubs&&st.clubs.me&&st.clubs.me.mOff&&st.clubs.me.mOff.length){const me=st.clubs.me;me.mOff=me.mOff.filter(o=>me.squad.some(p=>p.id===o.pid&&!p.sold&&!p.loan));if(st.phase!=='matchday'&&st.phase!=='halftime'&&!(st.phase==='offseason'&&st.tw))me.mOff=[];}
   if(st.clubs&&st.clubs.me)STAR_LG=st.clubs.me.lg;
   if(st.career&&st.clubs&&st.clubs.me&&st.phase!=='seasonEnd'){try{rivalEnsure(st);taskEnsure(st);}catch(e){}}
   if(st.career&&st.clubs&&st.clubs.me&&!st.jOffers&&!st.clubs.me.jers&&st.phase!=='seasonEnd'){const c=st.clubs.me;const r=RNG(st.seed,'jo'+st.season);const ff=Math.sqrt(clamp(c.fans/EXPFANS[c.lg],0.5,2.5));jerseyOffers(st,r,c,r2(SPON[c.lg]*ff));}
@@ -2217,9 +2218,11 @@ const CH={
   POACH_LET(st,a){const c=st.clubs.me;if(!c.poach)rej('?');const p=(c.nlz||[]).find(x=>x.id===c.poach.id);if(p){c.nlz=c.nlz.filter(x=>x!==p);money(c,c.poach.comp);feed(st,`${p.name} wechselt zu ${c.poach.club} – Entschädigung ${fm(c.poach.comp)}.`,'me');}c.poach=null;},
   STYLE(st,a){applyStyle(st.clubs.me,a);},
   PREM(st,a){st.clubs.me.prem=clamp(a.v|0,0,2);},
+  WEEK(st,a){twNext(st);},
   LIST(st,a){const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler kannst du nicht anbieten.');if(p.sold)rej('Er ist schon verkauft.');if(!a.pct){delete p.listed;c.mOff=(c.mOff||[]).filter(o=>o.pid!==p.id);return;}p.listed={pct:clamp(+a.pct,0.5,2)};},
   MO_OK(st,a){const c=st.clubs.me;const o=(c.mOff||[]).find(x=>x.id===a.offer);if(!o)rej('Angebot nicht mehr gültig.');const p=c.squad.find(x=>x.id===o.pid);if(!p)rej('?');
     if(c.squad.filter(x=>!x.sold).length<=SQUAD_MIN)rej('Mindestens 12 Spieler im Kader.');if(p.pos==='G'&&c.squad.filter(x=>x.pos==='G'&&!x.sold).length<2)rej('Du brauchst einen Torwart.');
+    if(st.phase==='offseason'&&st.tw){c.mOff=c.mOff.filter(x=>x.pid!==p.id);delete p.listed;plRemove(st,c,p);money(c,o.price);tlogAdd(st,p,c.name,o.club,o.price);c.lastNeg={ok:true,t:`🤝 Deal! ${p.name} wechselt sofort für ${fm(o.price)} zu ${o.club}.`};feed(st,c.lastNeg.t,'me');return;}
     p.sold={club:o.club,price:o.price};delete p.listed;c.mOff=c.mOff.filter(x=>x.pid!==p.id);c.lastNeg={ok:true,t:`🤝 Deal! ${p.name} wechselt zur ${st.md<9?'Winterpause':'Sommerpause'} für ${fm(o.price)} zu ${o.club}.`};feed(st,c.lastNeg.t,'me');},
   MO_NO(st,a){const c=st.clubs.me;c.mOff=(c.mOff||[]).filter(x=>x.id!==a.offer);},
   PT_START(st,a){const me=st.clubs.me;if(!(st.phase==='offseason'&&st.winter))rej('Das Elfmeterturnier gibt es nur in der Winterpause.');if(st.pt&&st.pt.s===st.season)rej('Diese Winterpause gab es schon ein Turnier.');
@@ -2480,6 +2483,21 @@ function paperMake(st,r,o){o=o||{};const me=st.clubs.me;const L=me.lg;const M=me
   const P=st.paper||(st.paper=[]);const no=P.filter(e=>e.s===st.season).length+1;
   const ed={s:st.season,md:o.md!=null?o.md:st.md,lg:L,n:paperName(st,L),no,y:seasonY(st),sp:o.sp||null,h:its[0]||{t:'Ruhige Woche',x:'Keine besonderen Vorkommnisse.'},k:its.slice(1,3),tel:o.tel||'',seen:false};
   P.push(ed);if(P.length>40)P.splice(0,P.length-40);return ed;}
+
+// ---------- Paket M2: Transferwochen ----------
+function twOffers(st,r){const me=st.clubs.me;me.mOff=(me.mOff||[]).filter(o=>o.w===st.tw.w&&me.squad.some(p=>p.id===o.pid&&!p.sold));
+  for(const p of me.squad.filter(p=>p.listed&&!p.sold&&!p.loan)){if(me.mOff.some(o=>o.pid===p.id))continue;const pct=p.listed.pct||1;const ch=clamp(0.5-(pct-1)*0.9+(p.age<=24?0.08:0),0.08,0.7);if(!r.chance(ch))continue;
+    const ids=npcNames(st,me);const club=st.clubs[r.pick(ids)].name;const price=r2(Math.max(0.01,value(p)*pct*(0.85+r.f()*0.25)));
+    me.mOff.push({id:'mo'+(st.nextId++),pid:p.id,club,price,md:st.md,w:st.tw.w});feed(st,`📨 ${club} bietet ${fm(price)} für ${p.name} – gilt diese Woche.`,'me');}}
+function twMarket(st,r){const me=st.clubs.me;const t=me.lg;const M=st.market||[];const cand=M.filter(p=>!p.res);if(cand.length){
+  const n=Math.min(cand.length,r.int(3,4));const sc=cand.map(p=>[p,p.rat+(p.pot||p.rat)*0.3-(p.free?0:Math.log10(1+value(p)*10)*4)+r.f()*8]).sort((a,b)=>b[1]-a[1]).slice(0,n);
+  const gone=[];for(const [p] of sc){st.market=st.market.filter(x=>x!==p);const ids=npcNames(st,me);gone.push(`${p.name} (${p.rat}) → ${st.clubs[r.pick(ids)].name}`);}
+  if(gone.length)feed(st,`📉 Transfermarkt: ${gone.join(', ')}.`,'me');}
+  const k=r.int(3,4);for(let i=0;i<k;i++){if(r.chance(0.25)){addFreeAg(st,r,t,1);continue;}const pos=r.wpick([{v:'G',w:2},{v:'D',w:5},{v:'M',w:6},{v:'A',w:5}]).v;const p=genPlayer(st,r,pos,TMEAN[t]+1,7,18,33);cName(st,r,p);p.tier=tierOf(r,p);ensureP(st,p);st.market.push(p);}}
+function twNext(st){if(st.phase!=='offseason'||!st.tw)rej('Keine Transferwoche.');if(st.tw.w>=st.tw.n)rej('Letzte Woche – jetzt startet die Saison.');
+  const r=RNG(st.seed,'tw'+st.season+(st.winter?'w':'s')+st.tw.w);st.tw.w++;twMarket(st,r);twOffers(st,r);
+  if(st.clubs.me.cond)for(const p of st.clubs.me.squad)p.fr=Math.min(100,(p.fr==null?100:p.fr)+5);
+  feed(st,`📅 Transferwoche ${st.tw.w}/${st.tw.n}${st.tw.w===st.tw.n?' – die letzte vor dem '+(st.winter?'Rückrundenstart':'Saisonstart'):''}.`,'me');}
 
 </script>
 <script>
@@ -3212,7 +3230,7 @@ VIEWS.market=function(){
   const rd=!!ST.ready[me()];const lim=ST.rv>=2&&(c.buys||0)>=buyMax(ST);
   const offs=(c.offers||[]).length;
   const inS=ST.career&&ST.phase==='matchday';
-  const nmo=(c.mOff||[]).filter(o=>c.squad.some(p=>p.id===o.pid&&!p.sold)).length;const msubs=inS?[['buy','Kaufen'],['sell','Anbieten'+(nmo?' ('+nmo+')':'')],['tl','Transfers']]:[['buy','Kaufen'],['off',`Angebote${offs?' ('+offs+')':''}`]];if(ST.career&&!inS)msubs.push(['loan','Leihen'],['tl','Transfers']);if(inS&&!['buy','tl','sell'].includes(ui.subs.market))ui.subs.market='buy';if(inS&&ui.subs.market==='sell')return (isLand()?'':subNav('market',msubs))+sellPage(c);
+  const nmo=(c.mOff||[]).filter(o=>c.squad.some(p=>p.id===o.pid&&!p.sold)).length;const tw=ST.career&&ST.phase==='offseason'&&ST.tw;const msubs=inS?[['buy','Kaufen'],['sell','Anbieten'+(nmo?' ('+nmo+')':'')],['tl','Transfers']]:[['buy','Kaufen'],['off',`Angebote${offs?' ('+offs+')':''}`]];if(tw)msubs.splice(1,0,['sell','Anbieten'+(nmo?' ('+nmo+')':'')]);if(ST.career&&!inS)msubs.push(['loan','Leihen'],['tl','Transfers']);if(inS&&!['buy','tl','sell'].includes(ui.subs.market))ui.subs.market='buy';if((inS||tw)&&ui.subs.market==='sell')return (isLand()?'':subNav('market',msubs))+sellPage(c);
   let h=feat(ST)?subNav('market',msubs):'';
   if(ST.career&&sub('market')==='loan')return h+loanPage(c);
   if(ST.career&&sub('market')==='tl')return h+tlogPage(c);
@@ -4016,7 +4034,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='139',APP_RV=13;
+const APP_BUILD='140',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4870,7 +4888,7 @@ function lmMenu(){const ph=ST.phase;const off=ph==='offseason',md=ph==='matchday
   const sq=(l,k)=>[l,'squad',k],mk=(l,k)=>[l,'market',k],lg=(l,k)=>[l,'cleague',k],of=(l,k)=>[l,'coffice',k];
   const M=[['zen','⚽','Zentrale',[['Übersicht',lmHome(),null]].concat(md?[['Aufgaben','zgoal',null],['Gegner & Tipp','zana',null]]:[],ht?[]:[['Kalender','zcal',null],['News','news',null]])],
     ['team','👕','Team',[sq('Kader','sp'),ht?['Taktik','cht',null]:sq('Taktik','xi')].concat(ht?[]:[sq('Training','tr'),sq('Rollen','ro'),sq('Verträge','ct')])]];
-  if(!ht){M.push(['tm','🔁','Transfers',off?[mk('Kaufen','buy'),mk('Angebote'+((myC().offers||[]).length?' ('+myC().offers.length+')':''),'off'),mk('Leihen','loan'),mk('Verlauf','tl')]:[mk('Kaufen','buy'),mk('Anbieten'+((myC().mOff||[]).length?' ('+myC().mOff.length+')':''),'sell'),mk('Verlauf','tl')]]);
+  if(!ht){M.push(['tm','🔁','Transfers',off?[mk('Kaufen','buy')].concat(ST.tw?[mk('Anbieten'+((myC().mOff||[]).length?' ('+myC().mOff.length+')':''),'sell')]:[],[mk('Angebote'+((myC().offers||[]).length?' ('+myC().offers.length+')':''),'off'),mk('Leihen','loan'),mk('Verlauf','tl')]):[mk('Kaufen','buy'),mk('Anbieten'+((myC().mOff||[]).length?' ('+myC().mOff.length+')':''),'sell'),mk('Verlauf','tl')]]);
     M.push(['nlz','🎓','NLZ',[['Talente & Camp','znlz',null],['Auslandsscout'+(myC().scout&&(myC().scout.rep||[]).length?' ❗':''),'zscout',null]]]);}
   M.push(['comp','🏆','Wettbewerbe',[lg('Tabelle','tab'),lg('Pokale','cup'),lg('Statistik','st'),lg('Chronik','ch')]]);
   if(md||off){M.push(['gel','🏟️','Gelände',[of('Vereinsgelände','ausbau')]]);M.push(['fin','💶','Finanzen',[of('Übersicht','finanzen'),of('Sponsoren','sponsor'),of('Gehälter','gehalt')]]);
@@ -5253,15 +5271,15 @@ function swPop(){const el=document.getElementById('xiswap');if(!el||!isLand()||!
 {const _rSw=render;render=function(){document.querySelectorAll('body>.swpop').forEach(e=>e.remove());_rSw.apply(this,arguments);try{swPop();}catch(e){}};}
 
 // ---------- Eigene Spieler anbieten ----------
-function sellPage(c){const W=ST.md<9?'Winterpause':'Sommerpause';const O=(c.mOff||[]).filter(o=>c.squad.some(p=>p.id===o.pid&&!p.sold));let h='';
+function sellPage(c){const W=ST.md<9?'Winterpause':'Sommerpause';const TW=ST.phase==='offseason'&&ST.tw;const O=(c.mOff||[]).filter(o=>c.squad.some(p=>p.id===o.pid&&!p.sold));let h='';
   if(O.length)h+=`<div class="card" style="border-color:var(--gold)"><div class="row"><b>📨 Angebote</b><span class="sp"></span><span class="pill">${O.length}</span></div>${O.map(o=>{const p=c.squad.find(x=>x.id===o.pid);if(!p)return '';return `<div class="pl" data-a="card" data-v="${p.id}" style="cursor:pointer"><span class="pos ${p.pos}">${posL(p)}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)} ← ${esc(o.club)}</b><span><b style="color:var(--acc2)">${fm(o.price)}</b> · MW ${fm(value(p))} · Wechsel zur ${W}</span></div><button class="btn sm ok" data-a="moOk" data-v="${o.id}">${cl('mo'+o.id,'Annehmen','Sicher?')}</button><button class="btn sm" data-a="moNo" data-v="${o.id}">✕</button></div>`;}).join('')}</div>`;
   const L=c.squad.filter(p=>!p.loan).sort((a,b)=>(!!b.sold-!!a.sold)||(!!b.listed-!!a.listed)||b.rat-a.rat);
-  h+=`<div class="card"><div class="row"><b>📤 Spieler anbieten</b>${inf('Setz Spieler auf die Transferliste. Andere Vereine melden sich mit Angeboten (gilt 3 Spieltage). Nimmst du an, bleibt der Spieler bis zur '+W+' und wechselt dann – das Geld kommt beim Wechsel. Je niedriger dein Preis, desto schneller kommen Angebote.')}<span class="sp"></span><span class="tiny mut">Wechsel zur ${W}</span></div>
+  h+=`<div class="card"><div class="row"><b>📤 Spieler anbieten</b>${inf(TW?'Setz Spieler auf die Transferliste. Mit jeder neuen Transferwoche melden sich Vereine mit Angeboten (gelten 1 Woche). Nimmst du an, wechselt der Spieler sofort und das Geld ist da. Je niedriger dein Preis, desto eher kommen Angebote.':'Setz Spieler auf die Transferliste. Andere Vereine melden sich mit Angeboten (gilt 3 Spieltage). Nimmst du an, bleibt der Spieler bis zur '+W+' und wechselt dann – das Geld kommt beim Wechsel. Je niedriger dein Preis, desto schneller kommen Angebote.')}<span class="sp"></span><span class="tiny mut">${TW?'Angebote kommen mit „Nächste Woche“':'Wechsel zur '+W}</span></div>
   ${L.map(p=>crow(p,{tap:1,sub:p.sold?`🔜 wechselt zu ${esc(p.sold.club)} · ${fm(p.sold.price)}`:p.listed?`📤 gelistet für ${fm(r2(value(p)*p.listed.pct))} (${Math.round(p.listed.pct*100)} %)`:`MW ${fm(value(p))} · Vertrag ${p.ct!=null?p.ct+' J.':'–'}`,right:p.sold?'':p.listed?`<button class="btn sm" data-a="unlist" data-v="${p.id}">Zurückziehen</button>`:`<button class="btn sm" data-a="sellOpen" data-v="${p.id}">Anbieten</button>`})).join('')}</div>`;
   return h;}
 ACT.sellOpen=function(v){ui.negMsg=null;ui.slPct=1;ui.modal={t:'sell',id:v};render();};
 ACT.slPct=function(v){ui.slPct=+v;render();};
-ACT.slGo=function(v){send('LIST',{player:v,pct:ui.slPct||1});ui.modal=null;render();toast('📤 Auf der Transferliste – Angebote kommen in den nächsten Spieltagen.',true);};
+ACT.slGo=function(v){send('LIST',{player:v,pct:ui.slPct||1});ui.modal=null;render();toast(ST.phase==='offseason'&&ST.tw?'📤 Auf der Transferliste – Angebote kommen mit der nächsten Transferwoche.':'📤 Auf der Transferliste – Angebote kommen in den nächsten Spieltagen.',true);};
 ACT.unlist=function(v){send('LIST',{player:v,pct:0});};
 ACT.moOk=function(v){if(conf('mo'+v))negSend('MO_OK',{offer:v});};
 ACT.moNo=function(v){send('MO_NO',{offer:v});};
@@ -5483,6 +5501,15 @@ ACT.paperTog=function(){LS.set('kc:paper',paperOn()?0:1);render();};
   h+=`<div class="card"><div class="row"><b>📰 Zeitungsarchiv</b><span class="sp"></span><span class="chip ${paperOn()?'on':''}" data-a="paperTog">Popup ${paperOn()?'an':'aus'}</span></div>${P.map(([e,i])=>`<div class="pl" data-a="paperOpen" data-v="${i}" style="cursor:pointer"><span class="tag" style="flex:none">${e.sp?'⭐':'ST '+(e.md+1)}</span><div class="pn"><b>${esc((e.h||{}).t||'')}</b><span>${esc(e.n)} · Ausgabe ${e.no} · ${e.y}/${String(e.y+1).slice(2)}</span></div><span class="mut">›</span></div>`).join('')||'<div class="empty">Noch keine Ausgabe erschienen.</div>'}</div>`;
   return h;};}
 {const _sP=VIEWS.settings;VIEWS.settings=function(){let h=_sP.apply(this,arguments);if(ST&&ST.career)h=`<div class="card"><div class="row"><b>📰 Zeitung nach jedem Spieltag</b>${inf('Nach jedem Spieltag erscheint eine Ausgabe als Popup. Alle Ausgaben findest du auch unter News › Zeitung.')}<span class="sp"></span><div class="chips" style="gap:4px"><span class="chip ${paperOn()?'on':''}" data-a="paperTog">An</span><span class="chip ${!paperOn()?'on':''}" data-a="paperTog">Aus</span></div></div></div>`+h;return h;};}
+
+// ---------- Paket M2: Transferwochen (Readybar) ----------
+function twOpen(){return ST&&ST.career&&ST.phase==='offseason'&&ST.tw&&ST.tw.w<ST.tw.n;}
+{const _rbW=readyBar;readyBar=function(){let h=_rbW();if(!ST||!ST.career||ST.phase!=='offseason'||!ST.tw)return h;const T=ST.tw;
+  const lbl=T.w<T.n?`Nächste Woche ▶ <span style="opacity:.7;font-weight:600">(${T.w}/${T.n})</span>`:null;
+  if(!lbl)return h.replace(/(<button class="btn pri block" data-a="ready"[^>]*>)([\s\S]*?)(<\/button>)/,(m0,a,lb,b)=>`${a}${lb} <span style="opacity:.7;font-weight:600">(Woche ${T.w}/${T.n})</span>${b}`);
+  return h.replace(/<button class="btn pri block" data-a="ready"([^>]*)>([\s\S]*?)<\/button>/,(m0,at)=>`<div style="display:flex;gap:6px"><button class="btn" data-a="twSkip" title="Direkt zum ${ST.winter?'Rückrundenstart':'Saisonstart'}" style="flex:none;padding:0 12px">${cl('twSkip','⏩','⏩ Start?')}</button><button class="btn pri block" data-a="twNext" style="flex:1">${lbl}</button></div>`);};}
+ACT.twNext=function(){send('WEEK');};
+ACT.twSkip=function(){if(!conf('twSkip'))return;ACT.ready();};
 
 // ---------- Start ----------
 async function initFirebase(cfg){
