@@ -264,6 +264,19 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 body.land.startv{overflow:auto;height:auto}
 body.land.startv #app{padding:12px 16px 24px!important;max-width:760px;margin:0 auto}
 body.land.startv #app h1,body.land.startv .logo{text-align:center}
+
+/* Taktik-Board */
+.tboard{display:flex;flex-direction:column;gap:6px;height:100%;min-height:0}
+body.land .lbody>.tboard{flex:1 1 auto}
+.tbt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tbn{font-size:14px}.tbs{font-size:12px;color:var(--mut)}.tbs b{color:var(--fg,#fff)}
+.tbt .chip{padding:4px 9px!important;font-size:12px!important}
+.tbm{flex:1 1 auto;min-height:0;display:flex;gap:10px}
+.tbf{flex:1 1 auto;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+.tbp{width:100%;height:100%;max-height:100%;border-radius:10px}
+.tbr{width:220px;flex:none;overflow:auto;scrollbar-width:none}.tbr::-webkit-scrollbar{display:none}
+.tbr .chip{padding:3px 8px!important;font-size:11.5px!important}
+body:not(.land) .tbm{flex-direction:column}body:not(.land) .tbr{width:auto}
+#xipitch .zones{opacity:0;transition:opacity .15s}#xipitch.drag .zones{opacity:1}
 </style>
 </head>
 <body>
@@ -627,6 +640,8 @@ function teamRat(c,form,tac,oppTac,home){if(form&&form[0]==='X')regForm(form);
     M=av(xi.M)+(F[1]-4)*4;
     A=0.75*av(xi.A)+0.25*av(xi.M)+(F[2]-2)*4;
     const fm=FMOD[form];if(fm){A+=fm.A;M+=fm.M;D+=fm.D;}
+    if(CAREER_VAL&&c.lineup&&c.lineup.P){const PP=c.lineup.P;for(const k of ['D','M','A'])for(const x of xi[k]){const v=x.p&&x.slot&&PP[x.p.id];if(!v)continue;const o=posOffset(x.slot,v[1]);A+=1.2*o;D-=1.2*o;}}
+    if(CAREER_VAL&&F[0]<3)D-=4*(3-F[0]);
     if(c.sp&&c.lineup&&c.lineup.R){const RR=c.lineup.R;const EF={D:{'1':[0.5,0.5,-1],'-1':[0,-0.8,0.8]},M:{'1':[1.2,-1,0],'-1':[0,-0.6,1]},A:{'1':[0.8,-0.8,0],'-1':[-1,1,0]}};for(const k of ['D','M','A'])for(const x of xi[k]){const v=x.p&&RR[x.p.id];if(!v)continue;const e=EF[k][String(v)];A+=e[0];M+=e[1];D+=e[2];}}
     const m=(c.moral-3)*1.5;A+=m;M+=m;D+=m;
     if(CAREER_VAL&&c.roles&&c.roles.cap&&c.squad.some(p=>p.id===c.roles.cap)&&!['G','D','M','A'].some(k=>xi[k].some(x=>x.p&&x.p.id===c.roles.cap))){A-=1;M-=1;D-=1;}
@@ -993,8 +1008,13 @@ function setLineup(c,lu){
   for(const k of ['G','D','M','A']){out[k]=[];for(const id of (Array.isArray(lu[k])?lu[k]:[]).slice(0,5)){if(ids.has(id)&&!seen.has(id)){seen.add(id);out[k].push(id);}}}
   if(c.sp&&lu.R&&typeof lu.R==='object'){const R={};for(const k of ['D','M','A'])for(const id of out[k]){const v=+lu.R[id];if(v===1||v===-1)R[id]=v;}if(Object.keys(R).length)out.R=R;}
   if(lu.fx)out.fx=1;
+  if(lu.P&&typeof lu.P==='object'){const P={};for(const k of ['D','M','A'])for(const id of out[k]){const v=lu.P[id];if(Array.isArray(v)&&v.length===2&&isFinite(v[0])&&isFinite(v[1]))P[id]=[clamp(+v[0],2,98),clamp(+v[1],4,84)];}if(Object.keys(P).length)out.P=P;}
   c.lineup=out;
 }
+// Freie Positionen: Höhe in der Zone (+ = weiter vorne)
+const SLOTY={LV:66,RV:66,IV:73,ZDM:51,ZM:42,ZOM:30,LM:38,RM:38,LA:18,RA:18,ST:12};
+function posOffset(slot,y){const c=SLOTY[slot];if(c==null)return 0;return clamp((c-y)/6,-1,1);}
+function footBonus(p,slot){if(!p||!slot)return 0;const side=PSIDE[slot];if(!side)return 0;const f=footOf(p);if(f==='B')return 0;return f===side?1:-1;}
 const H={
   JOIN(st,a){
     needPhase(st,'lobby');
@@ -1246,7 +1266,7 @@ function pickXIc(c,form){
     if(!fixed){const q=asg.filter(Boolean);if(q.length>1&&q.length<=5){let best=null,bs=1e9;const rec=(i,usedS,acc,cost)=>{if(cost>=bs)return;if(i===q.length){bs=cost;best=acc.slice();return;}for(let j=0;j<sl.length;j++){if(usedS&(1<<j))continue;acc.push(j);rec(i+1,usedS|(1<<j),acc,cost+posPenC(q[i],sl[j]));acc.pop();}};rec(0,0,[],0);
       if(best){asg=new Array(sl.length).fill(null);best.forEach((j,i)=>{asg[j]=q[i];});}}}
     let reds=redN[k];
-    for(let j=0;j<sl.length;j++){const p=asg[j];if(p){const pe=posPenC(p,sl[j]);const x={p,r:E(p)-pe,slot:sl[j]};if(pe>=10)x.oop=true;if(pe>0)x.sw=pe;xi[k].push(x);}}
+    for(let j=0;j<sl.length;j++){const p=asg[j];if(p){const pe=posPenC(p,sl[j]);const x={p,r:E(p)-pe+footBonus(p,sl[j]),slot:sl[j]};if(pe>=10)x.oop=true;if(pe>0)x.sw=pe;xi[k].push(x);}}
     for(let j=sl.length-1;j>=0;j--){if(asg[j])continue;if(reds>0){reds--;xi[k].push({p:null,r:0,red:true,slot:sl[j]});}else xi[k].push({p:null,r:35,slot:sl[j]});}
     xi[k].sort((a,b)=>sl.indexOf(a.slot)-sl.indexOf(b.slot)||0);
     // gleiche Slotnamen (IV, IV): stabile Reihenfolge nach Platzindex
@@ -2785,12 +2805,12 @@ function pitchSvg(c,form){
   const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),form);
   const rows=[['A',X.A,16],['M',X.M,40],['D',X.D,64],['G',X.G,86]];
   let pl='';
-  for(const [k,arr,y0] of rows){const n=arr.length;arr.forEach((x,i)=>{let cx=(i+1)*100/(n+1),y=y0;const rv=x.p&&k!=='G'?(((curLu(c)||{}).R||{})[x.p.id]||0):0;const RP=ST.career&&k!=='G'?realXY(arr,i,k):null;if(RP){[cx,y]=RP;}else if(k==='M'&&n===4&&form==='4-4-2R'){[cx,y]=[[18,39],[50,47],[50,28],[82,39]][i];}else if(k==='M'&&n===5&&form==='3-5-2O'&&(i===1||i===3))y=y0-6;else if(k==='M'&&n===5&&form==='3-5-2D'&&(i===1||i===3))y=y0+6;else if(k==='M'&&n===5&&form==='4-2-3-1'){y=y0+[-2,8,-3,8,-2][i];}else if(k==='M'&&n===5&&form==='4-5-1'&&i===2)y=y0-6;else if(k==='M'&&n===3&&x.slot==='ZDM')y=y0+5;y-=rv*5;
+  for(const [k,arr,y0] of rows){const n=arr.length;arr.forEach((x,i)=>{let cx=(i+1)*100/(n+1),y=y0;const rv=x.p&&k!=='G'?(((curLu(c)||{}).R||{})[x.p.id]||0):0;const PPl=(curLu(c)||{}).P;const RP=ST.career&&k!=='G'?(PPl&&x.p&&PPl[x.p.id]?PPl[x.p.id]:realXY(arr,i,k)):null;if(RP){[cx,y]=RP;}else if(k==='M'&&n===4&&form==='4-4-2R'){[cx,y]=[[18,39],[50,47],[50,28],[82,39]][i];}else if(k==='M'&&n===5&&form==='3-5-2O'&&(i===1||i===3))y=y0-6;else if(k==='M'&&n===5&&form==='3-5-2D'&&(i===1||i===3))y=y0+6;else if(k==='M'&&n===5&&form==='4-2-3-1'){y=y0+[-2,8,-3,8,-2][i];}else if(k==='M'&&n===5&&form==='4-5-1'&&i===2)y=y0-6;else if(k==='M'&&n===3&&x.slot==='ZDM')y=y0+5;y-=rv*5;
     if(x.red){pl+=`<g transform="translate(${cx},${y})"><circle r="5.2" fill="rgba(0,0,0,.35)" stroke="#ff5b4d" stroke-width=".7" stroke-dasharray="1.2 1"/><text y="1.8" text-anchor="middle" font-size="5">🟥</text><text y="10" text-anchor="middle" font-size="3.4" fill="#ff9a8d">Platzverweis</text></g>`;return;}
     const nm=x.p?esc(x.p.name.split(' ').slice(-1)[0]):'Amateur';const r=x.p?Math.round(x.r):35;
     const ed=xiEditable()&&x.p;const sel=ed&&ui.xiSel&&ui.xiSel.id===x.p.id;
     pl+=`<g transform="translate(${cx},${y})" ${ed?`data-a="xiTap" data-v="${k}|${x.p.id}" data-drag="${k}|${x.p.id}" style="cursor:pointer;touch-action:none"`:''}>${sel?'<circle r="7.2" fill="none" stroke="#d8f24a" stroke-width="1.2"/>':''}${rv?`<text x="6.5" y="-3" font-size="4" fill="#d8f24a">${rv>0?'▲':'▼'}</text>`:''}${x.slot&&k!=='G'?`<text y="-6.6" text-anchor="middle" font-size="2.9" font-weight="700" fill="${x.sw?'#ff9a3d':'rgba(255,255,255,.75)'}">${x.slot}${x.sw?' −'+x.sw:''}</text>`:''}${x.p&&x.p.fire>0?'<circle r="6.6" fill="none" stroke="#ff7a1a" stroke-width="1.3" opacity=".9"><animate attributeName="r" values="6.3;7.1;6.3" dur="1.2s" repeatCount="indefinite"/></circle><text x="4.2" y="-3.4" font-size="4.2">🔥</text>':''}<circle r="5.2" fill="${x.oop?'#ff9a3d':c.color}" stroke="${x.sw?'#ff9a3d':'#fff'}" stroke-width=".7"/><text y="1.6" text-anchor="middle" font-size="4.2" font-weight="700" fill="${c.color==='#f0f0f0'||c.color==='#f5c542'?'#13210f':'#fff'}">${r}</text><text y="10" text-anchor="middle" font-size="3.6" fill="#eef3e8">${nm}${x.p&&(x.p.tr==='fue'||x.p.tr==='elf')?(x.p.tr==='fue'?' ©️':' ⚽'):''}</text>${x.p&&c.cond?frBarSvg(x.p.fr):''}</g>`;});}
-  const fchips=xiEditable()?`<div class="row" style="margin:0 0 8px;gap:6px;flex-wrap:wrap"><select id="formSel" style="flex:1;min-width:130px">${(()=>{const L=formsFor(ST);if(String(form).slice(0,2)==='X:')L.unshift(form);return L;})().map(f=>`<option value="${f}" ${f===form?'selected':''}>${fname(f)}</option>`).join('')}</select>${ST.career&&ST.phase==='matchday'?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--acc2)" data-a="fitXI">🔋 Fitte Elf</span><span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--gold)" data-a="bestXI">💪 Stärkste Elf</span>':''}${curLu(c)?'<span class="chip" style="padding:5px 9px;font-size:13px" data-a="luAuto">↺ Auto-Elf</span>':''}${ui.undo&&ui.undo.k===undoKey()?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--bad)" data-a="xiUndo">↶ Rückgängig</span>':''}</div><!--F--><div class="chips" style="margin:0 0 8px;gap:4px">${Object.keys(TAC).map(t=>`<span class="chip ${t===(ui.tac||c.tac)?'on':''}" style="padding:5px 9px;font-size:13px" data-a="tac" data-v="${t}">${esc(TAC[t].n)}</span>`).join('')}${inf('<b>'+esc(TAC[ui.tac||c.tac].n)+':</b> '+esc(TAC[ui.tac||c.tac].d))}</div><!--T-->${ST.career?tkChips(c):''}`:'';
+  const fchips=xiEditable()?`<div class="row" style="margin:0 0 8px;gap:6px;flex-wrap:wrap"><select id="formSel" style="flex:1;min-width:130px">${(()=>{const L=formsFor(ST);if(String(form).slice(0,2)==='X:')L.unshift(form);return L;})().map(f=>`<option value="${f}" ${f===form?'selected':''}>${fname(f)}</option>`).join('')}</select>${ST.career&&isLand()?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:#7fb6ff" data-a="boardOpen">🧩 Taktik-Board</span>':''}${ST.career&&ST.phase==='matchday'?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--acc2)" data-a="fitXI">🔋 Fitte Elf</span><span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--gold)" data-a="bestXI">💪 Stärkste Elf</span>':''}${curLu(c)?'<span class="chip" style="padding:5px 9px;font-size:13px" data-a="luAuto">↺ Auto-Elf</span>':''}${ui.undo&&ui.undo.k===undoKey()?'<span class="chip" style="padding:5px 9px;font-size:13px;border-color:var(--bad)" data-a="xiUndo">↶ Rückgängig</span>':''}</div><!--F--><div class="chips" style="margin:0 0 8px;gap:4px">${Object.keys(TAC).map(t=>`<span class="chip ${t===(ui.tac||c.tac)?'on':''}" style="padding:5px 9px;font-size:13px" data-a="tac" data-v="${t}">${esc(TAC[t].n)}</span>`).join('')}${inf('<b>'+esc(TAC[ui.tac||c.tac].n)+':</b> '+esc(TAC[ui.tac||c.tac].d))}</div><!--T-->${ST.career?tkChips(c):''}`:'';
   const strength=(ST.phase==='matchday'||ST.phase==='halftime')&&myC()===c?(ST.career?'':xiStrength(c,form))+xiWarn(c,form,X):'';
   return fchips+'<!--S-->'+strength+`<svg id="xipitch" viewBox="0 0 100 100" style="width:100%;display:block;border-radius:12px;background:repeating-linear-gradient(180deg,#1d6b3a 0 10%,#1a6135 10% 20%)"><rect x="3" y="3" width="94" height="94" fill="none" stroke="rgba(255,255,255,.5)" stroke-width=".6"/><line x1="3" y1="50" x2="97" y2="50" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><circle cx="50" cy="50" r="9" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".5"/><rect x="30" y="80" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/><rect x="30" y="3" width="40" height="17" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".5"/>${pl}</svg><p class="tiny mut" style="margin:6px 0 0">Bedienung ${inf((ST.career?'Kleine Zahl = Abzug auf dieser Position, orange = deutlich fremde Position.':'Orange = auf fremder Position.')+(xiEditable()?' Ziehe Spieler aufeinander zum Tauschen, oder zieh einen in eine andere Reihe (Abwehr/Mittelfeld/Sturm), um die Formation zu ändern.':''),'Hilfe zur Aufstellung')}</p>${xiEditable()?(ST.career&&isLand()&&ui.xiSel?'':xiBench(c,X))+xiSwapCard(c,form,X):''}`;
 }
@@ -3701,7 +3721,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='131',APP_RV=13;
+const APP_BUILD='133',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4563,13 +4583,13 @@ function lmCur(M){for(const m of M)for(let i=0;i<m[3].length;i++)if(lmOn(m[3][i]
 function lmGo(it){ui.pl=null;ui.card=null;ui.facil=null;ui.confirm=null;ui.tab=it[1];if(it[2]!=null){if(it[1]==='coffice')ui.sub=it[2];else ui.subs[it[1]]=it[2];}}
 ACT.lmGo=function(v){const [mk,i]=String(v).split('|');const m=lmMenu().find(x=>x[0]===mk);if(!m)return;lmGo(m[3][+i||0]);render();scrollTo(0,0);};
 function vGameLand(){
-  let M=lmMenu();const tabsOk=new Set([].concat(...M.map(m=>m[3].map(x=>x[1]))));
+  let M=lmMenu();const tabsOk=new Set([].concat(...M.map(m=>m[3].map(x=>x[1])),['tboard']));
   if(ui.tab==='cmatch'||ui.tab==='cht'||ui.tab==='cseason'||ui.tab==='zhome')ui.tab=lmHome();
   if(ui.tab==='squad'&&ui.subs.squad==='nlz')ui.tab='znlz';
   if(!ui.tab||!tabsOk.has(ui.tab))ui.tab=lmHome();
   if(ui.tab==='coffice'&&ST.phase==='offseason'&&ST.winter&&['vorb','bericht'].includes(ui.sub))ui.sub='vorstand';
   let body=VIEWS[ui.tab]();M=lmMenu();
-  let cur=lmCur(M);if(!cur){cur=[M[0],0];}
+  let cur=lmCur(M);if(ui.tab==='tboard'){const t=M.find(m=>m[0]==='team');if(t){const i=t[3].findIndex(it=>it[2]==='xi'||it[1]==='cht');cur=[t,Math.max(0,i)];}}if(!cur){cur=[M[0],0];}
   const todoTabs=new Set();try{for(const x of todoList(myC()))if(!x.soft)todoTabs.add(x.tab==='coffice'?'coffice|'+String(x.v).split('|')[1]:x.tab);}catch(e){}
   const dotM=m=>m[3].some(it=>todoTabs.has(it[1])||todoTabs.has(it[1]+'|'+it[2]))&&m[0]!=='zen';
   const nav=`<nav>${sideHead()}<div class="in">${M.map(m=>`<button class="${m===cur[0]?'on':''}" data-a="lmGo" data-v="${m[0]}|0">${dotM(m)?'<b class="nd"></b>':''}<i>${m[1]}</i>${m[2]}</button>`).join('')}</div></nav>`;
@@ -4854,21 +4874,28 @@ clubGround=clubGround2;
 // ---------- Spieler auf freie Position ziehen → System passt sich an ----------
 function zoneSlot(x,y){const L=x<22,R=x>78;if(y<24)return x<33?'LA':x>67?'RA':'ST';if(y<35)return L?'LA':R?'RA':'ZOM';if(y<47)return L?'LM':R?'RM':'ZM';if(y<60)return L?(y<53?'LM':'LV'):R?(y<53?'RM':'RV'):'ZDM';if(y<81)return L?'LV':R?'RV':'IV';return null;}
 const SLN={TW:'Torwart',LV:'LV',RV:'RV',IV:'IV',ZDM:'ZDM',ZM:'ZM',ZOM:'ZOM',LM:'LM',RM:'RM',LA:'LA',RA:'RA',ST:'ST'};
-function xiSlotDrop(e){try{if(!XD.k||!['D','M','A'].includes(XD.k))return false;const svg=document.getElementById('xipitch');if(!svg)return false;const R=svg.getBoundingClientRect();
-  if(e.clientX<R.left||e.clientX>R.right||e.clientY<R.top||e.clientY>R.bottom)return false;
-  const x=(e.clientX-R.left)/R.width*100,y=(e.clientY-R.top)/R.height*100;const tgt=zoneSlot(x,y);if(!tgt)return false;
-  const c=myC();const old=ui.form||c.form;const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),old);
-  const cur=[];for(const k of ['D','M','A'])for(const it of X[k])if(it.slot&&(it.p||it.red))cur.push({id:it.p?it.p.id:null,slot:it.slot});
-  const me0=cur.find(q=>q.id===XD.id);if(!me0||me0.slot===tgt)return false;
-  const wl=cur.map(q=>q.id===XD.id?tgt:q.slot);const want=wl.slice().sort().join(',');
+function dropXY(e){const svg=document.getElementById('xipitch');if(!svg)return null;const R=svg.getBoundingClientRect();
+  if(e.clientX<R.left||e.clientX>R.right||e.clientY<R.top||e.clientY>R.bottom)return null;const fx=(e.clientX-R.left)/R.width,fy=(e.clientY-R.top)/R.height;
+  if(svg.dataset.board)return [fy*100,100-fx*100];return [fx*100,fy*100];}
+function curPos(c,X){const lu=curLu(c)||{};const P=Object.assign({},lu.P||{});
+  for(const k of ['D','M','A'])X[k].forEach((x,i)=>{if(x.p&&!P[x.p.id]){const r=realXY(X[k],i,k);if(r)P[x.p.id]=r;}});return P;}
+function xiSlotDrop(e){try{if(!XD.k||!['D','M','A'].includes(XD.k))return false;const xy=dropXY(e);if(!xy)return false;let [x,y]=xy;
+  if(!zoneSlot(x,y))return false;const c=myC();const old=ui.form||c.form;const X=pickXI(Object.assign({},c,{lineup:curLu(c)}),old);
+  const P=curPos(c,X);if(!P[XD.id])return false;
+  // Abstand zu anderen
+  for(let t=0;t<6;t++){let hit=false;for(const id in P){if(id===XD.id)continue;const q=P[id];if(Math.hypot(q[0]-x,q[1]-y)<7){x+=x<50?7:-7;hit=true;}}if(!hit)break;}
+  x=clamp(x,4,96);y=clamp(y,6,82);P[XD.id]=[Math.round(x),Math.round(y)];
+  const ids=[];for(const k of ['D','M','A'])for(const it of X[k])if(it.p)ids.push(it.p.id);
+  const reds=[];for(const k of ['D','M','A'])for(const it of X[k])if(!it.p&&it.red&&it.slot)reds.push(it.slot);
+  const ent=ids.map(id=>({id,slot:zoneSlot(P[id][0],P[id][1]),x:P[id][0]}));
+  const wl=ent.map(e=>e.slot).concat(reds);const want=wl.slice().sort().join(',');
   const cands=formsFor(ST).filter(f=>{const S=slotsOf(f);return S.D.concat(S.M,S.A).slice().sort().join(',')===want;});
   let nf=cands.includes(old)?old:cands[0];
-  if(!nf){const key=custKey(wl);if(!key||!regForm(key)){toast(`So geht es nicht – es braucht mindestens 2 Verteidiger.`);render();return true;}nf=key;}const S=slotsOf(nf);const pool=cur.map(q=>q.id===XD.id?{id:q.id,slot:tgt,me:1}:q);
-  const lu={G:X.G.filter(i=>i.p).map(i=>i.p.id),D:[],M:[],A:[],fx:1};
-  for(const k of ['D','M','A'])for(const sl of S[k]){let i=pool.findIndex(q=>q.id&&q.slot===sl&&q.me);if(i<0)i=pool.findIndex(q=>q.id&&q.slot===sl);if(i<0){const j=pool.findIndex(q=>!q.id&&q.slot===sl);if(j>=0){pool.splice(j,1);continue;}}if(i<0)i=pool.findIndex(q=>q.slot===sl);if(i>=0){lu[k].push(pool[i].id);pool.splice(i,1);}}
-  {const R0=(curLu(c)||{}).R;if(R0)lu.R=Object.assign({},R0);}
-  if(typeof undoSave==='function')undoSave();ui.lu=lu;ui.form=nf;ui.xiSel=null;const p=c.squad.find(q=>q.id===XD.id);
-  toast(`🔁 ${p?p.name.split(' ').slice(-1)[0]:'Spieler'} spielt jetzt ${SLN[tgt]} → ${fname(nf)}`,true);render();return true;}catch(err){console.error(err);return false;}}
+  if(!nf){const key=custKey(wl);if(!key||!regForm(key)){toast('So geht es nicht – mindestens 2 Verteidiger.');render();return true;}nf=key;}
+  const S=slotsOf(nf);const pool=ent.slice().sort((a,b)=>a.x-b.x);const lu={G:X.G.filter(i=>i.p).map(i=>i.p.id),D:[],M:[],A:[],fx:1,P:{}};
+  for(const k of ['D','M','A'])for(const sl of S[k]){const i=pool.findIndex(q=>q.slot===sl);if(i>=0){lu[k].push(pool[i].id);lu.P[pool[i].id]=P[pool[i].id];pool.splice(i,1);}}
+  if(typeof undoSave==='function')undoSave();ui.lu=lu;ui.form=nf;ui.xiSel=null;const me0=ent.find(q=>q.id===XD.id);const p=c.squad.find(q=>q.id===XD.id);
+  const D=FORM[nf]?FORM[nf][0]:4;toast(`🔁 ${p?p.name.split(' ').slice(-1)[0]:'Spieler'} → ${SLN[me0.slot]} · ${fname(nf)}${D<3?' · ⚠️ nur '+D+' Verteidiger':''}`,true);render();return true;}catch(err){console.error(err);return false;}}
 // ---------- Auswechselbank (6) & Tribüne ----------
 {const _xiB=xiBench;xiBench=function(c,X){if(!ST.career)return _xiB(c,X);
   const inXI=new Set();for(const k of ['G','D','M','A'])X[k].forEach(x=>{if(x.p)inXI.add(x.p.id);});
@@ -4969,6 +4996,37 @@ document.addEventListener('input',e=>{const el=e.target;if(!el||el.id!=='slRange
   _xsB(v);
   try{const lu=curLu(c);const X=pickXI(Object.assign({},c,{lineup:lu}),ui.form||c.form);const inXI=new Set();for(const k of ['G','D','M','A'])X[k].forEach(x=>{if(x.p)inXI.add(x.p.id);});
     if(b0.includes(v)&&inXI.has(v)&&!inXI.has(out)){const nb=b0.map(id=>id===v?out:id);send('BENCH',{ids:nb});}}catch(e){}};}
+// ================= Paket H: Taktik-Board (Vollbild) =================
+{const _xsP=ACT.xiSwap;ACT.xiSwap=function(v){const c=myC();const S=ui.xiSel;const P0=c&&(curLu(c)||{}).P?Object.assign({},(curLu(c)||{}).P):null;_xsP(v);
+  if(P0&&S&&ui.lu){const P=Object.assign({},P0);const a=P[S.id],b=P[v];if(a&&b){P[S.id]=b;P[v]=a;}else if(a&&!b){P[v]=a;delete P[S.id];}ui.lu.P=P;ui.lu.fx=1;render();}};}
+VIEWS.tboard=function(){const c=myC();if(!c)return '';const form=ui.form||c.form,tac=ui.tac||c.tac;const lu=curLu(c);const X=pickXI(Object.assign({},c,{lineup:lu}),form);
+  const P=curPos(c,X);const ed=xiEditable();
+  // Spieler (quer: eigenes Tor links, Angriff rechts)
+  let pl='';const S=(x,y)=>[((100-y)*1.5).toFixed(1),x.toFixed(1)];
+  {const g=X.G[0];if(g&&g.p){pl+=pNode(g,'G',...S(50,88),ed);}}
+  for(const k of ['D','M','A'])X[k].forEach((x,i)=>{if(!x.p){if(x.red){const r=realXY(X[k],i,k)||[50,50];const [sx,sy]=S(r[0],r[1]);pl+=`<g transform="translate(${sx},${sy})"><circle r="4.6" fill="rgba(0,0,0,.35)" stroke="#ff5b4d" stroke-width=".6" stroke-dasharray="1.2 1"/><text y="1.6" text-anchor="middle" font-size="4">🟥</text></g>`;}return;}
+    const v=P[x.p.id]||realXY(X[k],i,k)||[50,50];pl+=pNode(x,k,...S(v[0],v[1]),ed,v);});
+  // Zonen (beim Ziehen sichtbar)
+  const Z=[['LA','ST','RA',0,24],['LA','ZOM','RA',24,35],['LM','ZM','RM',35,47],['LM','ZDM','RM',47,60],['LV','IV','RV',60,81]];let zn='';
+  for(const [l,m,r,y0,y1] of Z){const sx0=(100-y1)*1.5,w=(y1-y0)*1.5;for(const [lab,x0,x1] of [[l,0,22],[m,22,78],[r,78,100]]){zn+=`<rect x="${sx0}" y="${x0}" width="${w}" height="${x1-x0}" fill="${lab==='IV'||lab==='LV'||lab==='RV'?'rgba(80,140,255,.10)':['ST','LA','RA'].includes(lab)?'rgba(255,90,80,.10)':'rgba(216,243,78,.08)'}" stroke="rgba(255,255,255,.18)" stroke-width=".3"/><text x="${sx0+w/2}" y="${(x0+x1)/2+1.5}" text-anchor="middle" font-size="4" fill="rgba(255,255,255,.45)" font-weight="700">${lab}</text>`;}}
+  const svg=`<svg id="xipitch" data-board="1" viewBox="0 0 150 100" preserveAspectRatio="xMidYMid meet" class="tbp"><rect x="0" y="0" width="150" height="100" rx="3" fill="#1d6b3a"/>${[...Array(10)].map((_,i)=>`<rect x="${i*15}" y="0" width="7.5" height="100" fill="#1a6135"/>`).join('')}
+    <g fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".5"><rect x="3" y="3" width="144" height="94"/><line x1="75" y1="3" x2="75" y2="97"/><circle cx="75" cy="50" r="10"/><rect x="3" y="28" width="19" height="44"/><rect x="128" y="28" width="19" height="44"/><rect x="3" y="40" width="7" height="20"/><rect x="140" y="40" width="7" height="20"/></g>
+    <g class="zones">${zn}</g>${pl}</svg>`;
+  const R=teamRat(Object.assign({},c,{lineup:lu}),form,tac,'bal',true);
+  const B=(()=>{const inXI=new Set();for(const k of ['G','D','M','A'])X[k].forEach(x=>{if(x.p)inXI.add(x.p.id);});const live=ST.phase==='halftime'&&ST.ht;const ids=live?(ST.ht.bench||[]):benchOf(c,inXI);return ids.map(id=>c.squad.find(p=>p.id===id)).filter(p=>p&&!inXI.has(p.id)&&!(p.inj>0)&&!(p.sus>0)&&!p.sent);})();
+  const top=`<div class="tbt"><button class="btn sm" data-a="boardClose">← Zurück</button>${ST.phase==='halftime'&&ST.ht?`<span class="pill">⏸ ${ST.ht.ctx.gh}:${ST.ht.ctx.ga} · ${ST.ht.brk?(ST.ht.ctx.lm||ST.ht.brk.m||0)+'′':'HZ'} · Wechsel ${ST.ht.xi1?htSubs(c,curLu(c),form):0}/3</span>`:''}<b class="tbn">${esc(fname(form))}</b><span class="tbs">A <b>${Math.round(R.A)}</b> · M <b>${Math.round(R.M)}</b> · D <b>${Math.round(R.D)}</b></span><span class="sp"></span>${ed?`${ui.undo&&ui.undo.k===undoKey()?'<span class="chip" data-a="xiUndo">↶</span>':''}${ST.phase==='matchday'?'<span class="chip" data-a="fitXI">🔋 Fitte Elf</span><span class="chip" data-a="bestXI">💪 Stärkste</span>':''}`:''}</div>`;
+  const side=`<div class="tbr"><div class="tiny mut">🪑 Bank – aufs Feld ziehen</div><div class="bwrap">${B.map(p=>`<span data-drag="B|${p.id}" class="bchip"><span class="pos ${p.pos}">${posL(p)}</span><b>${p.rat}</b><span class="bn">${esc(p.name.split(' ').slice(-1)[0])}</span></span>`).join('')||'<span class="tiny mut">leer</span>'}</div>
+    <div class="tiny mut" style="margin-top:8px">Ausrichtung</div><div class="chips" style="gap:4px">${Object.keys(TAC).map(t=>`<span class="chip ${t===tac?'on':''}" data-a="tac" data-v="${t}">${esc(TAC[t].n)}</span>`).join('')}</div>
+    <div style="margin-top:6px">${ST.career?tkChips(c):''}</div>
+    <div class="tiny mut" style="margin-top:6px">Ziehen: Zone = Rolle · weiter vorne = offensiver · Linksfuß links +1 ${inf('Zieh Spieler frei über das Feld. Die Zone bestimmt die Rolle (ZOM, ZM, LV …). Steht er in seiner Zone weiter vorne, gibt das bis zu +1,2 Angriff und −1,2 Abwehr – weiter hinten umgekehrt. Linksfuß auf links bzw. Rechtsfuß auf rechts: +1 Stärke, falsche Seite −1. Unter 3 Verteidigern gibt es einen deutlichen Abwehr-Abzug. Auf einen anderen Spieler ziehen = tauschen.')}</div></div>`;
+  return `<div class="tboard">${top}<div class="tbm"><div class="tbf">${svg}</div>${side}</div>${xiEditable()?xiSwapCard(c,form,X):''}</div>`;};
+function pNode(x,k,sx,sy,ed,v){const p=x.p;const nm=esc(p.name.split(' ').slice(-1)[0]);const r=Math.round(x.r);const sel=ed&&ui.xiSel&&ui.xiSel.id===p.id;
+  const o=v&&x.slot?posOffset(x.slot,v[1]):0;const fb=x.slot?footBonus(p,x.slot):0;
+  return `<g transform="translate(${sx},${sy})" ${ed?`data-a="xiTap" data-v="${k}|${p.id}" data-drag="${k}|${p.id}" style="cursor:grab;touch-action:none"`:''}>${sel?'<circle r="6.4" fill="none" stroke="#d8f24a" stroke-width="1"/>':''}<circle r="4.8" fill="${x.oop?'#ff9a3d':'#0b1a13'}" stroke="#fff" stroke-width=".7"/><text y="1.7" text-anchor="middle" font-size="4.4" font-weight="800" fill="#fff">${r}</text>
+   <text y="-6.1" text-anchor="middle" font-size="2.9" font-weight="700" fill="${x.sw?'#ff9a3d':'rgba(255,255,255,.8)'}">${x.slot||'TW'}${x.sw?' −'+x.sw:''}${o>0.3?' ▲':o<-0.3?' ▼':''}${fb>0?' 🦶':''}</text><text y="8.6" text-anchor="middle" font-size="3.2" fill="#fff" stroke="#0b1a13" stroke-width=".35" paint-order="stroke">${nm}</text></g>`;}
+ACT.boardOpen=function(){ui.boardBack={tab:ui.tab,sub:ui.sub,sq:ui.subs.squad};ui.tab='tboard';ui.xiSel=null;render();};
+ACT.boardClose=function(){const b=ui.boardBack||{tab:lmHome()};ui.tab=b.tab||lmHome();if(b.sub)ui.sub=b.sub;if(b.sq)ui.subs.squad=b.sq;ui.boardBack=null;ui.xiSel=null;render();};
+document.addEventListener('pointermove',e=>{if(XD&&XD.on&&XD.moved){const s=document.getElementById('xipitch');if(s&&!s.classList.contains('drag'))s.classList.add('drag');}},{passive:true});
 
 // ---------- Start ----------
 async function initFirebase(cfg){
