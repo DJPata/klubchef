@@ -1233,7 +1233,7 @@ function footOf(p){if(!p)return 'R';if(p.foot)return p.foot;const s=p.pos==='G'?
 function heightOf(p){if(!p)return 180;if(p.hgt)return p.hgt;const s=p.pos==='G'?'TW':spOfC(p);const u=h01(p.id+'|hg');const [a,b]=s==='TW'?[185,199]:s==='IV'?[181,196]:s==='ST'||s==='ZDM'?[175,194]:[166,188];p.hgt=Math.round(a+u*(b-a));return p.hgt;}
 function fitOf(p){if(!p)return 60;if(p.fit!=null)return p.fit;const u=h01(p.id+'|fi');p.fit=Math.round(clamp(76-Math.max(0,p.age-28)*3+(u*32-18),30,99));return p.fit;}
 // Star-Potenzial (Karriere): Potenzial relativ zur eigenen Liga (70 %) + Entwicklungstempo (30 %)
-let STAR_LG=3;const STAR_T=[0,78,70,63,56,50];
+let STAR_LG=3;const STAR_T=[0,78,70,63,56,53,50];
 function devOf(p){if(!p)return 1;if(p.dv!=null)return p.dv;p.dv=Math.round((0.7+h01(p.id+'|dv')*0.6)*100)/100;return p.dv;}
 function isDia(p){return !!(p&&(p.dia||p.st===6));}
 function starLg(){try{if(typeof ST!=='undefined'&&ST&&ST.career&&ST.clubs&&ST.clubs.me)return ST.clubs.me.lg;}catch(e){}return STAR_LG;}
@@ -1288,20 +1288,20 @@ function pickXIc(c,form){
   return xi;}
 
 // ================= KLUBCHEF KARRIERE-MODUS =================
-const LNAME=['','1. Liga','2. Liga','Regionalliga','Verbandsliga','Kreisliga'];
-const NL=5;
-const TMEAN=[0,78,70,63,56,50];
-const TVB=[0,6,1.8,0.9,0.45,0.15];
-const SPON=[0,4.5,1.4,0.75,0.4,0.18];
-const TPRICE=[0,45,28,20,13,8];
-const EXPFANS=[0,30000,12000,7000,3500,900];
+const LNAME=['','1. Liga','2. Liga','Regionalliga','Oberliga','Landesliga','Kreisliga'];
+const NL=6;
+const TMEAN=[0,78,70,63,56,53,50];
+const TVB=[0,6,1.8,0.9,0.45,0.25,0.15];
+const SPON=[0,4.5,1.4,0.75,0.4,0.27,0.18];
+const TPRICE=[0,45,28,20,13,10,8];
+const EXPFANS=[0,30000,12000,7000,3500,1800,900];
 const CCAP=[0,1500,5000,12000,30000,60000];
 const CUPCOST=[0,0.15,0.8,3,10];      // Stadionausbau
 const CUPCOST2=[0,0.1,0.4,1.5,5];        // Training, Scouting, Jugend
-const WINB=[0,0.15,0.05,0.025,0.012,0.004];
-const STAFFF=[0,1,0.3,0.15,0.07,0.03];
-const LOANS=[0,3,1,0.5,0.25,0.1];
-const CAMPC=[0,0.8,0.25,0.12,0.06,0.03];
+const WINB=[0,0.15,0.05,0.025,0.012,0.007,0.004];
+const STAFFF=[0,1,0.3,0.15,0.07,0.045,0.03];
+const LOANS=[0,3,1,0.5,0.25,0.16,0.1];
+const CAMPC=[0,0.8,0.25,0.12,0.06,0.045,0.03];
 const CMD_KREIS=[1,4,7,10],CMD_LAND=[11,13,15,17];
 const CUPR=['Achtelfinale','Viertelfinale','Halbfinale','Finale'];
 const TOWNS=['Rheinstadt','Neckartal','Waldau','Hafenburg','Odenwald','Seewinkel','Lindenau','Elbstadt','Hochfeld','Bergheim','Mühlbach','Kraichau','Talheim','Auenthal','Steinach','Wiesental','Rosenhain','Birkenau','Eichenfeld','Sonnberg','Kirchheim','Altdorf','Grünwalde','Brunnental','Felsberg','Mosbachtal','Weidenau','Hirschau','Lerchenfeld','Ostheim','Westerau','Bachingen','Kronfeld','Schönau','Tannberg','Ulmenhof','Dornstadt','Wolfsgrund','Falkenau','Lindach'];
@@ -1374,7 +1374,7 @@ function regClubName(st,r,used,L){const g=regOf(st);if(!g)return clubName(r,used
 function lgClubs(st,L){return st.order[L];}
 function careerTable(st,L){return st.order[L].map(id=>({id,...st.tables[L][id]})).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf||(a.id<b.id?-1:1));}
 
-function newCareer(name,club,color,region){
+function newCareer(name,club,color,region,pre){
   SQUAD_MAX=25;
   const seed=Math.random().toString(36).slice(2);
   const st={v:1,rv:5,career:true,code:'KARRIERE',seed,rc:0,host:'me',local:false,phase:'offseason',settings:{seasons:0,double:true,draft:'auto'},
@@ -1390,11 +1390,57 @@ function newCareer(name,club,color,region){
     for(let i=0;i<(L===NL?9:10);i++){const id='n'+(k++);const b=TMEAN[L]+r.int(-3,3);
       st.clubs[id]={id,human:false,lg:L,name:regClubName(st,r,used,L),color:NPC_COL[k%NPC_COL.length],A:b+r.int(-3,3),M:b+r.int(-3,3),D:b+r.int(-3,3)};st.order[L].push(id);}
   }
-  st.order[NL].push('me');st.nl5=1;
+  st.order[NL].push('me');st.nl5=1;st.nl6=1;c.founded=true;
+  if(pre){st.startJobs=startJobs(st,r);return st;}
   careerSetupSeason(st);careerOffseason(st,true);
   feed(st,`${name} übernimmt ${club} in der Kreisliga. Das Ziel: ganz nach oben!`);
   return st;
 }
+// ---------- Paket L: Jobangebote ----------
+const JOBK={
+  auf:{n:'Aufstiegskandidat',d:'einfach',e:'🟢',L:NL,sq:2,a:[19,30],cash:1.6,debt:0,fans:1.3,moral:3,up:{stadium:2},goal:'aufstieg',trust:55,x:'Starker Kader, etwas Geld, Stadion Stufe 2. Ziel: Aufstieg.'},
+  weak:{n:'Schwaches Team',d:'schwer',e:'🔴',L:NL,sq:-6,a:[25,34],cash:0.15,debt:0.15,fans:0.6,moral:2,up:{},goal:'erhalt',trust:75,bonus:5,x:'Schwacher, alter Kader, kleine Schulden, wenig Fans. Ziel: Klassenerhalt. Geduldiger Vorstand, +5 Ruf bei Erfolg.'},
+  mid:{n:'Mittelfeld',d:'mittel',e:'🟡',L:5,sq:-3,a:[19,32],cash:1,debt:0,fans:1,moral:3,up:{training:2,youth:2},goal:'erhalt',trust:60,x:'Solider Kader, Training & NLZ Stufe 2. Ziel: sicherer Klassenerhalt.'}};
+function npcStr(c){return (c.A+c.M+c.D)/3;}
+function startJobs(st,r){const out=[];const used=new Set();
+  for(const k of ['auf','weak','mid']){const J=JOBK[k];const pool=st.order[J.L].filter(id=>id!=='me'&&!used.has(id)).sort((a,b)=>npcStr(st.clubs[b])-npcStr(st.clubs[a]));
+    const id=k==='auf'?pool[0]:k==='weak'?pool[pool.length-1]:pool[Math.floor(pool.length/2)];used.add(id);out.push({id,k,L:J.L});}
+  return out;}
+function clubTake(st,r,nid,o){
+  // o:{k (JOBK-Typ) | null, start:bool}
+  const me=st.clubs.me;const n=st.clubs[nid];const L=n.lg,myL=me.lg;const J=o.k?JOBK[o.k]:null;
+  const base=J?TMEAN[L]+J.sq:Math.round(npcStr(n))-1;const oldStr=(()=>{try{const R=teamRat(me,me.form,'bal','bal',false);return (R.A+R.M+R.D)/3;}catch(e){return TMEAN[myL];}})();
+  const myName=me.name,myColor=me.color;me.name=n.name;me.color=n.color;delete me.logo;
+  if(o.start){const used=new Set(Object.values(st.clubs).map(c=>c.name));n.name=regClubName(st,r,used,myL);}else{n.name=myName;n.color=myColor;}
+  if(L!==myL){st.order[myL]=st.order[myL].map(id=>id==='me'?nid:id);st.order[L]=st.order[L].map(id=>id===nid?'me':id);n.lg=myL;me.lg=L;}
+  const ns=o.start?TMEAN[myL]:oldStr;for(const k of ['A','M','D'])n[k]=clamp(Math.round(ns+r.int(-2,2)),40,88);
+  const a=J?J.a:[18,32];
+  me.squad=[];for(const [pos,k] of [['G',2],['D',6],['M',7],['A',4]])for(let i=0;i<k;i++){const p=genPlayer(st,r,pos,base,5,a[0],a[1]);cName(st,r,p);ensureP(st,p);if(me.cond)p.fr=100;me.squad.push(p);}
+  me.cash=r2(SPON[L]*(J?J.cash:0.6));me.debt=J?r2(J.debt):0;me.staff=[];
+  me.up={training:1,scouting:1,stadium:1,youth:1};if(J)Object.assign(me.up,J.up);else{const lv=L<=2?3:L<=4?2:1;for(const k of Object.keys(me.up))me.up[k]=Math.max(1,Math.min(5,lv+r.int(-1,0)));}
+  me.fans=Math.round(EXPFANS[L]*(J?J.fans:1));me.moral=J?J.moral:3;me.nlz=[];me.lent=[];me.deals=[];me.lineup=null;me.prem=0;me.bench=[];me.mOff=[];me.offers=[];me.builds={};me.founded=false;
+  delete me.rival;me.spon=null;
+  if(J)me.board={trust:J.trust,fix:{g:J.goal,bonus:J.bonus||0,s:st.season+(o.start?0:1)}};else me.board={trust:55};
+  st.fired=false;st.jobs=null;st.jobPick=null;
+  const C=coachOf(st);if(o.start&&C.rep<25)C.rep=25;
+  if(st.nlzFillOk!==false){try{nlzFill(st,r,me);}catch(e){}}
+}
+function startJob(st,i){const r=CR(st);const j=st.startJobs[i];if(!j)throw new Error('?');const me=st.clubs.me;
+  clubTake(st,r,j.id,{k:j.k,start:true});delete st.startJobs;
+  careerSetupSeason(st);careerOffseason(st,true);
+  feed(st,`${me.manager||st.players[0].name} übernimmt ${me.name} in der ${LNAME[me.lg]} (${JOBK[j.k].n}). Ziel: ${BGOALS[JOBK[j.k].goal]}!`);return st;}
+const JOBREP=[0,80,65,50,38,24,0];
+function jobOffers(st,r,place,status,ok){
+  const C=coachOf(st);const rep=C.rep||20;const NO=st.pendingMoves||st.order;let myN=NL;for(let L=1;L<=NL;L++)if((NO[L]||[]).includes('me'))myN=L;
+  const pickIn=(L,weak)=>{const pool=(NO[L]||[]).filter(id=>id!=='me'&&st.clubs[id]&&!st.clubs[id].eu&&!st.clubs[id].cl).sort((a,b)=>npcStr(st.clubs[a])-npcStr(st.clubs[b]));if(!pool.length)return null;
+    const k=weak?r.int(0,Math.min(3,pool.length-1)):r.int(Math.floor(pool.length*0.2),pool.length-1);return pool[k];};
+  const out=[];const add=(L,weak)=>{L=Math.max(1,Math.min(NL,L));const id=pickIn(L,weak);if(id&&!out.some(o=>o.id===id))out.push({id,L});};
+  if(st.fired){add(Math.min(NL,myN+1),true);if(r.chance(0.6))add(myN,true);if(!out.length)add(NL,true);return out;}
+  const succ=status==='Aufstieg'||status==='Meister'||!!ok;
+  const p=succ?0.3+rep/180:0.12+rep/400;let n=r.chance(Math.min(0.85,p))?(r.chance(succ?0.4:0.15)?2:1):0;
+  for(let i=0;i<n;i++){let L=succ?myN-r.int(0,1)-(i?1:0):myN+r.int(0,1);while(L>1&&rep<JOBREP[L])L++;if(L===myN&&succ&&r.chance(0.5))L=Math.max(1,L-1);if(L<1)L=1;if(rep<JOBREP[L])L=Math.min(NL,L+1);add(L,!succ);}
+  return out;}
+
 function careerSetupSeason(st){
   st.ss={};
   const r=CR(st);
@@ -1404,7 +1450,7 @@ function careerSetupSeason(st){
   }
   const me=st.clubs.me;st.schedule=st.sched[me.lg];st.md=0;
   // Kreispokal: alle aus Liga 4 + 6 aus Liga 3
-  const KL=st.order[5]?5:4;let l3=r.shuffle(st.order[KL-1]);let pick3=l3.slice(0,6);if(me.lg===KL-1&&!pick3.includes('me'))pick3[0]='me';
+  const KL=st.order[NL]?NL:st.order[5]?5:4;let l3=r.shuffle(st.order[KL-1]);let pick3=l3.slice(0,6);if(me.lg===KL-1&&!pick3.includes('me'))pick3[0]='me';
   st.cups={kreis:{name:'Kreispokal',mds:CMD_KREIS,alive:r.shuffle(st.order[KL].concat(pick3)),log:[],winner:null},land:null};
 }
 // ---------- Namen: 40 % bekannte Profis, 10 % Legenden, 50 % erfunden ----------
@@ -1570,12 +1616,14 @@ function boardSet(st){const me=st.clubs.me;if(!me.board)me.board={trust:60};cons
   {const lad=L===1?['erhalt','oben','top3','meister']:L===NL?['oben','top3','aufstieg','meister']:['erhalt','oben','top3','aufstieg','meister'];let i=lad.indexOf(g);if(i<0)i=0;i=Math.max(1,Math.min(lad.length-2,i));
    me.board.opts={easy:lad[i-1],mid:lad[i],hard:lad[i+1]};me.board.goal=lad[i];me.board.diff='mid';me.board.picked=false;}
   const k=st.cups&&st.cups.kreis;if(k&&k.alive.includes('me'))me.board.cup='Kreispokal: Viertelfinale erreichen';
+  if(me.board.fix&&me.board.fix.s===st.season){const g2=me.board.fix.g;me.board.goal=g2;me.board.opts=null;me.board.diff='mid';me.board.picked=true;}
   me.board.season=st.season;}
 function boardEval(st,place,status,fin){const me=st.clubs.me;const b=me.board;if(!b||b.season!==st.season)return null;
   const g=b.goal;const ok=g==='meister'?place===1:g==='aufstieg'?status==='Aufstieg'||(me.lg===1&&place===1):g==='top3'?place<=3:g==='oben'?place<=5:place<=8;
   let cupOk=null;if(b.cup){const k=st.cups.kreis;cupOk=k.log.length>=2&&k.log[1].ms.some(m=>m.h==='me'||m.a==='me');}
   const D=BDIFF[b.diff]||null;let d=D?(ok?D.t:D.f):(ok?15:-25);if(cupOk===true)d+=5;if(cupOk===false)d-=5;
   if(ok)fin.push(['Vorstand: Ziel erreicht ('+BGOALS[g]+(D?', '+D.n:'')+')',r2(SPON[me.lg]*(D?D.p:0.2))]);else fin.push(['Vorstand kürzt das Budget (Ziel verfehlt)',-r2(SPON[me.lg]*(D?0.2:0.1))]);
+  if(ok&&b.fix&&b.fix.bonus&&b.fix.s===st.season){const C=coachOf(st);C.rep=Math.min(100,(C.rep||20)+b.fix.bonus);fin.push(['Ruf-Bonus: schwieriger Job gemeistert (+'+b.fix.bonus+' Ruf)',0]);}
   b.trust=clamp(b.trust+d,0,100);b.last={ok,cupOk,goal:g,d};
   if(b.trust<=0)st.fired=true;else if(b.trust<20)feed(st,`⚠️ Der Vorstand ist unzufrieden – letzte Warnung (Vertrauen ${b.trust}).`,'me');
   return b.last;}
@@ -1776,6 +1824,22 @@ function careerWinter(st){
   st.phase='offseason';st.ready={};
   feed(st,`❄️ Winterpause: 2 Transfers sind erlaubt, dann geht es mit der Rückrunde weiter.`,'me');
 }
+function careerMigrate6(st){
+  const r=CR(st);const me=st.clubs.me;const used=new Set(Object.values(st.clubs).map(c=>c.name));const nw=[];
+  for(let i=0;i<10;i++){const id='ll'+i;const b=TMEAN[5]+r.int(-3,3);st.clubs[id]={id,human:false,lg:5,name:regClubName(st,r,used,5),color:NPC_COL[i%NPC_COL.length],A:b+r.int(-3,3),M:b+r.int(-3,3),D:b+r.int(-3,3)};nw.push(id);}
+  const sh=o=>o?({1:o[1],2:o[2],3:o[3],4:o[4],6:o[5]}):o;
+  const O=sh(st.order);O[5]=nw;st.order=O;
+  if(st.pendingMoves){const P=sh(st.pendingMoves);P[5]=nw.slice();st.pendingMoves=P;}
+  const T=sh(st.tables)||{};T[5]={};for(const id of nw)T[5][id]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};st.tables=T;
+  const S=sh(st.sched)||{};let rr=roundRobin(r.shuffle(nw.slice()));rr=rr.concat(rr.map(m=>m.map(([a,b])=>[b,a])));S[5]=rr;st.sched=S;
+  for(const c of Object.values(st.clubs))if(c.lg>=5&&!nw.includes(c.id)&&!c.eu)c.lg++;
+  if(me.rival&&me.rival.lg>=5)me.rival.lg++;
+  st.schedule=st.sched[me.lg];
+  const tb=st.table;st.table=st.tables[5];for(let md=0;md<Math.min(st.md,rr.length);md++)for(const [h,a] of rr[md])playMatch(st,h,a,r,{cup:false,inj:[],sus:[]});st.table=st.tables[me.lg]||tb;
+  for(const h of st.history||[])if(h.lg>=5&&!h.nl6){h.lg++;h.nl6=1;}
+  if(st.ss)for(const e of Object.values(st.ss))if(e.lg>=5)e.lg++;
+  for(const x of st.tlog||[])if(x.lg>=5)x.lg++;
+  st.nl6=1;feed(st,'🆕 Neu: 6 Ligen! Die Verbandsliga heißt jetzt Oberliga, darunter gibt es die neue Landesliga.','me');}
 function careerMigrate5(st){
   const r=CR(st);const me=st.clubs.me;const used=new Set(Object.values(st.clubs).map(c=>c.name));const nw=[];
   for(let i=0;i<10;i++){const id='rl'+i;const b=TMEAN[3]+r.int(-3,3);st.clubs[id]={id,human:false,lg:3,name:regClubName(st,r,used,3),color:NPC_COL[i%NPC_COL.length],A:b+r.int(-3,3),M:b+r.int(-3,3),D:b+r.int(-3,3)};nw.push(id);}
@@ -1799,6 +1863,7 @@ function careerEnsurePrep(st){
   if(st.career&&st.clubs&&st.clubs.me&&!st.jOffers&&!st.clubs.me.jers&&st.phase!=='seasonEnd'){const c=st.clubs.me;const r=RNG(st.seed,'jo'+st.season);const ff=Math.sqrt(clamp(c.fans/EXPFANS[c.lg],0.5,2.5));jerseyOffers(st,r,c,r2(SPON[c.lg]*ff));}
   if(st.career&&st.clubs&&st.clubs.me&&!st.bOffers){const r=RNG(st.seed,'bo'+st.season);st.bOffers={l:sponName(st,r),b:sponName(st,r,JNAMES)};}
   if(!st.nl5&&st.phase!=='seasonEnd'&&st.order&&st.order[4]&&!st.order[5])careerMigrate5(st);
+  if(st.career&&st.nl5&&!st.nl6&&st.order&&st.order[5]&&!st.order[6])careerMigrate6(st);
   if(st.clubs.me&&!st.clubs.me.sp)st.clubs.me.sp=true;
   try{frCatchUp(st);}catch(e){}
   try{anaMigrate(st);}catch(e){}
@@ -2059,6 +2124,7 @@ function careerEndSeason(st){
   st.history.push({season:st.season,lg:t,place,status,champs:Object.assign({},champs),kreis:st.cups.kreis.winner,land:st.cups.land&&st.cups.land.winner,tops,my:{pts:myRow.pts,gf:myRow.gf,ga:myRow.ga,w:myRow.w,d:myRow.d,l:myRow.l},top:myTop&&myTop.gs?{n:myTop.name,g:myTop.gs}:null});
   st.pendingMoves=newOrder;
   try{coachSeasonEnd(st,place,status);}catch(e){console.error(e);}
+  try{st.jobs=jobOffers(st,r,place,status,bres&&bres.ok);st.jobPick=st.fired&&st.jobs.length===1?0:null;if(st.jobs.length&&!st.fired)feed(st,`📨 ${st.jobs.length} Jobangebot${st.jobs.length>1?'e':''} von anderen Vereinen – im Saisonbericht ansehen.`,'me');}catch(e){console.error(e);st.jobs=null;}
   feed(st,`Saison ${st.season} beendet: ${me.name} wird ${place}. in der ${LNAME[t]} – ${status}!`);
   for(let L=1;L<=NL;L++)feed(st,`🥇 ${st.clubs[champs[L]].name} ist Meister der ${LNAME[L]}.`);
   st.cl=null;
@@ -2078,11 +2144,14 @@ function careerNext(st){
     st.order={1:o[1],2:o[2],3:nw,4:o[3],5:o[4]};if(oldLg>=3)oldLg++;
     for(const h of st.history||[])if(h.lg>=3&&!h.nl5){h.lg++;h.nl5=1;}
     feed(st,'🆕 Neu: Die Regionalliga zwischen 2. Liga und Verbandsliga – jetzt sind es 5 Ligen bis ganz nach oben!','me');}
-  for(let L=1;L<=NL;L++)for(const id of st.order[L]){const c=st.clubs[id];c.lg=L;delete c.newLg;
+  for(let L=1;L<=NL;L++)for(const id of st.order[L]||[]){const c=st.clubs[id];c.lg=L;delete c.newLg;
     if(!c.human)for(const k of ['A','M','D'])c[k]=clamp(Math.round(c[k]+(TMEAN[L]-c[k])*0.35+r.int(-2,2)),40,88);}
   for(const id of Object.keys(st.clubs))if(st.clubs[id].cl||st.clubs[id].eu)delete st.clubs[id];
   if(st.euro){if(st.cups&&st.cups.euro)st.euroHist=(st.euroHist||[]).concat([{season:st.season,winner:st.cups.euro.winner?st.clubs[st.cups.euro.winner]&&st.clubs[st.cups.euro.winner].name:null}]);st.euro=null;}
-  if(st.fired)careerFire(st,r);
+  {const J=st.jobs;const i=st.jobPick;const pick=J&&i!=null&&J[i]?J[i]:(st.fired&&J&&J[0]?J[0]:null);
+   if(pick&&st.clubs[pick.id]&&!st.clubs[pick.id].human){const old=me.name,wasF=st.fired;clubTake(st,r,pick.id,{});feed(st,wasF?`🚪 Der Vorstand von ${old} hat dich entlassen. Neuer Job: ${me.name} in der ${LNAME[me.lg]}.`:`🤝 Vereinswechsel: Du verlässt ${old} und übernimmst ${me.name} in der ${LNAME[me.lg]}.`,'me');oldLg=me.lg;}
+   else if(st.fired){careerFire(st,r);oldLg=me.lg;}
+   st.jobs=null;st.jobPick=null;}
   st.season++;
   for(const x of me.staff){x.ct=(x.ct==null?1:x.ct)-1;if(x.ct<=0){x.ct=0;x.exp=true;const f=STAFFF[me.lg];x.newSal=r2(1.6*f);x.bonus=r2(f);feed(st,`📝 Vertrag von ${x.name} (${STAFF[x.type].n}) ist ausgelaufen – im Büro › Staff verlängern oder gehen lassen.`,'me');}}
   if(me.lent&&me.lent.length){for(const x of me.lent){x.p.apps=Math.max(x.p.apps||0,15);me.squad.push(x.p);}feed(st,`Zurück von der Leihe: ${me.lent.map(x=>x.p.name).join(', ')}.`,'me');me.lent=[];}
@@ -2101,7 +2170,8 @@ function logWrap(fn){return (st,a)=>{const c=st.clubs.me;const before=new Map(c.
   for(const [id,p] of before)if(!now.has(id))tlogAdd(st,p,c.name,'Transfermarkt',r2(c.cash-cash0));};}
 function winterBlock(fn,msg){return (st,a)=>{if(st.winter)rej(msg);return fn(st,a);};}
 const CH={
-  BOARD_PICK(st,a){needPhase(st,'offseason');if(st.winter)rej('Das Saisonziel wird in der Sommerpause festgelegt.');const b=st.clubs.me.board;if(!b||!b.opts||!b.opts[a.d])rej('?');b.diff=a.d;b.goal=b.opts[a.d];b.picked=true;},
+  JOB_PICK(st,a){needPhase(st,'seasonEnd');const J=st.jobs||[];if(a.i==null||a.i<0){if(st.fired)rej('Du wurdest entlassen – wähle einen neuen Verein.');st.jobPick=null;return;}if(!J[a.i])rej('Angebot nicht gefunden.');st.jobPick=a.i;},
+  BOARD_PICK(st,a){needPhase(st,'offseason');if(st.clubs.me.board&&st.clubs.me.board.fix&&st.clubs.me.board.fix.s===st.season)rej('Das Ziel ist bei diesem Job fest vorgegeben.');if(st.winter)rej('Das Saisonziel wird in der Sommerpause festgelegt.');const b=st.clubs.me.board;if(!b||!b.opts||!b.opts[a.d])rej('?');b.diff=a.d;b.goal=b.opts[a.d];b.picked=true;},
   TK(st,a){const c=st.clubs.me;c.tk=['soft','hard'].includes(a.v)?a.v:null;},
   BUY:logWrap((st,a)=>{if(st.phase==='matchday'){seasonFree(st,a);return;}H.BUY(st,a);}),PRE_BUY(st,a){preBuy(st,a);},
   RELEASE(st,a){if(st.phase==='halftime')rej('Nicht in der Halbzeit.');const c=st.clubs.me;const p=c.squad.find(x=>x.id===a.player);if(!p)rej('?');if(p.loan)rej('Leihspieler kannst du nicht entlassen.');
@@ -2211,7 +2281,7 @@ const CH={
     if(st.phase==='halftime'){if(st.ht&&st.ht.ctx.penPend)rej('Erst den Elfmeter schießen.');const old=c.lineup,of=c.form;if(a.form&&formOk(st,a.form))c.form=a.form;setLineup(c,a.lineup);
       if(st.ht&&st.ht.xi1){const x1=new Set(st.ht.xi1);const n=[...xiIds(c)].filter(i=>!x1.has(i)).length;if(n>3){c.lineup=old;c.form=of;rej(`Maximal 3 Wechsel pro Spiel (du hast ${n}).`);}}
       if(a.tac&&TAC[a.tac])c.tac=a.tac;careerResume(st);return;}
-    if(st.phase==='seasonEnd'){if(st.cl&&!st.cl.done){if(a.form&&formOk(st,a.form))c.form=a.form;if(a.tac&&TAC[a.tac])c.tac=a.tac;setLineup(c,a.lineup);}careerNext(st);}
+    if(st.phase==='seasonEnd'){if(st.fired&&st.jobs&&st.jobs.length>1&&st.jobPick==null&&!(st.cl&&!st.cl.done))rej('Du wurdest entlassen – wähle im Saisonbericht einen neuen Verein.');if(st.cl&&!st.cl.done){if(a.form&&formOk(st,a.form))c.form=a.form;if(a.tac&&TAC[a.tac])c.tac=a.tac;setLineup(c,a.lineup);}careerNext(st);}
   }
 };
 
@@ -2429,8 +2499,8 @@ function vStart(){
     h+=`<div class="card"><div class="row"><h3 style="margin:0">Offene Lobbys</h3><span class="sp"></span><button class="btn sm" data-a="refreshOpen">↻</button></div>${ui.openList===null?'<div class="empty">Lade…</div>':open.length?open.map(g=>`<div class="pl"><div class="pn"><b>#${esc(g.code)}</b><span>${esc((g.clubs||[]).join(', ')||'noch leer')}</span></div><button class="btn sm" data-a="openGame" data-v="${esc(g.code)}">Beitreten</button></div>`).join(''):'<div class="empty small">Gerade keine offenen Lobbys.</div>'}</div>`;
   }
   const car=LS.get('kc:career',null);
-  h+=`<div class="card"><h3>⚽ Karriere</h3><p class="small mut">Allein gegen den Computer: Starte mit einem Dorfverein in der Kreisliga und arbeite dich durch 5 Ligen hoch – mit Auf- und Abstieg, Kreis- und Landespokal.</p>${car?`<div class="small" style="margin-bottom:8px">Gespeichert: <b>${esc(car.clubs.me.name)}</b> · Saison ${car.season} · ${LNAME[car.clubs.me.lg]}</div><button class="btn pri block" data-a="contCareer">Karriere fortsetzen</button>`:''}
-  ${ui.newCar||!car?`<div style="margin-top:10px"><label class="small mut">Dein Name</label><input type="text" id="cName" maxlength="20" placeholder="z. B. Patrick"><label class="small mut">Vereinsname</label><input type="text" id="cClub" maxlength="24" placeholder="z. B. SV Schriesheim"><label class="small mut">Region (Gegner &amp; Sponsoren)</label><select id="cReg" style="width:100%;padding:11px;border-radius:10px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-size:16px;margin:4px 0 10px">${Object.entries(REG).map(([k,g])=>`<option value="${k}" ${(LS.get('kc:reg','bw'))===k?'selected':''}>${g.n}</option>`).join('')}</select><div class="chips">${COLORS.map(c=>`<span class="chip ${ui.jColor===c?'on':''}" data-a="color" data-v="${c}" style="padding:7px 9px"><span class="dot" style="background:${c}"></span></span>`).join('')}</div><button class="btn ok block" style="margin-top:12px" data-a="newCareer">${car?cl('newCareer','Neue Karriere starten','Alte Karriere überschreiben?'):'Karriere starten'}</button></div>`:`<button class="btn block" style="margin-top:8px" data-a="showNewCar">Neue Karriere…</button>`}</div>`;
+  h+=`<div class="card"><h3>⚽ Karriere</h3><p class="small mut">Allein gegen den Computer: Starte mit einem Dorfverein in der Kreisliga und arbeite dich durch 6 Ligen hoch – mit Auf- und Abstieg, Kreis- und Landespokal.</p>${car?`<div class="small" style="margin-bottom:8px">Gespeichert: <b>${esc(car.clubs.me.name)}</b> · Saison ${car.season} · ${LNAME[car.clubs.me.lg]}</div><button class="btn pri block" data-a="contCareer">Karriere fortsetzen</button>`:''}
+  ${ui.newCar||!car?(ui.preCar?jobStartPick():`<div style="margin-top:10px"><div class="chips" style="margin-bottom:8px"><span class="chip ${ui.carMode!=='job'?'on':''}" data-a="carMode" data-v="own">🏠 Eigener Verein</span><span class="chip ${ui.carMode==='job'?'on':''}" data-a="carMode" data-v="job">📨 Jobangebot</span></div><p class="tiny mut" style="margin:0 0 8px">${ui.carMode==='job'?'Übernimm einen bestehenden Verein – 3 Angebote, Name, Wappen &amp; Farben werden übernommen, das Vorstandsziel ist fest. Start-Ruf 25.':'Gründe deinen eigenen Dorfverein in der Kreisliga – Name &amp; Farben frei wählbar. Start-Ruf 20.'}</p><label class="small mut">Dein Name</label><input type="text" id="cName" maxlength="20" placeholder="z. B. Patrick" value="${esc(ui.cNameV||'')}">${ui.carMode==='job'?'':`<label class="small mut">Vereinsname</label><input type="text" id="cClub" maxlength="24" placeholder="z. B. SV Schriesheim">`}<label class="small mut">Region (Gegner &amp; Sponsoren)</label><select id="cReg" style="width:100%;padding:11px;border-radius:10px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-size:16px;margin:4px 0 10px">${Object.entries(REG).map(([k,g])=>`<option value="${k}" ${(LS.get('kc:reg','bw'))===k?'selected':''}>${g.n}</option>`).join('')}</select>${ui.carMode==='job'?`<button class="btn ok block" style="margin-top:12px" data-a="jobGen">📨 Jobangebote ansehen</button>`:`<div class="chips">${COLORS.map(c=>`<span class="chip ${ui.jColor===c?'on':''}" data-a="color" data-v="${c}" style="padding:7px 9px"><span class="dot" style="background:${c}"></span></span>`).join('')}</div><button class="btn ok block" style="margin-top:12px" data-a="newCareer">${car?cl('newCareer','Neue Karriere starten','Alte Karriere überschreiben?'):'Karriere starten'}</button>`}</div>`):`<button class="btn block" style="margin-top:8px" data-a="showNewCar">Neue Karriere…</button>`}</div>`;
   const loc=LS.get('kc:local',null);
   h+=`<div class="card"><h3>Ein Gerät</h3><p class="small mut">Alle Manager teilen sich ein Handy und wechseln oben den aktiven Manager.</p><div class="row">${loc?'<button class="btn" data-a="contLocal">Fortsetzen</button>':''}<button class="btn" data-a="newLocal">${loc?cl('newLocal','Neues lokales Spiel','Altes überschreiben?'):'Lokales Spiel starten'}</button></div></div>`;
   return h+rulesCard();
@@ -2586,7 +2656,7 @@ cmatch(){
 },
 cleague(){
   const c=myC();const L=ui.lgv||c.lg;
-  let h=`<div class="chips" style="margin:12px 0 0">${[1,2,3,4,5].map(l=>`<span class="chip ${l===L?'on':''}" data-a="lgv" data-v="${l}">${LNAME[l]}${l===c.lg?' •':''}</span>`).join('')}</div>`;
+  let h=`<div class="chips" style="margin:12px 0 0">${[...Array(NL)].map((_,i)=>i+1).map(l=>`<span class="chip ${l===L?'on':''}" data-a="lgv" data-v="${l}">${LNAME[l]}${l===c.lg?' •':''}</span>`).join('')}</div>`;
   h+=`<div class="card"><h3>${LNAME[L]} · Saison ${ST.season}</h3>${ctable(L)}<p class="tiny mut" style="margin:8px 0 0">${L>1?'🟩 Plätze 1–2 steigen auf. ':''}${L<NL?'🟥 Plätze 9–10 steigen ab.':''}</p></div>`+statsCard(e=>e.lg===L,'Statistik '+LNAME[L]+' (inkl. Pokal)');
   h+=cupHtml(ST.cups.kreis)+cupHtml(ST.cups.land);
   if(!ST.cups.land)h+='<div class="card small mut">🏆 Landespokal: Der Kreispokalsieger trifft ab Spieltag 12 auf alle Teams der 1. Liga und fünf aus der 2. Liga.</div>';
@@ -3156,7 +3226,7 @@ VIEWS.cleague=function(){
   const c=myC();const L=ui.lgv||c.lg;
   let h=subNav('cleague',[['tab','Tabelle'],['cal','📅 Kalender'],['cup','Pokale'],['st','Statistik'],['ch','Chronik']]);const s=sub('cleague');
   if(s==='cal')return h+calPage(c);
-  if(s==='tab'||s==='st')h+=`<div class="chips" style="margin:8px 0 0">${[1,2,3,4,5].map(l=>`<span class="chip ${l===L?'on':''}" data-a="lgv" data-v="${l}" style="padding:5px 9px;font-size:12px">${LNAME[l]}${l===c.lg?' •':''}</span>`).join('')}</div>`;
+  if(s==='tab'||s==='st')h+=`<div class="chips" style="margin:8px 0 0">${[...Array(NL)].map((_,i)=>i+1).map(l=>`<span class="chip ${l===L?'on':''}" data-a="lgv" data-v="${l}" style="padding:5px 9px;font-size:12px">${LNAME[l]}${l===c.lg?' •':''}</span>`).join('')}</div>`;
   if(s==='tab')h+=`<div class="card"><h3>${LNAME[L]}</h3>${ctable(L)}<p class="tiny mut" style="margin:8px 0 0">${L>1?'🟩 1–2 steigen auf. ':''}${L<NL?'🟥 9–10 steigen ab.':''}</p></div>`;
   if(s==='cup'){h+=euroHtml()+bracketHtml(ST.cups.kreis)+bracketHtml(ST.cups.land);if(!ST.cups.land)h+='<div class="card small mut">🏆 Landespokal: Der Kreispokalsieger trifft ab Spieltag 12 auf die 1. Liga und fünf Teams der 2. Liga.</div>';}
   if(s==='st'){h+=statsCard(e=>e.lg===L,'Statistik '+LNAME[L]);if(L===c.lg)h+=teamStats(c);}
@@ -3838,13 +3908,13 @@ function tutShow(){
 function tutGo(){const s=TUT[ui.tut];if(!s)return;const tabs=tabsFor().map(t=>t[0]);if(tabs.includes(s.t))ui.tab=s.t;if(s.s)ui.sub=s.s;if(s.ms)ui.subs.market=s.ms;if(s.qs)ui.subs.squad=s.qs;ui.pl=null;render();scrollTo(0,0);}
 function tutEnd(){ui.tut=null;LS.set('kc:tut',1);const d=document.getElementById('tutov');if(d)d.remove();render();}
 const _renderTut=render;render=function(){_renderTut();tutShow();};
-const _newCarTut=ACT.newCareer;ACT.newCareer=function(){_newCarTut.apply(this,arguments);if(ST&&ST.career&&!LS.get('kc:tut',0)){ui.tut=0;tutGo();}};
+const _newCarTut=ACT.newCareer;ACT.newCareer=function(){ui.preCar=null;_newCarTut.apply(this,arguments);if(ST&&ST.career&&!LS.get('kc:tut',0)){ui.tut=0;tutGo();}};
 const _contCarTut=ACT.contCareer;ACT.contCareer=function(){_contCarTut.apply(this,arguments);if(ST&&ST.career&&!LS.get('kc:tut',0)){ui.tut=0;tutGo();}};
 ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='136',APP_RV=13;
+const APP_BUILD='137',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -5215,6 +5285,30 @@ ACT.ntCallSeen=function(){send('NT_SEEN',{});ui.modal=null;render();};
   return '';};}
 {const _cofR=VIEWS.coffice;VIEWS.coffice=function(){let h=_cofR.apply(this,arguments);if(ST.career&&ui.sub==='vorstand'){const C=ST.coach||{rep:20,hist:[]};const H=(C.hist||[]).filter(x=>x.t);
   h+=`<div class="card"><div class="row"><b>🎖 Trainer-Ruf</b>${inf('Dein Ruf als Trainer steigt mit Titeln, Aufstiegen und Turnieren der Nationalmannschaft. Ab der 1. Liga mit einem Titel (oder zweimal Top 3) kommen Angebote von Nationalverbänden – je höher der Ruf, desto stärker die Nation.')}<span class="sp"></span><span class="pill">${C.rep}/100</span></div><div class="bar" style="margin-top:8px"><i style="width:${C.rep}%;background:var(--acc)"></i></div>${C.nt?`<div class="tiny mut" style="margin-top:6px">Aktuell Nationaltrainer von ${NATS[C.nt.nat][0]} ${NATS[C.nt.nat][1]}</div>`:''}${H.length?`<div class="tiny mut" style="margin-top:6px">${H.map(x=>`${NATS[x.nat]?NATS[x.nat][0]:''} ${x.t} ${x.s}: ${{grp:'Gruppe',qf:'Viertelfinale',sf:'Halbfinale',f:'Finale',win:'🏆 Sieg'}[x.res]||''}`).join(' · ')}</div>`:''}</div>`;}return h;};}
+
+// ---------- Paket L: Jobangebote ----------
+ACT.carMode=function(v){const e=document.getElementById('cName');if(e)ui.cNameV=e.value;ui.carMode=v;render();};
+ACT.jobGen=function(){const name=val('cName');if(!name){toast('Bitte deinen Namen eingeben.');return;}ui.cNameV=name;const reg=val('cReg')||'bw';LS.set('kc:reg',reg);
+  ui.preCar=newCareer(name,'Vereinslos','#888888',reg,true);render();};
+ACT.jobBack=function(){ui.preCar=null;render();};
+ACT.jobStart=function(v){const car=LS.get('kc:career',null);if(car&&!conf('js'+v))return;const st=ui.preCar;if(!st)return;
+  cleanup();NET.mode='career';CAREER_VAL=true;ST=startJob(st,+v);ui.preCar=null;ui.view='game';ui.lastPhase=ST.phase;ui.newCar=false;saveCareer();render();scrollTo(0,0);
+  if(!LS.get('kc:tut',0)){ui.tut=0;try{tutGo();}catch(e){}}};
+function jobRow(c,L,extra,btn){const s=Math.round(npcStr(c));return `<div class="tac" style="display:flex;gap:10px;align-items:center;cursor:default"><div>${crest(c,34)}</div><div style="flex:1;min-width:0"><b>${esc(c.name)}</b><div class="tiny mut">${LNAME[L]} · Stärke ${s}</div>${extra||''}</div>${btn||''}</div>`;}
+function jobStartPick(){const st=ui.preCar;let h=`<div style="margin-top:10px"><h4>📨 Deine Jobangebote</h4>`;
+  st.startJobs.forEach((j,i)=>{const J=JOBK[j.k];const c=st.clubs[j.id];
+    h+=jobRow(c,J.L,`<div class="tiny">${J.e} ${J.n} (${J.d}) · Ziel: <b>${BGOALS[J.goal]}</b></div><div class="tiny mut">${J.x}</div>`,`<button class="btn ok sm" data-a="jobStart" data-v="${i}">${cl('js'+i,'Annehmen','Alte Karriere überschreiben?')}</button>`);});
+  return h+`<button class="btn block sm" style="margin-top:6px" data-a="jobBack">‹ Zurück</button></div>`;}
+function jobCard(c){const J=ST.jobs;if(!ST.career||!J||!J.length)return '';const F=ST.fired;let my=0;try{const R=teamRat(c,c.form,'bal','bal',false);my=Math.round((R.A+R.M+R.D)/3);}catch(e){}
+  let h=`<div class="card" style="border-color:${F?'var(--bad)':'var(--acc2)'}"><h3>${F?'🚪 Entlassen – neuer Verein':'📨 Jobangebote'}</h3><p class="tiny mut" style="margin:0 0 6px">${F?'Der Vorstand hat dich entlassen. Diese Vereine wollen dich trotzdem:':'Andere Vereine wollen dich als Trainer.'} Beim Wechsel übernimmst du Kader, Geld und Gelände des neuen Vereins – dein Ruf, Nationaltrainer-Job und Erfolge bleiben. (Dein Team: Stärke ${my})</p>`;
+  J.forEach((o,i)=>{const n=ST.clubs[o.id];if(!n)return;const on=ST.jobPick===i;const k='jp'+i;
+    const btn=on?`<button class="btn ok sm" data-a="jobPick" data-v="${i}">✓ Gewählt</button>`:`<button class="btn sm" data-a="jobPick" data-v="${i}">${c.founded&&!F?cl(k,'Annehmen','Eigenen Verein verlassen?'):'Annehmen'}</button>`;
+    h+=jobRow(n,o.L,'',btn);});
+  if(!F)h+=`<div class="tac ${ST.jobPick==null?'on':''}" data-a="jobPick" data-v="-1"><b>🏠 Bei ${esc(c.name)} bleiben</b></div>`;
+  if(ST.jobPick!=null)h+=`<p class="tiny" style="margin:6px 0 0">Der Wechsel passiert mit „Weiter zur Sommerpause“.</p>`;
+  return h+`</div>`;}
+ACT.jobPick=function(v){v=+v;const c=myC();if(v>=0&&ST.jobPick!==v&&c.founded&&!ST.fired&&!conf('jp'+v))return;send('JOB_PICK',{i:v});};
+{const _cs=VIEWS.cseason;VIEWS.cseason=function(){const h=_cs.apply(this,arguments);try{const c=myC();const jc=jobCard(c);if(!jc)return h;const i=h.indexOf('<div class="card"><h3>Abrechnung</h3>');return i<0?h+jc:h.slice(0,i)+jc+h.slice(i);}catch(e){return h;}};}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
