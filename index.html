@@ -3577,6 +3577,9 @@ function soLiveDraw(m){
   <div class="clock" style="margin-top:6px">${fin?`Elfmeterschießen ${m.pens[0]}:${m.pens[1]} – ${esc(ST.clubs[m.w].name)} weiter!`:'Elfmeterschießen'}</div>
   <div class="card" style="padding:10px;margin:8px 0"><div class="row small"><span>${esc(H.name)}</span><span class="sp"></span><span>${row('h')}</span></div><div class="row small" style="margin-top:6px"><span>${esc(A.name)}</span><span class="sp"></span><span>${row('a')}</span></div><div class="h" style="text-align:center;font-size:22px;margin-top:6px">${a}:${b}</div></div>
   ${main}${fin?(TK.i<TK.ms.length-1?'<button class="btn pri block" style="margin-top:12px" data-ov="next">Nächstes Spiel</button>':TK.card?'<button class="btn pri block" style="margin-top:12px" data-ov="card">Ereigniskarte aufdecken</button>':'<button class="btn pri block" style="margin-top:12px" data-ov="close">Schließen</button>'):''}`;
+  try{if(isLand()){const kids=[...box.children];const g=document.createElement('div');g.style.cssText='display:grid;grid-template-columns:1fr 1.15fr;gap:12px;align-items:start';const L=document.createElement('div'),R=document.createElement('div');
+    let right=false;for(const k of kids){if(!right&&k.classList.contains('card')&&k.querySelector('svg'))right=true;(right||k.tagName==='BUTTON'?R:L).appendChild(k);}
+    if(!R.children.length){R.appendChild(L.lastElementChild);}g.appendChild(L);g.appendChild(R);box.appendChild(g);const sv=R.querySelector('svg');if(sv)sv.style.maxHeight='62vh';}}catch(e){}
 }
 function soPadSvg(m,mine){
   const H=ST.clubs[m.h],A=ST.clubs[m.a];const keeperC=mine?(m.h==='me'?A:H):ST.clubs.me;
@@ -4034,7 +4037,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='140',APP_RV=13;
+const APP_BUILD='141',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4616,7 +4619,7 @@ ACT.boCounterNo=function(v){negSend('BUY_COUNTER',{player:v,no:1});};
 ACT.offUp=function(v){const [id,pc]=String(v).split('|');negSend('OFFER_UP',{offer:id,pct:+pc});};
 const _plBo=ACT.pl;ACT.pl=function(v){if(ui.pl!==v){ui.boSwap=null;ui.boPct=null;}_plBo(v);};
 
-const _drawTickerSt=drawTicker;drawTicker=function(){_drawTickerSt();try{if(!TK||!ST||!ST.career||TK.showCard||TK.pen)return;const m=TK.ms&&TK.ms[TK.i];if(!m||!m.stats||!(m.h==='me'||m.a==='me')||TK.min<(TK.max||90))return;
+const _drawTickerSt=drawTicker;drawTicker=function(){_drawTickerSt();try{if(!TK||!ST||!ST.career||TK.showCard||TK.pen||TK.soLive||ST.so)return;const m=TK.ms&&TK.ms[TK.i];if(!m||!m.stats||!(m.h==='me'||m.a==='me')||TK.min<(TK.max||90))return;
   const box=document.getElementById('ovb');if(!box||box.querySelector('.tkst'))return;const at=box.querySelector('.clock')||box.querySelector('.score');if(!at)return;
   at.insertAdjacentHTML('afterend',`<details class="tkst" style="margin:8px 0 0" ${LS.get('kc:stOpen',true)?'open':''}><summary class="small" style="cursor:pointer;font-weight:700">📊 Statistik</summary>${statsBox(m)}</details>`);
   const d=box.querySelector('.tkst');d.addEventListener('toggle',()=>LS.set('kc:stOpen',d.open));}catch(e){}};
@@ -5495,7 +5498,7 @@ function paperOn(){return LS.get('kc:paper',1)!==0;}
 ACT.paperX=function(){const P=ST.paper||[];if(P.some(e=>!e.seen))send('PAPER_SEEN');ACT.sheetX();};
 ACT.paperOpen=function(v){ui.modal={t:'paper',i:+v};render();};
 ACT.paperTog=function(){LS.set('kc:paper',paperOn()?0:1);render();};
-{const _rP=render;render=function(){_rP.apply(this,arguments);try{const P=ST&&ST.career&&ST.paper;if(P&&P.length&&!P[P.length-1].seen&&paperOn()&&ui.view==='game'&&!ui.modal&&!ui.quick&&!tkOpen()&&!ST.retire){ui.modal={t:'paper'};sheetDraw();}}catch(e){}};}
+{const _rP=render;render=function(){_rP.apply(this,arguments);try{const P=ST&&ST.career&&ST.paper;if(P&&P.length&&!P[P.length-1].seen&&paperOn()&&ui.view==='game'&&!ui.modal&&!ui.quick&&!tkOpen()&&!ST.retire&&!ST.so){ui.modal={t:'paper'};sheetDraw();}}catch(e){}};}
 {const _nw=VIEWS.news;VIEWS.news=function(){if(!ST.career)return _nw.apply(this,arguments);let h=subNav('news',[['pp','📰 Zeitung'],['fd','🔔 Meldungen']]);
   if(sub('news')==='fd')return h+_nw.apply(this,arguments);const P=(ST.paper||[]).map((e,i)=>[e,i]).reverse();
   h+=`<div class="card"><div class="row"><b>📰 Zeitungsarchiv</b><span class="sp"></span><span class="chip ${paperOn()?'on':''}" data-a="paperTog">Popup ${paperOn()?'an':'aus'}</span></div>${P.map(([e,i])=>`<div class="pl" data-a="paperOpen" data-v="${i}" style="cursor:pointer"><span class="tag" style="flex:none">${e.sp?'⭐':'ST '+(e.md+1)}</span><div class="pn"><b>${esc((e.h||{}).t||'')}</b><span>${esc(e.n)} · Ausgabe ${e.no} · ${e.y}/${String(e.y+1).slice(2)}</span></div><span class="mut">›</span></div>`).join('')||'<div class="empty">Noch keine Ausgabe erschienen.</div>'}</div>`;
