@@ -2999,7 +2999,7 @@ function drawTicker(){
 document.getElementById('ov').addEventListener('click',e=>{
   const b=e.target.closest('[data-ov]');if(!b||!TK)return;const a=b.dataset.ov;
   if((a==='close'||a==='skip')&&Date.now()-(TK.t0||0)<900)return;
-  if(a==='close'){clearInterval(TK.iv);document.getElementById('ov').style.display='none';TK=null;return;}
+  if(a==='close'){clearInterval(TK.iv);document.getElementById('ov').style.display='none';TK=null;setTimeout(()=>{try{render();}catch(e){}},60);return;}
   if(a==='skip'){clearInterval(TK.iv);TK.min=TK.max||90;drawTicker();}
   if(a==='next'){TK.i++;runTicker();}
   if(a==='card'){TK.showCard=true;drawTicker();}
@@ -4016,7 +4016,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='138',APP_RV=13;
+const APP_BUILD='139',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4080,7 +4080,7 @@ async function lvTick(){
     return;}
   lvStop(b?b.t:'ht');
 }
-function lvEnd(){clearInterval(LV.iv);LV.on=false;LV=null;document.getElementById('ov').style.display='none';checkTicker();}
+function lvEnd(){clearInterval(LV.iv);LV.on=false;LV=null;document.getElementById('ov').style.display='none';checkTicker();setTimeout(()=>{try{render();}catch(e){}},60);}
 function lvDraw(){
   if(!LV)return;const box=document.getElementById('ovb');const c=LV.ctx;const H=ST.clubs[c.h],A=ST.clubs[c.a];
   const ev=c.ev.filter(e=>e.m<=LV.min&&!(LV.pen&&e.m===LV.pen.m&&(e.t==='p'||e.t==='pm'))).sort((a,b)=>a.m-b.m);let gh=0,ga=0;for(const e of ev)if(e.t==='g'||e.t==='p'){if(e.s==='h')gh++;else ga++;}
@@ -4973,7 +4973,7 @@ const _cardHtmlC=cardHtml;cardHtml=function(){const h=_cardHtmlC();if(!h||!isLan
 // ---------- ℹ️ Info-Knöpfe statt langer Beschreibungen ----------
 const INFOT={};
 function inf(t,title){const k='i'+h32(String(t));INFOT[k]=[t,title||''];return `<span class="ib" data-a="info" data-v="${k}" role="button" aria-label="Info">i</span>`;}
-ACT.info=function(v){const x=INFOT[v];if(!x)return;let el=document.getElementById('infoPop');if(!el){el=document.createElement('div');el.id='infoPop';document.body.appendChild(el);el.addEventListener('click',()=>{el.classList.remove('on');});}
+ACT.info=function(v){const x=INFOT[v];if(!x)return;let el=document.getElementById('infoPop');if(!el){el=document.createElement('div');el.id='infoPop';document.body.appendChild(el);el.addEventListener('click',()=>{el.classList.remove('on');setTimeout(()=>{try{render();}catch(e){}},60);});}
   el.innerHTML=`<div class="ipb">${x[1]?`<b>${x[1]}</b><br>`:''}${x[0]}<div class="tiny mut" style="margin-top:10px">Tippen zum Schließen</div></div>`;el.classList.add('on');};
 // Lange Erklärtexte automatisch hinter ein ⓘ legen (nur in der Karriere)
 function collapseDesc(){if(!ST||!ST.career)return;const app=document.getElementById('app');if(!app)return;
@@ -5051,7 +5051,7 @@ ACT.quick=async function(){if(!ST||!ST.career||ST.phase!=='matchday'||ST.so)retu
 function quickResult(){const L=ST.last;if(!L)return;const m=(L.results||[]).find(x=>x.h==='me'||x.a==='me');if(!m)return;
   const H=ST.clubs[m.h],A=ST.clubs[m.a];const home=m.h==='me';const my=home?m.gh:m.ga,ot=home?m.ga:m.gh;const res=m.w?(m.w==='me'?'S':'N'):my>ot?'S':my<ot?'N':'U';
   const ev=(m.ev||[]).filter(e=>['g','p','r','yr'].includes(e.t)).sort((a,b)=>a.m-b.m);
-  let el=document.getElementById('infoPop');if(!el){el=document.createElement('div');el.id='infoPop';document.body.appendChild(el);el.addEventListener('click',()=>{el.classList.remove('on');});}
+  let el=document.getElementById('infoPop');if(!el){el=document.createElement('div');el.id='infoPop';document.body.appendChild(el);el.addEventListener('click',()=>{el.classList.remove('on');setTimeout(()=>{try{render();}catch(e){}},60);});}
   el.innerHTML=`<div class="ipb" style="min-width:260px"><div class="tiny mut" style="text-align:center">${m.cup?'🏆 Pokal':'Liga'} · Endstand</div><div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0"><b style="flex:1;text-align:right">${esc(H.name)}</b><b style="font-size:26px;color:${res==='S'?'var(--ok)':res==='N'?'var(--bad)':'var(--fg)'}">${m.gh}:${m.ga}</b><b style="flex:1">${esc(A.name)}</b></div>${m.pens?`<div class="tiny mut" style="text-align:center">i.E. ${m.pens[0]}:${m.pens[1]}</div>`:''}
     <div style="max-height:40vh;overflow:auto">${ev.map(e=>`<div class="tiny" style="display:flex;gap:6px;${e.s==='a'?'flex-direction:row-reverse;text-align:right':''}"><span class="mut">${e.m}′</span><span>${evText(e).replace(/<br>.*/,'')}</span></div>`).join('')||'<div class="tiny mut" style="text-align:center">Keine Tore.</div>'}</div><div class="tiny mut" style="margin-top:10px;text-align:center">Tippen zum Schließen</div></div>`;el.classList.add('on');}
 {const _rbQ=readyBar;readyBar=function(){let h=_rbQ();if(!ST||!ST.career||ST.phase!=='matchday'||ST.so)return h;const c=myC();if(!c||c.pending)return h;
@@ -5074,7 +5074,7 @@ function celebrate(){if(!ST||!ST.career||ui.view!=='game'||ui.quick)return;if(![
   const ups=[],pos=[],ms=[],sts=[];for(const p of c.squad.concat(c.nlz||[])){if(S.s&&S.lg===c.lg&&S.s[p.id]!=null&&now.s[p.id]>S.s[p.id])sts.push([p,S.s[p.id]]);const a=S.r[p.id];if(a!=null&&p.rat>a)ups.push([p,a]);if(S.x[p.id]!=null&&now.x[p.id]>S.x[p.id])pos.push(p);}
   for(const k in now.m)if(!S.m||!S.m[k]){const d=MSD.find(x=>ST.season+x.k===k);if(d)ms.push(d);}
   if(!ups.length&&!pos.length&&!ms.length&&!sts.length){LS.set(key,now);return;}
-  let el=document.getElementById('infoPop');if(!el){el=document.createElement('div');el.id='infoPop';document.body.appendChild(el);el.addEventListener('click',()=>{el.classList.remove('on');});}
+  let el=document.getElementById('infoPop');if(!el){el=document.createElement('div');el.id='infoPop';document.body.appendChild(el);el.addEventListener('click',()=>{el.classList.remove('on');setTimeout(()=>{try{render();}catch(e){}},60);});}
   if(el.classList.contains('on')||document.querySelector('#ov.on,#sheet.on'))return;{const sh=document.getElementById('sheet');if(sh&&sh.style.display==='flex'&&sh.classList.contains('mod'))return;}LS.set(key,now);
   el.innerHTML=`<div class="ipb lvup">${ms.length?`<div style="text-align:center;font-size:30px">🏅</div><div style="text-align:center;font-weight:800;color:var(--gold)">MEILENSTEIN!</div>${ms.map(d=>`<div style="text-align:center">${d.e} ${d.t}</div>`).join('')}`:''}
     ${ups.length?`<div style="text-align:center;font-size:28px;margin-top:${ms.length?10:0}px">⬆️</div><div style="text-align:center;font-weight:800;color:var(--acc)">LEVEL UP!</div>${ups.sort((a,b)=>(b[0].rat-b[1])-(a[0].rat-a[1])).slice(0,6).map(([p,a])=>`<div class="row" style="gap:8px;margin-top:4px"><span class="pos ${p.pos}">${posL(p)}</span><b style="flex:1">${esc(p.name)}</b><span class="mut">${a}</span><span>→</span><b style="color:var(--acc)">${p.rat}</b></div>`).join('')}${ups.length>6?`<div class="tiny mut" style="text-align:center">+${ups.length-6} weitere</div>`:''}`:''}
@@ -5443,7 +5443,7 @@ VIEWS.cseason=function(){const c=myC();if(!ST.career||!c)return _cseasonLC.apply
   else if(s==='fin')h+=fin;else if(s==='ab')h+=lc;else h+=tab;
   return h;};
 {const _rJ=render;render=function(){_rJ.apply(this,arguments);try{if(ST&&ST.career&&ui.view==='game'&&ST.phase==='seasonEnd'&&ST.jobs&&ST.jobs.length&&ui.jobsSeen!==ST.season&&!ui.modal&&!ui.quick&&!tkOpen()){ui.jobsSeen=ST.season;ui.modal={t:'jobs'};sheetDraw();}}catch(e){}};}
-function tkOpen(){const o=document.getElementById('ov');return !!(o&&o.style.display==='flex')||!!(typeof LV!=='undefined'&&LV&&LV.on);}
+function tkOpen(){const ip=document.getElementById('infoPop');if(ip&&ip.classList.contains('on'))return true;const o=document.getElementById('ov');return !!(o&&o.style.display==='flex')||!!(typeof LV!=='undefined'&&LV&&LV.on);}
 // ---------- Paket M: Karriereende-Gespräch ----------
 {const _mhR=modalHtml;modalHtml=function(){const M=ui.modal;const c=myC();if(!M||M.t!=='ret'||!c)return _mhR();const R=ST.retire;
   if(!R){const L=ST.retireLast;if(!L)return '';return `<button class="ic mx" data-a="sheetX">✕</button><div class="mt">${L.ok?'💪 Er bleibt!':'🛑 Karriereende'}</div><div class="mdone"><div style="font-size:40px">${L.ok?'🤝':'👋'}</div><div class="small">${L.ok?`${esc(L.name)} macht weiter – er fehlt aber ${L.n} Spieltage.`:`${esc(L.name)} hat seine Karriere beendet.`}</div></div><button class="btn block" style="margin-top:8px" data-a="sheetX">OK</button>`;}
