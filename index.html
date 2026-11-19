@@ -3253,7 +3253,7 @@ function st0(){return ST;}
 // ---------- Spieltag (online + Karriere) ----------
 function oppInfo(c){
   if(ST.career&&ST.cupPend){const P=ST.cupPend;const home=P.h==='me';return{home,opp:ST.clubs[home?P.a:P.h],cup:P};}
-  if(ST.career){const fx=ST.sched[c.lg][ST.md].find(m=>m.includes('me'));const home=fx[0]==='me';return{home,opp:ST.clubs[home?fx[1]:fx[0]]};}
+  if(ST.career){const fx=((ST.sched[c.lg]||[])[ST.md]||[]).find(m=>m.includes('me'));if(!fx){const L=ST.last&&ST.last.results&&ST.last.results.find(m=>m.h==='me'||m.a==='me');const home=L?L.h==='me':true;return{home,opp:L?ST.clubs[home?L.a:L.h]:c};}const home=fx[0]==='me';return{home,opp:ST.clubs[home?fx[1]:fx[0]]};}
   const fx=ST.schedule[ST.md].find(m=>m.includes(c.id));const home=fx[0]===c.id;return{home,opp:ST.clubs[home?fx[1]:fx[0]]};
 }
 function pendingCard(c){
@@ -3569,12 +3569,12 @@ function soLiveDraw(m){
   if(TK.pen)main=penSvg(TK.pen,m).replace('ELFMETER für','Schütze '+esc(TK.pen.x)+' –');
   else if(so){const side=n%2===0?'h':'a';const mine=side===meSide;const k=Math.floor(n/2);
     const nm=mine?soName('me',k):(k+1)+'. Schütze von '+esc(ST.clubs[side==='h'?m.h:m.a].name);
-    main=`<div class="card" style="padding:10px;margin:8px 0;text-align:center"><div class="small" style="color:var(--acc);font-weight:700">${mine?'⚽ Du schießt: tippe in die Ecke!':'🧤 Du bist Torwart: tippe, wohin du springst!'}</div><div class="tiny mut">${esc(nm)}</div>${soPadSvg(m,mine)}</div>`;}
+    main=`<div class="card" style="padding:10px;margin:8px 0;text-align:center"><div class="small" style="color:var(--acc);font-weight:700">${mine?'⚽ Du schießt: tippe in die Ecke!':'🧤 Du bist Torwart: tippe, wohin du springst!'}</div><div class="tiny mut">${esc(nm)}</div>${soPadSvg(m,mine)}<button class="btn sm" style="margin-top:6px" data-ov="soauto">🎲 Automatisch zu Ende schießen</button></div>`;}
   else main='';
   const fin=!so&&!TK.pen;
   box.innerHTML=`<div class="row"><span class="pill">${esc(m.cup||'Pokal')}</span><span class="sp"></span>${fin?'<button class="ic" data-ov="close">✕</button>':''}</div>
   <div class="score"><div class="tm">${crest(H,34)}<br>${esc(H.name)}</div><div class="sc">${m.gh}:${m.ga}</div><div class="tm">${crest(A,34)}<br>${esc(A.name)}</div></div>
-  <div class="clock" style="margin-top:6px">${fin?`Elfmeterschießen ${m.pens[0]}:${m.pens[1]} – ${esc(ST.clubs[m.w].name)} weiter!`:'Elfmeterschießen'}</div>
+  <div class="clock" style="margin-top:6px">${fin?(m.pens?`Elfmeterschießen ${m.pens[0]}:${m.pens[1]} – ${esc((ST.clubs[m.w]||{}).name||'')} ${ST.cups&&Object.values(ST.cups).some(c=>c&&c.winner===m.w&&c.mds&&ST.md>=18)?'holt den Pokal!':'weiter!'}`:'Elfmeterschießen beendet'):'Elfmeterschießen'}</div>
   <div class="card" style="padding:10px;margin:8px 0"><div class="row small"><span>${esc(H.name)}</span><span class="sp"></span><span>${row('h')}</span></div><div class="row small" style="margin-top:6px"><span>${esc(A.name)}</span><span class="sp"></span><span>${row('a')}</span></div><div class="h" style="text-align:center;font-size:22px;margin-top:6px">${a}:${b}</div></div>
   ${main}${fin?(TK.i<TK.ms.length-1?'<button class="btn pri block" style="margin-top:12px" data-ov="next">Nächstes Spiel</button>':TK.card?'<button class="btn pri block" style="margin-top:12px" data-ov="card">Ereigniskarte aufdecken</button>':'<button class="btn pri block" style="margin-top:12px" data-ov="close">Schließen</button>'):''}`;
   try{if(isLand()){const kids=[...box.children];const g=document.createElement('div');g.style.cssText='display:grid;grid-template-columns:1fr 1.15fr;gap:12px;align-items:start';const L=document.createElement('div'),R=document.createElement('div');
@@ -3594,12 +3594,15 @@ const _drawTickerLive=drawTicker;
 drawTicker=function(){
   if(!TK||TK.showCard)return _drawTickerLive();
   const m=TK.ms[TK.i];
-  if(m&&ST.career&&!TK.half&&TK.min>=(TK.max||90)&&(m.pend||TK.soLive)){TK.soLive=true;TK.soSkip=true;return soLiveDraw(m);}
+  if(m&&ST.career&&!TK.half&&TK.min>=(TK.max||90)&&(m.pend||TK.soLive)){TK.soLive=true;TK.soSkip=true;
+    try{const mm=ST.so&&ST.last&&ST.last.results[ST.so.mi]||m;if(!ST.so&&!mm.pens&&!TK.pen){const L=ST.last&&ST.last.results.find(x=>x.h===m.h&&x.a===m.a);if(L&&L.pens)TK.ms[TK.i]=L;}return soLiveDraw(TK.ms[TK.i]);}
+    catch(e){console.error(e);const box=document.getElementById('ovb');if(box)box.innerHTML=`<div class="mt">🎯 Elfmeterschießen</div><p class="small">Die Anzeige konnte nicht geladen werden.</p>${ST.so?'<button class="btn pri block" data-ov="soauto">🎲 Automatisch zu Ende schießen</button>':''}<button class="btn block" style="margin-top:8px" data-ov="close">Schließen</button>`;return;}}
   return _drawTickerLive();
 };
 document.getElementById('ov').addEventListener('click',async e=>{
   const b=e.target.closest('[data-ov]');if(!b||!TK)return;const a=b.dataset.ov;
   if(a==='next'||a==='close'){TK.soLive=false;}
+  if(a==='soauto'){e.stopPropagation();let g=0;while(ST.so&&g++<60)await send('SO_KICK',{zone:Math.floor(Math.random()*6)});TK.pen=null;TK.soBusy=false;try{drawTicker();}catch(err){document.getElementById('ov').style.display='none';TK=null;render();}return;}
   if(a!=='soz'||TK.soBusy||!ST.so)return;
   e.stopPropagation();TK.soBusy=true;
   await send('SO_KICK',{zone:+b.dataset.z});
@@ -4037,7 +4040,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='141',APP_RV=13;
+const APP_BUILD='142',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -5513,6 +5516,12 @@ function twOpen(){return ST&&ST.career&&ST.phase==='offseason'&&ST.tw&&ST.tw.w<S
   return h.replace(/<button class="btn pri block" data-a="ready"([^>]*)>([\s\S]*?)<\/button>/,(m0,at)=>`<div style="display:flex;gap:6px"><button class="btn" data-a="twSkip" title="Direkt zum ${ST.winter?'Rückrundenstart':'Saisonstart'}" style="flex:none;padding:0 12px">${cl('twSkip','⏩','⏩ Start?')}</button><button class="btn pri block" data-a="twNext" style="flex:1">${lbl}</button></div>`);};}
 ACT.twNext=function(){send('WEEK');};
 ACT.twSkip=function(){if(!conf('twSkip'))return;ACT.ready();};
+
+// Absicherung: Elfmeterschießen nach dem letzten Spieltag (z. B. Pokalfinale)
+{const _cmSO=VIEWS.cmatch;VIEWS.cmatch=function(){const c=myC();if(ST&&ST.career&&c&&ST.phase==='matchday'&&!ST.cupPend&&(ST.so||!((ST.sched[c.lg]||[])[ST.md]))){
+  const m=ST.so&&ST.last&&ST.last.results[ST.so.mi];const H=m&&ST.clubs[m.h],A=m&&ST.clubs[m.a];
+  return `<div class="card" style="text-align:center"><div class="tiny mut">${esc(m&&m.cup||'Pokal')}</div>${m?`<div class="h" style="font-size:26px;margin:6px 0">${esc(H.name)} ${m.gh}:${m.ga} ${esc(A.name)}</div>`:''}<p class="small">${ST.so?'Unentschieden – jetzt entscheidet das Elfmeterschießen!':'Die Saison ist gleich zu Ende.'}</p><button class="btn pri block" data-a="ready">${ST.so?'🎯 Elfmeterschießen spielen':'Weiter'}</button></div>`;}
+  return _cmSO.apply(this,arguments);};}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
