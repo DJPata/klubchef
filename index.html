@@ -4040,7 +4040,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='142',APP_RV=13;
+const APP_BUILD='143',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -4897,6 +4897,7 @@ function lmMenu(){const ph=ST.phase;const off=ph==='offseason',md=ph==='matchday
   if(!ht){M.push(['tm','🔁','Transfers',off?[mk('Kaufen','buy')].concat(ST.tw?[mk('Anbieten'+((myC().mOff||[]).length?' ('+myC().mOff.length+')':''),'sell')]:[],[mk('Angebote'+((myC().offers||[]).length?' ('+myC().offers.length+')':''),'off'),mk('Leihen','loan'),mk('Verlauf','tl')]):[mk('Kaufen','buy'),mk('Anbieten'+((myC().mOff||[]).length?' ('+myC().mOff.length+')':''),'sell'),mk('Verlauf','tl')]]);
     M.push(['nlz','🎓','NLZ',[['Talente & Camp','znlz',null],['Auslandsscout'+(myC().scout&&(myC().scout.rep||[]).length?' ❗':''),'zscout',null]]]);}
   M.push(['comp','🏆','Wettbewerbe',[lg('Tabelle','tab'),lg('Pokale','cup'),lg('Statistik','st'),lg('Chronik','ch')]]);
+  if(!ht){const N=ST.coach&&ST.coach.nt;M.push(['int','🌍','International',[['Europapokal','zint','eu']].concat(N?[['NT: Quali','zint','ntq'],['NT: Spielplan','zint','ntsp']].concat(N.tour?[['NT: '+N.tour.name,'zint','nttour']]:[],[['NT: Kader','zint','ntk']]):[['Nationalteam','zint','nt']])]);}
   if(md||off){M.push(['gel','🏟️','Gelände',[of('Vereinsgelände','ausbau')]]);M.push(['fin','💶','Finanzen',[of('Übersicht','finanzen'),of('Sponsoren','sponsor'),of('Gehälter','gehalt')]]);
     M.push(['vor','🏛️','Vorstand',[of('Ziele','vorstand'),of('Staff','staff')].concat(sum?[of('Vorbereitung'+(myC().prepS===ST.season?'':' ❗'),'vorb'),of('Bericht','bericht')]:[])]);}
   if(!ht)M.push(['set','⚙️','Optionen',[['Allgemein','settings','gen'],['Vereinslogo','settings','logo']]]);
@@ -5522,6 +5523,37 @@ ACT.twSkip=function(){if(!conf('twSkip'))return;ACT.ready();};
   const m=ST.so&&ST.last&&ST.last.results[ST.so.mi];const H=m&&ST.clubs[m.h],A=m&&ST.clubs[m.a];
   return `<div class="card" style="text-align:center"><div class="tiny mut">${esc(m&&m.cup||'Pokal')}</div>${m?`<div class="h" style="font-size:26px;margin:6px 0">${esc(H.name)} ${m.gh}:${m.ga} ${esc(A.name)}</div>`:''}<p class="small">${ST.so?'Unentschieden – jetzt entscheidet das Elfmeterschießen!':'Die Saison ist gleich zu Ende.'}</p><button class="btn pri block" data-a="ready">${ST.so?'🎯 Elfmeterschießen spielen':'Weiter'}</button></div>`;}
   return _cmSO.apply(this,arguments);};}
+
+// ---------- International: Europapokal & Nationalteam ----------
+function intEuro(){const E=ST.euro;let h='';
+  if(E)h+=euroHtml();
+  else h+=`<div class="card"><h3 style="margin-top:0">🌍 Europapokal</h3>${ST.euroQ?'<p class="small">✅ Du bist qualifiziert! Der Europapokal startet nächste Saison mit der Ligaphase.</p>':`<p class="small">Du spielst noch nicht international.</p><div class="tac"><b>🎯 So kommst du hin</b><span class="small">Werde in der <b>1. Liga Erster oder Zweiter</b> – dann spielst du in der nächsten Saison die Ligaphase mit 18 Teams.</span></div>`}<p class="tiny mut" style="margin:8px 0 0">Ligaphase: 6 Spiele gegen verschiedene Gegner, die Top 8 kommen ins Viertelfinale. Prämien bis ${fm(8)} für den Titel.</p></div>`;
+  const H=ST.euroHist||[];if(H.length)h+=`<div class="card"><b>📜 Europapokal-Sieger</b>${H.slice().reverse().map(x=>`<div class="row small" style="padding:5px 0;border-top:1px solid var(--line)"><span class="mut">Saison ${x.season}</span><span class="sp"></span><b>${esc(x.winner||'–')}</b></div>`).join('')}</div>`;
+  return h;}
+function ntFlag(n){return NATS[n]?NATS[n][0]:'';}function ntNm(n){return NATS[n]?NATS[n][1]:n;}
+function intNT(){const C=ST.coach||{rep:20};const nt=C.nt;const c=myC();
+  if(!nt){let h=`<div class="card"><h3 style="margin-top:0">🌍 Nationalteam</h3>`;
+    if(C.offer)h+=`<p class="small">📨 Du hast ein Angebot als Nationaltrainer von <b>${natLbl(C.offer.nat)}</b>! Annehmen kannst du es in der Zentrale.</p>`;
+    else h+=`<p class="small">Du bist noch kein Nationaltrainer.</p><div class="tac"><b>🎯 So kommst du hin</b><span class="small">Spiel in der <b>1. Liga</b> und gewinne einen Titel – oder werde zweimal Top 3. Dann melden sich Verbände. Je höher dein Trainer-Ruf, desto stärker die Nation.</span></div>`;
+    return h+`<div class="row small" style="margin-top:8px"><span>🎖 Trainer-Ruf</span><span class="sp"></span><b>${C.rep||20}/100</b></div><div class="bar" style="margin-top:4px"><i style="width:${C.rep||20}%;background:var(--acc)"></i></div></div>`;}
+  const L=[['q','Quali'],['sp','Spielplan']];if(nt.tour)L.push(['tour','🏆 '+esc(nt.tour.name)]);L.push(['k','Kader']);
+  let h=subNav('zintnt',L);if(isLand())h='';const s=sub('zintnt');const q=nt.q;
+  const head=`<div class="card" style="padding:10px 14px"><div class="row"><b style="font-size:17px">${natLbl(nt.nat)}</b><span class="sp"></span><span class="pill">Stärke ${Math.round(ntStrength(ST))}</span></div></div>`;
+  if(s==='q'){h+=head;if(!q)return h+'<div class="card small mut">Die Qualifikation startet mit der Saison.</div>';const tb=ntTable(q);
+    h+=`<div class="card"><h3 style="margin-top:0">Qualifikation ${seasonY(ST,q.s)}</h3><table><tr><th class="l">#</th><th class="l">Nation</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr>${tb.map((x,i)=>`<tr class="${x.n===nt.nat?'me':''}"><td class="l" style="border-left:3px solid ${i===0?'var(--acc2)':'transparent'}">${i+1}</td><td class="l">${ntFlag(x.n)} ${esc(ntNm(x.n))}</td><td>${x.sp}</td><td>${x.gf}:${x.ga}</td><td><b>${x.p}</b></td></tr>`).join('')}</table><p class="tiny mut" style="margin:6px 0 0">🟩 Gruppensieger fährt zum Turnier im Sommer.${q.qual?' ✅ Qualifiziert!':''}</p></div>`;}
+  else if(s==='sp'){h+=head;if(!q)return h;
+    h+=`<div class="card"><h3 style="margin-top:0">📅 Länderspiele</h3>${q.games.map((g,i)=>{const home=g.h===nt.nat;const o=home?g.a:g.h;let res='–',col='var(--mut)';if(g.gh!=null){const my=home?g.gh:g.ga,ot=home?g.ga:g.gh;res=my+':'+ot;col=my>ot?'#3fd0a0':my<ot?'#ff6b5b':'#93ab9c';}
+      return `<div class="row small" style="padding:7px 0;border-top:1px solid var(--line);gap:8px"><span class="mut" style="width:96px">Pause ${i+1} · ST ${(NTBRK[i]||0)+1}</span><span class="mut" style="width:38px">${home?'Heim':'Ausw.'}</span><span style="flex:1">${ntFlag(o)} ${esc(ntNm(o))}</span><b style="color:${col}">${res}</b></div>`;}).join('')}
+      ${(q.other||[]).length?`<h4>Weitere Spiele der Gruppe</h4>${q.other.map(g=>`<div class="row small" style="padding:5px 0;border-top:1px solid var(--line)"><span>${ntFlag(g.h)} ${esc(ntNm(g.h))} – ${ntFlag(g.a)} ${esc(ntNm(g.a))}</span><span class="sp"></span><b>${g.gh!=null?g.gh+':'+g.ga:'–'}</b></div>`).join('')}`:''}
+      <p class="tiny mut" style="margin:8px 0 0">Länderspiele finden in den Länderspielpausen statt (nach Spieltag ${NTBRK.map(x=>x).join(', ')}).</p></div>`;}
+  else if(s==='tour'){const sv=ui.modal;ui.modal={t:'nttour'};let x='';try{x=modalHtml();}catch(e){}ui.modal=sv;x=x.replace(/^<button class="ic mx"[^>]*>✕<\/button>/,'').replace('<div class="mt">','<h3 style="margin-top:0">').replace(/<\/div>(<div class="ntgg">)/,'</h3>$1');h+=`<div class="card">${x||'<span class="small mut">Kein Turnier.</span>'}</div>`;}
+  else{const S=ntSquad(ST);h+=`<div class="card"><div class="row"><b>👥 Kader ${S.length}/18</b><span class="sp"></span><button class="btn sm" data-a="ntSq">Kader bearbeiten</button></div>${S.slice().sort((a,b)=>'GDMA'.indexOf(a.pos)-'GDMA'.indexOf(b.pos)||b.rat-a.rat).map(p=>`<div class="row small" style="padding:5px 0;border-top:1px solid var(--line);gap:8px"><span class="pos ${p.pos}">${p.pos==='G'?'TW':p.pos==='D'?'AB':p.pos==='M'?'MF':'ST'}</span><span style="flex:1">${esc(p.name)}${c.squad.some(x=>x.id===p.id)?' ⭐':''}</span><b>${p.rat}</b></div>`).join('')||'<div class="small mut">Noch kein Kader nominiert.</div>'}</div>`;}
+  const H=(C.hist||[]).filter(x=>x.nt||x.tour);return h;}
+ACT.ntSq=ACT.ntSq||function(){ui.modal={t:'ntsq'};render();};
+VIEWS.zint=function(){if(!ST.career)return '';let s=ui.subs.zint;const MAP={ntq:'q',ntsp:'sp',nttour:'tour',ntk:'k'};if(MAP[s]){ui.subs.zintnt=MAP[s];s='nt';}if(s!=='eu'&&s!=='nt')s=ui.subs.zint='eu';
+  let h=isLand()?'':subNav('zint',[['eu','🌍 Europapokal'],['nt','🏳️ Nationalteam']]);return h+(s==='eu'?intEuro():intNT());};
+// Hochformat: International unter Ligen
+{const _clI=VIEWS.cleague;VIEWS.cleague=function(){const want=ui.subs.cleague==='int'&&ST&&ST.career&&!isLand();if(want)ui.subs.cleague='tab';const h=_clI.apply(this,arguments);if(want)ui.subs.cleague='int';if(!ST||!ST.career||isLand())return h;if(want)return h.replace(/^(<div class="chips subnav">[\s\S]*?<\/div>)[\s\S]*$/,'$1').replace(/chip on/g,'chip').replace(/(<\/div>)$/,`<span class="chip on">🌍 International</span>$1`)+VIEWS.zint();return h.replace('<div class="chips subnav">','<div class="chips subnav">').replace(/(<div class="chips subnav">[\s\S]*?)(<\/div>)/,`$1<span class="chip ${ui.subs.cleague==='int'?'on':''}" data-a="sub2" data-v="cleague|int">🌍 International</span>$2`);};}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
