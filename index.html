@@ -1734,7 +1734,16 @@ function ntPoolGen(st,nat){const r=RNG(st.seed,'ntp'+nat);const S=natStr(nat);co
 function ntCands(st){const C=coachOf(st);const nt=C.nt;if(!nt)return [];const me=st.clubs.me;const mine=me.squad.filter(p=>natOf(p)===nt.nat);return mine.concat(nt.pool);}
 function ntSquad(st){const C=coachOf(st);const nt=C.nt;if(!nt)return [];const L=ntCands(st);let S=(nt.squad||[]).map(id=>L.find(p=>p.id===id)).filter(Boolean).filter(p=>!(p.inj>0));
   if(S.length<11){const rest=L.filter(p=>!S.includes(p)&&!(p.inj>0)).sort((a,b)=>b.rat-a.rat);S=S.concat(rest).slice(0,18);}return S;}
-function ntStrength(st){const S=ntSquad(st);const by=k=>S.filter(p=>p.pos===k).sort((a,b)=>b.rat-a.rat);const xi=[].concat(by('G').slice(0,1),by('D').slice(0,4),by('M').slice(0,4),by('A').slice(0,2));
+const NTF={'4-4-2':{D:4,M:4,A:2},'4-3-3':{D:4,M:3,A:3},'4-2-3-1':{D:4,M:5,A:1},'3-5-2':{D:3,M:5,A:2}};
+function ntSlots(f){const F=NTF[f]||NTF['4-4-2'];return ['G'].concat(Array(F.D).fill('D'),Array(F.M).fill('M'),Array(F.A).fill('A'));}
+function ntAutoXI(S,f){const sl=ntSlots(f);const used=new Set();const ids=sl.map(k=>{const p=S.filter(x=>x.pos===k&&!used.has(x.id)).sort((a,b)=>b.rat-a.rat)[0];if(p){used.add(p.id);return p.id;}return null;});
+  for(let i=0;i<ids.length;i++)if(!ids[i]){const p=S.filter(x=>!used.has(x.id)&&(sl[i]==='G')===(x.pos==='G')).sort((a,b)=>b.rat-a.rat)[0]||S.filter(x=>!used.has(x.id)).sort((a,b)=>b.rat-a.rat)[0];if(p){used.add(p.id);ids[i]=p.id;}}return ids;}
+function ntXI(st){const C=coachOf(st);const nt=C.nt;if(!nt)return null;const S=ntSquad(st);const f=nt.xi&&NTF[nt.xi.f]?nt.xi.f:'4-4-2';const auto=ntAutoXI(S,f);
+  if(!nt.xi||!Array.isArray(nt.xi.ids))return {f,ids:auto};const ok=new Set(S.map(p=>p.id));const used=new Set();const ids=nt.xi.ids.slice(0,ntSlots(f).length).map(id=>ok.has(id)&&!used.has(id)?(used.add(id),id):null);
+  for(let i=0;i<ids.length;i++)if(!ids[i]){const a=auto.find(x=>x&&!used.has(x));if(a){used.add(a);ids[i]=a;}}return {f,ids};}
+function ntXIStr(st,X){const S=ntSquad(st);const sl=ntSlots(X.f);let t=0,n=0;X.ids.forEach((id,i)=>{const p=S.find(x=>x.id===id);if(!p)return;let v=p.rat;if(p.pos!==sl[i])v-=(p.pos==='G'||sl[i]==='G')?20:6;t+=v;n++;});return n?t/Math.max(n,11):50;}
+function ntStrength(st){try{const X=ntXI(st);if(X&&X.ids.filter(Boolean).length)return ntXIStr(st,X);}catch(e){}return ntStrengthAuto(st);}
+function ntStrengthAuto(st){const S=ntSquad(st);const by=k=>S.filter(p=>p.pos===k).sort((a,b)=>b.rat-a.rat);const xi=[].concat(by('G').slice(0,1),by('D').slice(0,4),by('M').slice(0,4),by('A').slice(0,2));
   const rest=S.filter(p=>!xi.includes(p)).sort((a,b)=>b.rat-a.rat);while(xi.length<11&&rest.length)xi.push(rest.shift());if(!xi.length)return 50;return xi.reduce((a,p)=>a+p.rat,0)/xi.length;}
 function ntGame(r,sa,sb){const lam=x=>clamp(1.25+x/12,0.2,3.4);const g=l=>{let k=0,L=Math.exp(-l),p=1;do{k++;p*=r.f();}while(p>L&&k<9);return k-1;};return [g(lam(sa-sb)),g(lam(sb-sa))];}
 function ntOppStr(r,n){return natStr(n)+r.int(-2,2);}
@@ -2237,6 +2246,7 @@ const CH={
   NT_QUIT(st,a){const C=coachOf(st);if(!C.nt)rej('?');C.hist.push({nat:C.nt.nat,s0:C.nt.s0,s1:st.season,quit:true});C.nt=null;},
   NT_SQUAD(st,a){const C=coachOf(st);if(!C.nt)rej('?');const L=ntCands(st);const ids=(Array.isArray(a.ids)?a.ids:[]).filter(id=>L.some(p=>p.id===id)).slice(0,18);C.nt.squad=ids;},
   NT_PLAY(st,a){ntPlayQuali(st);},
+  NT_XI(st,a){const nt=coachOf(st).nt;if(!nt)rej('Kein Nationalteam.');if(!NTF[a.f])rej('?');const S=new Set(ntSquad(st).map(p=>p.id));const ids=(a.ids||[]).slice(0,ntSlots(a.f).length).map(id=>S.has(id)?id:null);nt.xi={f:a.f,ids};},
   NT_TOUR(st,a){ntTourPlay(st);},
   NT_SEEN(st,a){if(st.ntBreak)st.ntBreak.seen=true;},
   BENCH(st,a){if(st.phase!=='matchday')rej('Die Bank stellst du vor dem Anpfiff auf.');const c=st.clubs.me;if(a.ids===null){delete c.bench;return;}const ids=[];for(const id of (Array.isArray(a.ids)?a.ids:[]))if(c.squad.some(p=>p.id===id)&&!ids.includes(id))ids.push(id);c.bench=ids.slice(0,BENCH_N);},
@@ -4040,7 +4050,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='143',APP_RV=13;
+const APP_BUILD='144',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -5391,9 +5401,11 @@ function ntCard(c){if(!ST.career)return '';const C=ST.coach||{rep:20};let h='';
 {const _cmN=VIEWS.cmatch;VIEWS.cmatch=function(){const h=_cmN.apply(this,arguments);if(!ST.career||ST.phase!=='matchday')return h;const c=myC();return c&&h.indexOf('🌍 Nationaltrainer')<0&&h.indexOf('Angebot: Nationaltrainer')<0?ntCard(c)+h:h;};}
 ACT.ntAcc=function(){send('NT_ACCEPT',{});};ACT.ntDec=function(){send('NT_DECLINE',{});};
 ACT.ntSq=function(){ui.modal={t:'ntsq'};render();};
-ACT.ntPlay=function(){send('NT_PLAY',{});ui.modal={t:'ntres'};render();};
+ACT.ntPlay=function(){ACT.ntXiOpen('q');};
+ACT.ntPlayGo=function(){send('NT_PLAY',{});ui.modal={t:'ntres'};render();};
 ACT.ntTourOpen=function(){ui.modal={t:'nttour'};render();};
-ACT.ntTour=function(){send('NT_TOUR',{});render();};
+ACT.ntTour=function(){const T=ST.coach&&ST.coach.nt&&ST.coach.nt.tour;const me=ST.coach.nt.nat;const myKo=T&&T.stage>=3&&T.ko.some(g=>g.rd===T.stage-3&&(g.h===me||g.a===me));if(T&&(T.stage<3||myKo)){ACT.ntXiOpen('t');return;}send('NT_TOUR',{});render();};
+ACT.ntTourGo=function(){send('NT_TOUR',{});ui.modal={t:'nttour'};render();};
 ACT.ntTog=function(v){const C=ST.coach;if(!C||!C.nt)return;let ids=ntSquad(ST).map(p=>p.id);if(ids.includes(v))ids=ids.filter(x=>x!==v);else if(ids.length<18)ids.push(v);else{toast('Maximal 18 Spieler.');return;}send('NT_SQUAD',{ids});};
 ACT.ntAuto=function(){const L=ntCands(ST).filter(p=>!(p.inj>0));const by=k=>L.filter(p=>p.pos===k).sort((a,b)=>b.rat-a.rat);const pick=[].concat(by('G').slice(0,2),by('D').slice(0,6),by('M').slice(0,6),by('A').slice(0,4));send('NT_SQUAD',{ids:pick.map(p=>p.id)});};
 ACT.ntCallSeen=function(){send('NT_SEEN',{});ui.modal=null;render();};
@@ -5547,13 +5559,47 @@ function intNT(){const C=ST.coach||{rep:20};const nt=C.nt;const c=myC();
       ${(q.other||[]).length?`<h4>Weitere Spiele der Gruppe</h4>${q.other.map(g=>`<div class="row small" style="padding:5px 0;border-top:1px solid var(--line)"><span>${ntFlag(g.h)} ${esc(ntNm(g.h))} – ${ntFlag(g.a)} ${esc(ntNm(g.a))}</span><span class="sp"></span><b>${g.gh!=null?g.gh+':'+g.ga:'–'}</b></div>`).join('')}`:''}
       <p class="tiny mut" style="margin:8px 0 0">Länderspiele finden in den Länderspielpausen statt (nach Spieltag ${NTBRK.map(x=>x).join(', ')}).</p></div>`;}
   else if(s==='tour'){const sv=ui.modal;ui.modal={t:'nttour'};let x='';try{x=modalHtml();}catch(e){}ui.modal=sv;x=x.replace(/^<button class="ic mx"[^>]*>✕<\/button>/,'').replace('<div class="mt">','<h3 style="margin-top:0">').replace(/<\/div>(<div class="ntgg">)/,'</h3>$1');h+=`<div class="card">${x||'<span class="small mut">Kein Turnier.</span>'}</div>`;}
-  else{const S=ntSquad(ST);h+=`<div class="card"><div class="row"><b>👥 Kader ${S.length}/18</b><span class="sp"></span><button class="btn sm" data-a="ntSq">Kader bearbeiten</button></div>${S.slice().sort((a,b)=>'GDMA'.indexOf(a.pos)-'GDMA'.indexOf(b.pos)||b.rat-a.rat).map(p=>`<div class="row small" style="padding:5px 0;border-top:1px solid var(--line);gap:8px"><span class="pos ${p.pos}">${p.pos==='G'?'TW':p.pos==='D'?'AB':p.pos==='M'?'MF':'ST'}</span><span style="flex:1">${esc(p.name)}${c.squad.some(x=>x.id===p.id)?' ⭐':''}</span><b>${p.rat}</b></div>`).join('')||'<div class="small mut">Noch kein Kader nominiert.</div>'}</div>`;}
+  else{const S=ntSquad(ST);h+=`<div class="card"><div class="row"><b>👥 Kader ${S.length}/18</b><span class="sp"></span><button class="btn sm" data-a="ntSq">Kader bearbeiten</button><button class="btn sm" data-a="ntXiOpen" data-v="">Aufstellung</button></div>${S.slice().sort((a,b)=>'GDMA'.indexOf(a.pos)-'GDMA'.indexOf(b.pos)||b.rat-a.rat).map(p=>`<div class="row small" style="padding:5px 0;border-top:1px solid var(--line);gap:8px"><span class="pos ${p.pos}">${p.pos==='G'?'TW':p.pos==='D'?'AB':p.pos==='M'?'MF':'ST'}</span><span style="flex:1">${esc(p.name)}${c.squad.some(x=>x.id===p.id)?' ⭐':''}</span><b>${p.rat}</b></div>`).join('')||'<div class="small mut">Noch kein Kader nominiert.</div>'}</div>`;}
   const H=(C.hist||[]).filter(x=>x.nt||x.tour);return h;}
 ACT.ntSq=ACT.ntSq||function(){ui.modal={t:'ntsq'};render();};
 VIEWS.zint=function(){if(!ST.career)return '';let s=ui.subs.zint;const MAP={ntq:'q',ntsp:'sp',nttour:'tour',ntk:'k'};if(MAP[s]){ui.subs.zintnt=MAP[s];s='nt';}if(s!=='eu'&&s!=='nt')s=ui.subs.zint='eu';
   let h=isLand()?'':subNav('zint',[['eu','🌍 Europapokal'],['nt','🏳️ Nationalteam']]);return h+(s==='eu'?intEuro():intNT());};
 // Hochformat: International unter Ligen
 {const _clI=VIEWS.cleague;VIEWS.cleague=function(){const want=ui.subs.cleague==='int'&&ST&&ST.career&&!isLand();if(want)ui.subs.cleague='tab';const h=_clI.apply(this,arguments);if(want)ui.subs.cleague='int';if(!ST||!ST.career||isLand())return h;if(want)return h.replace(/^(<div class="chips subnav">[\s\S]*?<\/div>)[\s\S]*$/,'$1').replace(/chip on/g,'chip').replace(/(<\/div>)$/,`<span class="chip on">🌍 International</span>$1`)+VIEWS.zint();return h.replace('<div class="chips subnav">','<div class="chips subnav">').replace(/(<div class="chips subnav">[\s\S]*?)(<\/div>)/,`$1<span class="chip ${ui.subs.cleague==='int'?'on':''}" data-a="sub2" data-v="cleague|int">🌍 International</span>$2`);};}
+
+// ---------- Nationalteam: Aufstellung vor dem Länderspiel ----------
+ACT.ntXiOpen=function(go){const X=ntXI(ST);ui.ntX={f:X.f,ids:X.ids.slice()};ui.ntSel=null;ui.modal={t:'ntxi',go};render();};
+ACT.ntXiF=function(v){const S=ntSquad(ST);const keep=new Set(ui.ntX.ids);const auto=ntAutoXI(S,v);const sl=ntSlots(v);
+  // vorhandene Spieler möglichst behalten
+  const ids=Array(sl.length).fill(null);const pool=ui.ntX.ids.map(id=>S.find(p=>p.id===id)).filter(Boolean);
+  sl.forEach((k,i)=>{const j=pool.findIndex(p=>p.pos===k);if(j>=0){ids[i]=pool[j].id;pool.splice(j,1);}});
+  sl.forEach((k,i)=>{if(!ids[i]){const a=auto.find(x=>x&&!ids.includes(x));ids[i]=a||null;}});ui.ntX={f:v,ids};ui.ntSel=null;render();};
+ACT.ntXiAuto=function(){ui.ntX={f:ui.ntX.f,ids:ntAutoXI(ntSquad(ST),ui.ntX.f)};ui.ntSel=null;render();};
+ACT.ntXiTap=function(v){const X=ui.ntX;const sel=ui.ntSel;if(sel==null){ui.ntSel=v;render();return;}if(sel===v){ui.ntSel=null;render();return;}
+  const ia=X.ids.indexOf(sel),ib=X.ids.indexOf(v);
+  if(ia>=0&&ib>=0){X.ids[ia]=v;X.ids[ib]=sel;}else if(ia>=0){X.ids[ia]=v;}else if(ib>=0){X.ids[ib]=sel;}else{ui.ntSel=v;render();return;}
+  ui.ntSel=null;render();};
+ACT.ntXiGo=function(){const M=ui.modal;send('NT_XI',{f:ui.ntX.f,ids:ui.ntX.ids});if(M&&M.go==='t')ACT.ntTourGo();else if(M&&M.go==='q')ACT.ntPlayGo();else{ui.modal=null;render();}};
+{const _mhX=modalHtml;modalHtml=function(){const M=ui.modal;const c=myC();if(!M||M.t!=='ntxi'||!c)return _mhX();const C=ST.coach||{};const nt=C.nt;if(!nt||!ui.ntX)return '';
+  const S=ntSquad(ST);const X=ui.ntX;const sl=ntSlots(X.f);const str=ntXIStr(ST,X);const mine=new Set(c.squad.map(p=>p.id));
+  let opp='';if(M.go==='q'){const B=ST.ntBreak;const g=B&&B.game!=null&&nt.q&&nt.q.games[B.game];if(g)opp=`${NATS[g.h][0]} ${esc(NATS[g.h][1])} – ${NATS[g.a][0]} ${esc(NATS[g.a][1])}`;}
+  else if(M.go==='t'){const T=nt.tour;if(T){const g=T.stage<3?T.gm.find(x=>x.rd===T.stage&&(x.h===nt.nat||x.a===nt.nat)):T.ko.find(x=>x.rd===T.stage-3&&(x.h===nt.nat||x.a===nt.nat));if(g)opp=`${NATS[g.h][0]} ${esc(NATS[g.h][1])} – ${NATS[g.a][0]} ${esc(NATS[g.a][1])}`;}}
+  const chip=(id,k)=>{const p=S.find(x=>x.id===id);if(!p)return `<div class="ntc empty">–</div>`;const off=k&&p.pos!==k;const on=ui.ntSel===id;
+    return `<div class="ntc${on?' on':''}${off?' off':''}" data-a="ntXiTap" data-v="${p.id}"><b>${p.rat}</b><span>${esc(p.name.split(' ').slice(-1)[0])}</span>${mine.has(p.id)?'<i>⭐</i>':''}${off?'<em>!</em>':''}</div>`;};
+  const rows=['A','M','D','G'].map(k=>{const idx=sl.map((x,i)=>x===k?i:-1).filter(i=>i>=0);return `<div class="ntr">${idx.map(i=>chip(X.ids[i],k)).join('')}</div>`;}).join('');
+  const bench=S.filter(p=>!X.ids.includes(p.id)).sort((a,b)=>'GDMA'.indexOf(a.pos)-'GDMA'.indexOf(b.pos)||b.rat-a.rat);
+  const pl={G:'TW',D:'AB',M:'MF',A:'ST'};
+  return `<button class="ic mx" data-a="sheetX">✕</button><div class="mt">🌍 ${opp||natLbl(nt.nat)}</div>
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:6px">${Object.keys(NTF).map(f=>`<span class="chip ${X.f===f?'on':''}" data-a="ntXiF" data-v="${f}">${f}</span>`).join('')}<span class="sp"></span><span class="pill">Stärke ${Math.round(str)}</span></div>
+  <div class="ntwrap"><div class="ntpitch">${rows}</div><div class="ntbench"><div class="tiny mut" style="margin-bottom:4px">Bank · antippen zum Tauschen</div>${bench.map(p=>`<div class="pl${ui.ntSel===p.id?' on':''}" data-a="ntXiTap" data-v="${p.id}" style="cursor:pointer;padding:5px 6px"><span class="pos ${p.pos}">${pl[p.pos]}</span><span class="rt" style="color:${ratCol(p.rat)}">${p.rat}</span><div class="pn"><b>${esc(p.name)}${mine.has(p.id)?' ⭐':''}</b></div></div>`).join('')||'<div class="small mut">Keine Ersatzspieler.</div>'}</div></div>
+  <div class="tiny mut" style="margin:6px 0">${ui.ntSel?'Jetzt den Spieler antippen, mit dem getauscht werden soll.':'Spieler antippen, dann Tauschpartner antippen. <b style="color:#ff9d5c">!</b> = falsche Position (Stärke −6).'}</div>
+  <div class="row" style="gap:6px"><button class="btn" data-a="ntXiAuto">🤖 Beste Elf</button>${M.go?`<button class="btn pri" style="flex:1" data-a="ntXiGo">▶ Anpfiff</button>`:`<button class="btn pri" style="flex:1" data-a="ntXiGo">Speichern</button>`}</div>`;};}
+{const st=document.createElement('style');st.textContent=`.ntwrap{display:grid;grid-template-columns:1fr;gap:8px}body.land .ntwrap{grid-template-columns:1.3fr 1fr}
+.ntpitch{background:linear-gradient(#1f6b3a,#17552e);border:2px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;gap:8px}
+.ntr{display:flex;justify-content:space-around;gap:4px}.ntc{position:relative;min-width:54px;max-width:70px;flex:1;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:4px 2px;text-align:center;cursor:pointer}
+.ntc b{display:block;font-size:15px}.ntc span{display:block;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ntc.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}.ntc.off{border-color:#ff9d5c}
+.ntc i{position:absolute;top:-6px;left:-4px;font-style:normal;font-size:11px}.ntc em{position:absolute;top:-6px;right:-3px;font-style:normal;font-weight:900;color:#ff9d5c;font-size:13px}.ntc.empty{opacity:.4}
+.ntbench{max-height:38vh;overflow:auto}body.land .ntbench{max-height:58vh}.pl.on{outline:2px solid var(--acc);border-radius:8px}`;document.head.appendChild(st);}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
