@@ -4052,7 +4052,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='153',APP_RV=13;
+const APP_BUILD='154',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -5618,7 +5618,7 @@ const PRWAGE2=[null,[15000,60000],[4000,12000],[1000,3000],[300,900],[100,300],[
 const PRLGMUL=[0,1.3,1.15,1.0,0.85,0.7,0.5];const PRLIV=[0,1500,600,200,80,40,25];const PRCARUP=[0,40,90,220,800];const PRMS=[0,6,4,2.5,1.5,1,1];
 const PREUMD=[1,3,6,9,11,12],PREUKO=[14,15,17];
 function prWageFor(L,role){const W=PRWAGE2[L];return role==='Stammspieler'?W[1]:role==='Rotation'?Math.round((W[0]+W[1])/20)*10:W[0];}
-function prTax(L){return prEq(L)<=3?0.4:0;}
+function prTax(L){return prEq(L)<=3?(PRO&&PRO.p&&((PRO.p.edu||{}).uni||0)>=6?0.34:0.4):0;}
 function prSoftCap(L){return TMEAN[L]+12;}
 function prOppMul(p,L){const d=prOvr(p)-TMEAN[L];return d<=0?1.1:d<=5?1:d<=10?0.6:d<=15?0.35:0.2;}
 function prAgeMul(a){return a<=19?1.3:a<=23?1:a<=27?0.6:a<=30?0.3:0.1;}
@@ -5690,12 +5690,12 @@ function prPick(i){const s=PRO.start[i];const p=PRO.p;p.club=s.id;p.rel.tr=clamp
 function prSeasonStats(){PRO.p.stats={s:PRO.L.season,club:PRO.p.club,lg:prMyClub().lg,sp:0,start:0,g:0,a:0,notes:[],yc:0,rc:0,min:0};PRO.goals=prGoals();}
 function prFeed(t){(PRO.feed=PRO.feed||[]).push({s:PRO.L.season,md:PRO.L.md,t});if(PRO.feed.length>80)PRO.feed.splice(0,PRO.feed.length-80);}
 // ---------- Woche: Training ----------
-function prWeekNew(){PRO.wk={tr:[null,null,null],ev:null};const r=prR('ev');if(r.chance(0.6))PRO.wk.ev=prEvPick(r,'week');
+function prWeekNew(){PRO.wk={tr:[null,null,null],ev:null};try{const E=PRO.p.edu||{};let k=0;if(E.licW>0)PRO.wk.tr[2-(k++)]={a:'edu',t:'lic'};if(E.uniW>0)PRO.wk.tr[2-(k++)]={a:'edu',t:'uni'};}catch(e){}const r=prR('ev');if(r.chance(0.6))PRO.wk.ev=prEvPick(r,'week');
   const p=PRO.p;prPosMig(p);if((PRO.posOffW||-99)+8<=PRO.L.md+PRO.L.season*18){const cur=prOvr(p);let best=null,bv=cur+3;for(const k in PRW){if(k===p.pos)continue;const v=prOvrAt(p,k);if(v>bv){bv=v;best=k;}}if(best){PRO.wk.pos={to:best,v:bv};PRO.posOffW=PRO.L.md+PRO.L.season*18;}}}
 function prOvrAt(p,pos){const W=PRW[pos];let s=0;for(const k in W)s+=W[k]*p.att[k];return Math.round(s);}
 const PRINT=[null,{n:'Locker',g:0.28,f:3,i:0},{n:'Normal',g:0.55,f:7,i:0.005},{n:'Hart',g:0.9,f:13,i:0.03}];
 function prTrainGain(p,k,int){const age=prAgeMul(p.age)*(p.att[k]>=prSoftCap(prLg())?0.5:1);const ov=prOvr(p);const potf=clamp((p.pot-ov)/12,0.08,1.2);const af=clamp((95-p.att[k])/45,0.15,1.2);const hb=PRO.p.home>=4?1.15:1;return PRINT[int].g*age*potf*af*hb*(p.fit<40?0.6:1);}
-function prTrainApply(r){const p=PRO.p;const out=[];if(PRO.wk.camp)return ['🏕️ Diese Woche warst du im Leistungscamp.'];for(const s of PRO.wk.tr){if(!s)continue;if(s.a==='rest'){p.fit=Math.min(100,p.fit+12);out.push('🛌 Regeneration +12 % Frische');continue;}
+function prTrainApply(r){const p=PRO.p;const out=[];if(PRO.wk.camp)return ['🏕️ Diese Woche warst du im Leistungscamp.'];for(const s of PRO.wk.tr){if(!s)continue;if(s.a==='edu'){out.push(s.t==='lic'?'🎓 Trainerlehrgang':'📚 Fernstudium');continue;}if(s.a==='rest'){p.fit=Math.min(100,p.fit+12);out.push('🛌 Regeneration +12 % Frische');continue;}
   if(p.inj>0)continue;const I=PRINT[s.i];const g=prTrainGain(p,s.a,s.i)*(s.played?s.mul:(0.7+r.f()*0.6));const b4=prAtt(p,s.a);p.att[s.a]=Math.min(prCap(p),p.att[s.a]+g);p.fit=Math.max(5,p.fit-I.f);
   if(prAtt(p,s.a)>b4)out.push(`⬆️ ${PRAN[s.a][1]} ${PRAN[s.a][2]} ${b4} → ${prAtt(p,s.a)}`);
   if(r.chance(I.i*(p.fit<50?2:1)*(p.injMul||1))){p.inj=r.int(1,3);out.push(`🩹 Verletzt im Training – ${p.inj} Woche${p.inj>1?'n':''} Pause`);prFeed(`🩹 ${p.name} verletzt sich im Training (${p.inj} Wochen).`);}}
@@ -5803,7 +5803,7 @@ function prFinish(){const m=PRO.m;if(m.res)return;const r=prR('f');const p=PRO.p
   p.tot.sp+=m.played?1:0;p.tot.g+=m.g;p.tot.a+=m.as;if(m.played&&p.adapt>0)p.adapt--;
   if(m.red)p.sus=1;else if(m.yc){p.yc++;if(p.yc>=5){p.yc=0;p.sus=1;prFeed(`🟨 ${p.name} ist nach der 5. Gelben gesperrt.`);}}
   // Beziehungen
-  const R=p.rel;if(m.played){if(m.note<=2.5)R.tr=Math.min(100,R.tr+3);else if(m.note>=4.5)R.tr=Math.max(0,R.tr-3);R.fan=clamp(R.fan+m.g+(m.note<=2?1:0)+(prMyClub().lg<=2?1:0),0,100);if(m.as)R.mit=Math.min(100,R.mit+1);}
+  const R=p.rel;if(m.played){if(m.note<=2.5)R.tr=Math.min(100,R.tr+3+(((p.edu||{}).lic||0)>=2?1:0));else if(m.note>=4.5)R.tr=Math.max(0,R.tr-3);R.fan=clamp(R.fan+m.g+(m.note<=2?1:0)+(prMyClub().lg<=2?1:0),0,100);if(m.as)R.mit=Math.min(100,R.mit+1);}
   else if(m.role==='bench'||m.role==='trib'){if(prOvr(p)>c.s+3)R.tr=Math.min(100,R.tr+1);}
   p.sp+=m.pts;
   // Geld
@@ -5817,6 +5817,7 @@ function prAfterPost(){const p=PRO.p;const L=PRO.L;
   if(p.rel.fan>25&&prR('fd').chance(0.5))p.rel.fan--;
   for(const k of ['tr','mit']){const v=p.rel[k];if(v>75)p.rel[k]-=1;else if(v<25)p.rel[k]+=1;}
   if(p.rel.fan>=40){const sp=Math.round(PRWAGE2[prLg()][1]*0.003*p.rel.fan);p.money+=sp;}
+  try{prEduWeek();}catch(e){console.error(e);}
   PRO.m=null;L.md++;prAwardsWeek();
   if(L.md===9){prOffers('winter');}
   if(PRO.eu&&prEuGame()){PRO.ph='eucall';prSave();return;}
@@ -5904,7 +5905,7 @@ function prXFor(eq){return Object.keys(PRX).map(Number).filter(k=>PRX[k].eq===eq
 function prOffers(when){const p=PRO.p;const r=prR('of');const ov=prOvr(p);const c0=prMyClub();const cur=Math.max(prEq(c0.lg),when==='summer'&&PRO.rep?prEq(PRO.rep.lg):0);const out=[];
   const add=(eq,abroad)=>{eq=clamp(eq,1,NL);if(eq<cur&&ov<TMEAN[eq]-2)eq=cur;if(eq<prEq(c0.lg)-1)eq=prEq(c0.lg)-1;let L=eq;
     const xs=prXFor(eq);if((abroad||(c0.lg>6&&r.chance(0.5)))&&xs.length){const same=c0.lg>6?xs.filter(k=>PRX[k].c===PRX[c0.lg].c):[];L=same.length&&r.chance(0.6)?same[0]:r.pick(xs);}
-    const ids=(PRO.L.order[L]||[]).filter(id=>id!==c0.id&&!out.some(o=>o.id===id));if(!ids.length)return;const id=r.pick(ids);const cl=prClub(id);const role=prRoleFor(ov,cl);out.push({id,L,role,wage:prWageFor(L,role),yrs:r.int(2,4)});};
+    const ids=(PRO.L.order[L]||[]).filter(id=>id!==c0.id&&!out.some(o=>o.id===id));if(!ids.length)return;const id=r.pick(ids);const cl=prClub(id);const role=prRoleFor(ov,cl);out.push({id,L,role,wage:Math.round(prWageFor(L,role)*(((p.edu||{}).uni||0)>=3?1.1:1)/10)*10,yrs:r.int(2,4)});};
   const intl=ov>=70&&(p.scout||0)>=50;
   if((p.scout||0)>=100){add(cur-1,intl&&r.chance(0.35));p.scout=50;}
   let n=r.chance(when==='summer'?0.6:0.3)?r.int(1,2):0;for(let i=0;i<n;i++){const up=(p.scout||0)>=60&&r.chance(((p.scout||0)-60)/120);add(up?cur-1:r.chance(0.5)?cur:cur+1,intl&&r.chance(0.3));}
@@ -6002,8 +6003,8 @@ function prHomeSvg(l){const gx=160,gy=40;const P=prIsoP(gx,gy);let g=`<defs><lin
     const Q=prIsoP(130,70);g+=prPoly([Q(10,85,0),Q(80,85,0),Q(80,120,0),Q(10,120,0)],'#d8d2c4')+prPoly([Q(16,90,1),Q(74,90,1),Q(74,114,1),Q(16,114,1)],'#3db8ff')+prPoly([Q(22,94,1.2),Q(44,94,1.2),Q(44,100,1.2),Q(22,100,1.2)],'#9fe3ff');g+=prPalm(40,150)+prPalm(290,150)+`<rect x="226" y="176" width="16" height="5" rx="2" fill="#fff"/><rect x="248" y="180" width="16" height="5" rx="2" fill="#fff"/>`;}
   return `<svg viewBox="0 0 320 200" style="width:100%;display:block;border-radius:10px">${g}</svg>`;}
 // ---------- Fahrzeuge ----------
-function prWheel(x,y,r){return `<circle cx="${x}" cy="${y}" r="${r}" fill="#1a1a1a"/><circle cx="${x}" cy="${y}" r="${r*0.62}" fill="#b9bec4"/><circle cx="${x}" cy="${y}" r="${r*0.2}" fill="#555"/>${[0,72,144,216,288].map(a=>`<line x1="${x}" y1="${y}" x2="${(x+Math.cos(a*Math.PI/180)*r*0.58).toFixed(1)}" y2="${(y+Math.sin(a*Math.PI/180)*r*0.58).toFixed(1)}" stroke="#7d848b" stroke-width="2"/>`).join('')}`;}
-function prCarSvg(l,col){col=col||'#e5484d';const d=prShade(col,-0.3),hl=prShade(col,0.3);let g=`<ellipse cx="100" cy="86" rx="88" ry="6" fill="#000" opacity=".3"/>`;
+function prWheel(x,y,r,rc){return `<circle cx="${x}" cy="${y}" r="${r}" fill="#1a1a1a"/><circle cx="${x}" cy="${y}" r="${r*0.62}" fill="${rc||'#b9bec4'}"/><circle cx="${x}" cy="${y}" r="${r*0.2}" fill="#555"/>${[0,72,144,216,288].map(a=>`<line x1="${x}" y1="${y}" x2="${(x+Math.cos(a*Math.PI/180)*r*0.58).toFixed(1)}" y2="${(y+Math.sin(a*Math.PI/180)*r*0.58).toFixed(1)}" stroke="#7d848b" stroke-width="2"/>`).join('')}`;}
+function prCarSvg(l,col,T){T=T||{};if(T.col)col=T.col;col=col||'#e5484d';const d=prShade(col,-0.3),hl=prShade(col,0.3);let g=T.neon?`<ellipse cx="100" cy="84" rx="86" ry="8" fill="${T.neon}" opacity=".55"/>`:`<ellipse cx="100" cy="86" rx="88" ry="6" fill="#000" opacity=".3"/>`;
   if(l===0){const fc=col;const sp=(cx)=>[0,30,60,90,120,150].map(a=>`<line x1="${cx}" y1="64" x2="${(cx+Math.cos(a*Math.PI/180)*22).toFixed(1)}" y2="${(64+Math.sin(a*Math.PI/180)*22).toFixed(1)}" stroke="#aaa" stroke-width="1"/><line x1="${cx}" y1="64" x2="${(cx-Math.cos(a*Math.PI/180)*22).toFixed(1)}" y2="${(64-Math.sin(a*Math.PI/180)*22).toFixed(1)}" stroke="#aaa" stroke-width="1"/>`).join('');
     g+=`<circle cx="48" cy="64" r="23" stroke="#222" stroke-width="5" fill="none"/><circle cx="152" cy="64" r="23" stroke="#222" stroke-width="5" fill="none"/>${sp(48)}${sp(152)}<g stroke="${fc}" stroke-width="5" stroke-linecap="round" fill="none"><path d="M48 64 L94 64 L80 30 Z"/><path d="M94 64 L140 30"/><path d="M80 30 L138 30"/><path d="M140 26 L152 64"/></g><path d="M70 24 L90 24" stroke="#222" stroke-width="6" stroke-linecap="round"/><path d="M80 30 L78 24" stroke="#333" stroke-width="3"/><path d="M136 22 C140 14 150 14 154 18" stroke="#333" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="94" cy="64" r="6" fill="#444"/><path d="M94 64 L102 74 M94 64 L86 54" stroke="#333" stroke-width="3"/>`;
     return `<svg viewBox="0 0 200 95" style="width:100%;max-width:360px;display:block;margin:0 auto">${g}</svg>`;}
@@ -6011,9 +6012,12 @@ function prCarSvg(l,col){col=col||'#e5484d';const d=prShade(col,-0.3),hl=prShade
    2:{b:'M18 70 L18 46 Q20 30 40 28 L128 26 Q140 28 150 42 L170 46 Q184 50 184 60 L184 70Z',w:'M28 44 L30 33 Q32 31 42 31 L78 31 L78 44Z M84 31 L122 31 Q134 32 142 44 L84 44Z',wr:[48,154],r:14},
    3:{b:'M16 72 L16 40 Q18 22 40 20 L130 20 Q144 22 154 38 L174 42 Q188 46 188 58 L188 72Z',w:'M26 38 L28 26 Q30 24 42 24 L80 24 L80 38Z M86 24 L126 24 Q140 26 148 38 L86 38Z',wr:[50,156],r:16},
    4:{b:'M12 70 L12 60 Q14 50 40 46 L70 40 Q90 30 116 30 Q138 32 160 44 L182 50 Q192 54 190 64 L190 70Z',w:'M78 42 Q94 34 112 34 L114 44Z M120 34 Q134 36 150 46 L120 46Z',wr:[46,160],r:14}}[l];
-  g+=`<path d="${S.b}" fill="${col}"/><path d="${S.b}" fill="url(#prcg)" opacity=".5"/><path d="${S.w}" fill="#9fd8ff" opacity=".85"/><path d="${S.w}" fill="#fff" opacity=".15"/>`;
+  const cid='pcc'+(PRAV++);const low=T.low?3:0;g+=`<g transform="translate(0,${low})"><clipPath id="${cid}"><path d="${S.b}"/></clipPath><path d="${S.b}" fill="${col}"/>${T.fin==='matt'?'':`<path d="${S.b}" fill="url(#prcg)" opacity="${T.fin==='met'?.85:.5}"/>`}${T.fin==='met'?`<g clip-path="url(#${cid})" fill="#fff" opacity=".5">${[30,60,95,130,160].map((x,i)=>`<circle cx="${x}" cy="${40+i%3*9}" r="1"/>`).join('')}</g>`:''}
+  <g clip-path="url(#${cid})">${T.wrap===1?`<rect x="0" y="50" width="200" height="5" fill="#fff" opacity=".9"/><rect x="0" y="57" width="200" height="2" fill="#fff" opacity=".9"/>`:T.wrap===2?`<path d="M20 70 Q40 50 60 66 Q70 46 90 64 Q100 50 115 66 L115 70Z" fill="#ff7a1a"/><path d="M24 70 Q42 58 58 68 Q72 54 88 68Z" fill="#ffd36b"/>`:T.wrap===3?[...Array(14)].map((_,i)=>`<ellipse cx="${15+i*13}" cy="${40+(i*17)%28}" rx="9" ry="5" fill="${['#3d4a2c','#5c6b3a','#22301a'][i%3]}"/>`).join(''):T.wrap===4?`<rect x="0" y="44" width="200" height="12" fill="${(prMyClub()||{}).color||'#3fd0a0'}"/><rect x="0" y="56" width="200" height="3" fill="#fff"/>`:''}</g>
+  <path d="${S.w}" fill="#9fd8ff" opacity=".85"/><path d="${S.w}" fill="#fff" opacity=".15"/>${T.sticker?`<text x="${(S.wr[0]+S.wr[1])/2+(l===4?6:0)}" y="62" font-size="11" font-weight="900" text-anchor="middle" fill="#fff" stroke="#000" stroke-width=".6">${esc(T.sticker)}</text>`:''}</g>`;
+  if(T.spoiler){const sx=l===4?16:l===1?30:20,sy=l===4?50+low:l===1?46+low:(l===2?30:22)+low;g+=T.spoiler===3?`<rect x="${sx-4}" y="${sy-10}" width="30" height="4" rx="1" fill="${d}"/><rect x="${sx+4}" y="${sy-7}" width="3" height="9" fill="#222"/><rect x="${sx+16}" y="${sy-7}" width="3" height="9" fill="#222"/>`:T.spoiler===2?`<path d="M${sx-2} ${sy} L${sx+22} ${sy-6} L${sx+24} ${sy-2} L${sx} ${sy+3}Z" fill="${d}"/>`:`<path d="M${sx} ${sy+1} L${sx+16} ${sy-2} L${sx+16} ${sy+1}Z" fill="${d}"/>`;}
   g+=`<path d="M${l===4?96:80} 48 L${l===4?98:80} 68" stroke="${d}" stroke-width="1.5"/>${S.wr.map(x=>`<path d="M${x-S.r-4} 70 A${S.r+4} ${S.r+4} 0 0 1 ${x+S.r+4} 70Z" fill="${d}"/>`).join('')}<rect x="${l===4?182:l===1?166:176}" y="54" width="8" height="5" rx="2" fill="#fff6c2"/><rect x="${l===4?12:l===1?28:16}" y="52" width="5" height="6" rx="1" fill="#ff4a4a"/>`;
-  g+=S.wr.map(x=>prWheel(x,72,S.r)).join('');
+  g+=S.wr.map(x=>prWheel(x,72,S.r,T.rims)).join('');
   return `<svg viewBox="0 0 200 95" style="width:100%;max-width:360px;display:block;margin:0 auto"><defs><linearGradient id="prcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient></defs>${g}</svg>`;}
 function prBar(v,col){return `<div class="bar" style="height:8px"><i style="width:${clamp(v,0,100)}%;background:${col||'var(--acc)'}"></i></div>`;}
 function prHead(){const p=PRO.p;const c=prMyClub();return `<div class="prh"><div data-a="prTab" data-v="me" style="cursor:pointer">${prAvatar(p,48,c)}</div><div style="flex:1;min-width:0"><b style="font-size:16px">${esc(p.name)}</b> <span class="tiny mut">${NATS[p.nat]?NATS[p.nat][0]:''} ${p.age} J. · ${p.pos}</span><div class="tiny mut">${c?esc(c.name)+' · '+LNAME[c.lg]:''} · Saison ${PRO.L.season} · Woche ${PRO.L.md+1}/18</div></div><div style="text-align:right"><div class="h" style="font-size:24px;color:${ratCol(prOvr(p))}">${prOvr(p)}</div><div class="tiny mut">${prE(p.money)}</div></div><button class="ic" data-a="prExit" title="Hauptmenü">✕</button></div>`;}
@@ -6041,7 +6045,7 @@ function prVWeek(){const p=PRO.p;const W=PRO.wk;let h='';
   if(W.evRes)h+=`<div class="card small" style="padding:10px 14px">💬 ${prResHtml(W.evRes)}</div>`;
   if(W.camp)h+=`<div class="card" style="border-color:#3fd0a0"><b>🏕️ Leistungscamp</b><p class="small" style="margin:4px 0 0">Diese Woche bist du im Leistungscamp – das ersetzt dein Training.</p></div>`;
   else h+=`<div class="card"><div class="row"><b>🏋️ Training diese Woche</b>${inf('3 Einheiten pro Woche. Mit 🎮 Interaktiv spielst du ein kurzes Minispiel – je nach Ergebnis 50–160 % Trainingseffekt (automatisch: ca. 100 %). Locker bringt wenig, kostet kaum Frische. Hart bringt viel, kostet viel Frische und birgt ein Verletzungsrisiko. Regeneration gibt +12 % Frische. Junge Spieler mit viel Potenzial lernen am schnellsten.')}<span class="sp"></span></div>
-   ${W.tr.map((s,i)=>`<div style="padding:6px 0;border-top:1px solid var(--line)"><div class="tiny mut">Einheit ${i+1}</div><div class="prtg">${PRA.map(([k,ic,n])=>`<button class="prtb ${s&&s.a===k?'on':''}" data-a="prTr" data-v="${i}|${k}"><span>${ic}</span><b>${k==='int'?'Intelligenz':n}</b><em>${prAtt(p,k)}</em></button>`).join('')}<button class="prtb ${s&&s.a==='rest'?'on':''}" data-a="prTr" data-v="${i}|rest"><span>🛌</span><b>Erholen</b><em>+12 %</em></button></div>${s&&s.a!=='rest'?`<div class="chips" style="gap:4px;margin-top:4px">${[1,2,3].map(n=>`<span class="chip ${s.i===n?'on':''}" data-a="prTrI" data-v="${i}|${n}">${PRINT[n].n} (−${PRINT[n].f} %)</span>`).join('')}<span class="sp"></span>${s.played?`<span class="pill" style="color:${s.mul>=1?'#3fd0a0':'#f5c542'}">🎮 ${Math.round(s.mul*100)} %</span>`:`<button class="btn sm" data-a="pgOpen" data-v="${i}">🎮 Interaktiv</button>`}</div>`:''}</div>`).join('')}
+   ${W.tr.map((s,i)=>s&&s.a==='edu'?`<div style="padding:6px 0;border-top:1px solid var(--line)"><div class="tiny mut">Einheit ${i+1}</div><div class="tac" style="margin-top:4px"><b>${s.t==='lic'?'🎓 Trainerlehrgang':'📚 Fernstudium'}</b><span class="small">Diese Einheit gehört deiner Weiterbildung (Leben › Bildung).</span></div></div>`:`<div style="padding:6px 0;border-top:1px solid var(--line)"><div class="tiny mut">Einheit ${i+1}</div><div class="prtg">${PRA.map(([k,ic,n])=>`<button class="prtb ${s&&s.a===k?'on':''}" data-a="prTr" data-v="${i}|${k}"><span>${ic}</span><b>${k==='int'?'Intelligenz':n}</b><em>${prAtt(p,k)}</em></button>`).join('')}<button class="prtb ${s&&s.a==='rest'?'on':''}" data-a="prTr" data-v="${i}|rest"><span>🛌</span><b>Erholen</b><em>+12 %</em></button></div>${s&&s.a!=='rest'?`<div class="chips" style="gap:4px;margin-top:4px">${[1,2,3].map(n=>`<span class="chip ${s.i===n?'on':''}" data-a="prTrI" data-v="${i}|${n}">${PRINT[n].n} (−${PRINT[n].f} %)</span>`).join('')}<span class="sp"></span>${s.played?`<span class="pill" style="color:${s.mul>=1?'#3fd0a0':'#f5c542'}">🎮 ${Math.round(s.mul*100)} %</span>`:`<button class="btn sm" data-a="pgOpen" data-v="${i}">🎮 Interaktiv</button>`}</div>`:''}</div>`).join('')}
    ${PRO.lastTrain?`<div class="tiny mut" style="margin-top:6px">Letzte Woche: ${PRO.lastTrain.map(esc).join(' · ')}</div>`:''}</div>`;
   if(PRO.goals)h+=`<div class="card"><b>🎯 Saisonziele vom Trainer</b>${PRO.goals.map(g=>{const v=prGoalVal(g);const ok=prGoalOk(g);return `<div class="row small" style="padding:5px 0;border-top:1px solid var(--line)"><span>${ok?'✅':'⬜'} ${g.t}</span><span class="sp"></span><b>${g.k==='note'?(p.stats.notes.length?prNoteS(v):'–'):v+' / '+g.n}</b></div>`;}).join('')}</div>`;
   return h;}
@@ -6105,11 +6109,12 @@ function prVLeague(){const c=prMyClub();const sv=ui.prLgS||'tab';let h=`<div cla
   h+=`<div class="card"><table><tr><th class="l">#</th><th class="l">Verein</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr>${tb.map((r,i)=>{const k=prClub(r.id);return `<tr class="${r.id===c.id?'me':''}"><td class="l" style="border-left:3px solid ${i<2&&(lg>6?!!PRX[lg].up:lg>1)?'var(--acc2)':i>=8&&(lg>6?!!PRX[lg].dn:lg<NL)?'var(--bad)':'transparent'}">${i+1}</td><td class="l">${esc(k.name)}</td><td>${r.sp}</td><td>${r.gf}:${r.ga}</td><td><b>${r.pts}</b></td></tr>`;}).join('')}</table></div>`;
   if(lg===c.lg){const L=PRO.L;h+=`<div class="card"><b>📅 Spielplan</b>${L.sched[lg].map((rd,i)=>{const f=rd.find(x=>x.includes(c.id));const home=f[0]===c.id;const o=prClub(home?f[1]:f[0]);return `<div class="row small" style="padding:4px 0;border-top:1px solid var(--line);${i===L.md?'color:var(--acc)':''}"><span class="mut" style="width:44px">ST ${i+1}</span><span style="width:46px" class="mut">${home?'Heim':'Ausw.'}</span><span style="flex:1">${esc(o.name)}</span></div>`;}).join('')}</div>`;}
   return h;}
-function prVLife(){const p=PRO.p;const s=ui.prLife||'home';let h=`<div class="chips" style="margin-bottom:8px">${[['home','🏠 Wohnen'],['car','🚗 Auto'],['look','👤 Aussehen'],['tro','🏆 Trophäen']].map(([k,l])=>`<span class="chip ${s===k?'on':''}" data-a="prLife" data-v="${k}">${l}</span>`).join('')}</div>`;
+function prVLife(){const p=PRO.p;const s=ui.prLife||'home';let h=`<div class="chips" style="margin-bottom:8px">${[['home','🏠 Wohnen'],['car','🚗 Auto'],['look','👤 Aussehen'],['edu','🎓 Bildung'],['tro','🏆 Trophäen']].map(([k,l])=>`<span class="chip ${s===k?'on':''}" data-a="prLife" data-v="${k}">${l}</span>`).join('')}</div>`;
   if(s==='home'){const H=PRHOME[p.home];h+=`<div class="card"><div class="row"><b>🏠 ${H.n}</b><span class="sp"></span><span class="pill">Stufe ${p.home}/5</span></div>${prHomeSvg(p.home)}<div class="small" style="margin-top:6px">${H.b}</div><div class="tiny mut">Miete ${prE(H.rent)}/Woche</div></div>`;
     if(p.home<5){const N=PRHOME[p.home+1];h+=`<div class="card"><b>⬆️ Umziehen: ${N.n}</b><div class="small" style="margin:4px 0">${N.b}</div><div class="tiny mut">Kaution ${prE(N.dep)} · Miete ${prE(N.rent)}/Woche</div><button class="btn ok block" style="margin-top:8px" data-a="prHome" ${p.money<N.dep?'disabled':''}>${p.money<N.dep?'Zu wenig Geld':'Umziehen'}</button></div>`;}
     if(p.home>1)h+=`<div class="card"><button class="btn block" data-a="prHomeDown">${cl('prHD','⬇️ In eine kleinere Wohnung ziehen','Wirklich?')}</button></div>`;}
-  else if(s==='car'){h+=`<div class="card"><b>${p.car?'🚗':'🚲'} ${PRCARS[p.car].n}</b>${prCarSvg(p.car,(prMyClub()||{}).color)}</div>`;h+=`<div class="card">${PRCARS.map((c,i)=>i<=p.car?'':`<div class="row small" style="padding:6px 0;border-top:1px solid var(--line);gap:8px"><div style="width:90px">${prCarSvg(i,(prMyClub()||{}).color)}</div><b style="flex:1">${c.n}</b><span>${prE(c.p)}</span><button class="btn sm" style="margin-left:8px" data-a="prCar" data-v="${i}" ${p.money<c.p?'disabled':''}>Kaufen</button></div>`).join('')||'<div class="small mut">Du fährst schon das Beste.</div>'}<div class="tiny mut" style="margin-top:6px">Ein schickes Auto bringt Fans & Medien.</div></div>`;}
+  else if(s==='car'){h+=`<div class="card"><b>${p.car?'🚗':'🚲'} ${PRCARS[p.car].n}</b>${prCarSvg(p.car,(prMyClub()||{}).color,prTune())}</div>`+prVTune();h+=`<div class="card">${PRCARS.map((c,i)=>i<=p.car?'':`<div class="row small" style="padding:6px 0;border-top:1px solid var(--line);gap:8px"><div style="width:90px">${prCarSvg(i,(prMyClub()||{}).color)}</div><b style="flex:1">${c.n}</b><span>${prE(c.p)}</span><button class="btn sm" style="margin-left:8px" data-a="prCar" data-v="${i}" ${p.money<c.p?'disabled':''}>Kaufen</button></div>`).join('')||'<div class="small mut">Du fährst schon das Beste.</div>'}<div class="tiny mut" style="margin-top:6px">Ein schickes Auto bringt Fans & Medien.</div></div>`;}
+  else if(s==='edu'){h+=prVEdu();}
   else if(s==='look'){const L=p.look;const own=p.own;const opt=(key,arr,lab,shopP)=>`<div style="margin-top:6px"><div class="tiny mut">${lab}</div><div class="chips" style="gap:4px">${arr.map((v,i)=>{const sk=shopP?shopP(i):null;const locked=sk&&!own[sk];return `<span class="chip ${L[key]===i?'on':''}" data-a="prLook" data-v="${key}|${i}" style="${locked?'opacity:.6':''}">${typeof v==='string'&&v[0]==='#'?`<span class="dot" style="background:${v}"></span>`:esc(v)}${locked?' 🔒 '+prE(PRSHOP[sk].p):''}</span>`;}).join('')}</div></div>`;
     h+=`<div class="card"><div class="row" style="gap:14px;align-items:center;justify-content:center"><div>${prAvatar(p,170,prMyClub())}</div><div style="text-align:center"><div class="tiny mut">Schuhe</div>${prBootSvg(PRBOOT[L.boot||0])}<div class="tiny mut" style="margin-top:8px;max-width:150px">Dein Look erscheint auf der Spielerkarte. 🔒-Teile kannst du kaufen.</div></div></div>${opt('skin',PRSKIN,'Hautfarbe')}${opt('hair',PRHAIR,'Frisur',i=>i>=3?'h'+i:null)}${opt('hc',PRHC,'Haarfarbe',i=>i===6?'hc6':null)}${opt('beard',PRBEARD,'Bart')}${opt('boot',PRBOOT,'Schuhe',i=>i===5?'b5':i===6?'b6':null)}${opt('tat',['Ohne','Tattoo-Ärmel'],'Tattoo',i=>i===1?'tat':null)}${opt('band',['Ohne','Stirnband'],'Stirnband',i=>i===1?'band':null)}</div>`;}
   else{h+=`<div class="card"><b>🏆 Trophäenwand</b>${p.trophies.map(t=>`<div class="small" style="padding:4px 0">🏆 ${esc(t)}</div>`).join('')||'<div class="small mut">Noch keine Titel.</div>'}<h4>Auszeichnungen</h4>${p.awards.map(t=>`<div class="small" style="padding:4px 0">🏅 ${esc(t)}</div>`).join('')||'<div class="small mut">Noch keine.</div>'}</div>`;
@@ -6150,7 +6155,7 @@ Object.assign(ACT,{
  prExit(){prSave();PRO=null;ui.view='start';ui.startPg='pro';render();scrollTo(0,0);},
  prPick(v){prPick(+v);render();},
  prTab(v){ui.prTab=v;render();scrollTo(0,0);},prStatGo(){ui.prTab='lg';ui.prLgS='st';render();scrollTo(0,0);},prLgS(v){ui.prLgS=v;render();},prLg(v){ui.prLg=+v;render();},prLife(v){ui.prLife=v;render();},prNews(v){ui.prNews=v;render();},
- prTr(v){const [i,k]=v.split('|');const W=PRO.wk;const s=W.tr[+i];W.tr[+i]=s&&s.a===k?null:{a:k,i:s&&s.i||2};if(W.tr[+i])delete W.tr[+i].played;prSave();render();},
+ prTr(v){const [i,k]=v.split('|');const W=PRO.wk;const s=W.tr[+i];if(s&&s.a==='edu'){toast('Diese Einheit ist für deine Weiterbildung reserviert.');return;}W.tr[+i]=s&&s.a===k?null:{a:k,i:s&&s.i||2};if(W.tr[+i])delete W.tr[+i].played;prSave();render();},
  prTrI(v){const [i,n]=v.split('|');const s=PRO.wk.tr[+i];if(s&&!s.played)s.i=+n;prSave();render();},
  prEvOpen(){ui.prTab='wk';render();},
  prEv(v){const W=PRO.wk;if(W.ev==null)return;W.evRes=PREV[W.ev].o[+v][0]+' → '+(prEvApply(W.ev,+v)||'keine Auswirkung');W.ev=null;prSave();render();},
@@ -6173,7 +6178,10 @@ Object.assign(ACT,{
    p.look[k]=n;prSave();render();},
  prToMgr(){const p=PRO.p;const cnt={};for(const h of p.hist){const n=h.clubN||(prClub(h.club)||{}).name;if(n)cnt[n]=(cnt[n]||0)+h.sp;}const fav=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];const club=fav?fav[0]:'SV '+p.name.split(' ').slice(-1)[0];
    if(LS.get('kc:career',null)&&!conf('prMgr')){toast('Achtung: Deine bestehende Manager-Karriere wird überschrieben. Nochmal tippen.');return;}
-   cleanup();NET.mode='career';CAREER_VAL=true;ST=newCareer(p.name,club,(prClub(p.club)||{}).color||'#3fd0a0',PRO.region);try{const C=coachOf(ST);C.rep=Math.min(60,25+p.awards.length*2+p.trophies.length*3+Math.round(p.nt.caps/3));}catch(e){}
+   cleanup();NET.mode='career';CAREER_VAL=true;const E=p.edu||{};const col=(prClub(p.club)||{}).color||'#3fd0a0';
+   if((E.lic||0)>=4){const st=newCareer(p.name,club,col,PRO.region,true);delete st.startJobs;const r=RNG(st.seed,'pro3');const pool=st.order[3].slice().sort((a,b)=>npcStr(st.clubs[a])-npcStr(st.clubs[b]));clubTake(st,r,pool[4],{start:true});careerSetupSeason(st);careerOffseason(st,true);ST=st;feed(ST,`${p.name} übernimmt mit Pro-Lizenz ${ST.clubs.me.name} in der ${LNAME[ST.clubs.me.lg]}!`);}
+   else ST=newCareer(p.name,club,col,PRO.region);
+   try{const C=coachOf(ST);C.rep=Math.min(80,25+p.awards.length*2+p.trophies.length*3+Math.round(p.nt.caps/3)+(E.lic>=3?10:0)+(E.lic>=4?10:0));if((E.uni||0)>=6)ST.clubs.me.cash=r2(ST.clubs.me.cash+SPON[ST.clubs.me.lg]*1.5);}catch(e){}
    PRO=null;ui.view='game';ui.lastPhase=ST.phase;saveCareer();render();scrollTo(0,0);toast('Willkommen als Manager! Dein Trainer-Ruf startet mit Bonus.',true);}
 });
 // ---------- Interaktives Training (Minispiele) ----------
@@ -6261,7 +6269,7 @@ function prNegoOk(){const p=PRO.p;const L=prLg();return PRO.ph==='week'&&p.rel.t
 Object.assign(ACT,{
  prYouth(v){prYouth(+v);render();scrollTo(0,0);},
  prCamp(){if(!prCampOk())return;const p=PRO.p;const c=prCampCost();if(p.money<c){toast('Zu wenig Geld für das Camp ('+prE(c)+').');return;}if(!conf('prCamp'))return;p.money-=c;const g=p.age<=21?3:p.age<=24?2:1;p.pot+=g;p.campN=(p.campN||0)+1;p.campS=PRO.L.season;PRO.wk.camp=true;PRO.wk.tr=[null,null,null];prFeed(`🏕️ ${p.name} absolviert ein Leistungscamp – Potenzial +${g}.`);toast(`🏕️ Potenzial +${g}! Diese Woche ersetzt das Camp dein Training.`,true);prSave();render();},
- prNego(){if(!prNegoOk())return;const p=PRO.p;const L=prLg();const r=prR('neg');const old=p.wage;p.negS=PRO.L.season;if(r.chance(0.7)){p.wage=prWageFor(L,'Stammspieler');p.role='Stammspieler';toast(`✍️ Neuer Vertrag: ${prE(old)} → ${prE(p.wage)} pro Woche!`,true);prFeed(`✍️ ${p.name} verhandelt nach: ${prE(p.wage)}/Woche.`);}else{p.rel.tr=Math.max(0,p.rel.tr-4);toast('Der Verein lehnt ab – „Zeig uns das erst über die ganze Saison.“ (Trainer −4)');}prSave();render();},
+ prNego(){if(!prNegoOk())return;const p=PRO.p;const L=prLg();const r=prR('neg');const old=p.wage;p.negS=PRO.L.season;if(r.chance(((p.edu||{}).uni||0)>=3?0.85:0.7)){p.wage=prWageFor(L,'Stammspieler');p.role='Stammspieler';toast(`✍️ Neuer Vertrag: ${prE(old)} → ${prE(p.wage)} pro Woche!`,true);prFeed(`✍️ ${p.name} verhandelt nach: ${prE(p.wage)}/Woche.`);}else{p.rel.tr=Math.max(0,p.rel.tr-4);toast('Der Verein lehnt ab – „Zeig uns das erst über die ganze Saison.“ (Trainer −4)');}prSave();render();},
  prPen(v){prPen(+v);render();},prSo(v){prSo(+v);render();},
  prEuGo(){prMatchStart(Object.assign({eu:true},PRO.eug));render();scrollTo(0,0);}
 });
@@ -6367,6 +6375,62 @@ function battlePage(){const back=`<div class="row" style="margin:12px 0 0"><butt
   return h;}
 ACT.btSort=function(v){ui.btSort=v;render();};
 {const _vs2=vStart;vStart=function(){if((ui.startPg||'')==='battle')return battlePage();let h=_vs2.apply(this,arguments);if(!(ui.startPg||'')){const mk='<button class="card" data-a="stPg" data-v="pro"';const i=h.indexOf(mk);if(i>=0){const j=h.indexOf('</button>',i)+9;h=h.slice(0,j)+`<button class="card" data-a="stPg" data-v="battle" style="display:block;width:100%;text-align:left;cursor:pointer;border:1px solid rgba(111,168,255,.4)"><div class="row"><span style="font-size:34px">⚔️</span><div style="margin-left:12px"><div class="h" style="font-size:24px">Freunde-Battle</div><div class="small mut">Wer ist am schnellsten in der 1. Liga?</div></div><span class="sp"></span><span class="mut" style="font-size:22px">›</span></div></button>`+h.slice(j);}}return h;};}
+
+// ---------- Tuning-Studio ----------
+const PRTCOL=['#e5484d','#1d3fa8','#111111','#ffffff','#3fd0a0','#f5c542','#ff7a1a','#9b59b6','#7d848b','#d4af37'];
+const PRTRIM=[null,'#d9dde2','#1a1a1a','#d4af37','#e5484d'];const PRTRIMN=['Standard','Chrom','Schwarz','Gold','Rot'];
+const PRTWRAP=['Keine','Rennstreifen','Flammen','Camouflage','Vereinsfarben'];const PRTSP=['Kein','Klein','Groß','Rennflügel'];
+const PRTNEON=[null,'#3db8ff','#ff3df0','#3dff8a'];const PRTNEONN=['Keine','Blau','Pink','Grün'];
+const PRTBASE={col:200,met:150,matt:300,wrap:400,rims:300,spoiler:300,low:250,neon:200,sticker:50};
+const PRTMUL=[0.2,1,2.5,5,25];
+function prTune(){const p=PRO.p;p.tune=p.tune||{};return p.tune[p.car]=p.tune[p.car]||{};}
+function prTP(k,lvl){return Math.round(PRTBASE[k]*PRTMUL[PRO.p.car||0]*(lvl||1)/10)*10;}
+function prTuneCount(T){return ['wrap','rims','spoiler','low','neon','sticker'].filter(k=>T[k]).length+(T.fin&&T.fin!=='gloss'?1:0);}
+function prVTune(){const p=PRO.p;const T=prTune();const car=p.car||0;const chip=(act,val,label,price,on)=>`<span class="chip ${on?'on':''}" data-a="prTune" data-v="${act}|${val}">${label}${price&&!on?` · ${prE(price)}`:''}</span>`;
+  let h=`<div class="card"><div class="row"><b>🔧 Tuning-Studio</b>${inf('Tuning bringt etwas Fans & Medien. Zu viel Protz kann aber Ärger mit Trainer oder Presse geben. Preise steigen mit der Autoklasse.')}<span class="sp"></span><span class="pill">${prTuneCount(T)} Teile</span></div>`;
+  h+=`<div class="tiny mut" style="margin-top:8px">🎨 Lackierung · ${prE(prTP('col'))}</div><div class="chips" style="gap:4px">${PRTCOL.map(c=>`<span class="chip ${T.col===c?'on':''}" data-a="prTune" data-v="col|${c}"><span class="dot" style="background:${c}"></span></span>`).join('')}</div>`;
+  if(car>0){h+=`<div class="tiny mut" style="margin-top:6px">✨ Lack-Finish</div><div class="chips" style="gap:4px">${chip('fin','gloss','Glanz',0,!T.fin||T.fin==='gloss')}${chip('fin','met','Metallic',prTP('met'),T.fin==='met')}${chip('fin','matt','Matt',prTP('matt'),T.fin==='matt')}</div>`;
+    h+=`<div class="tiny mut" style="margin-top:6px">🏁 Folierung</div><div class="chips" style="gap:4px">${PRTWRAP.map((n,i)=>chip('wrap',i,n,i?prTP('wrap'):0,(T.wrap||0)===i)).join('')}</div>`;
+    h+=`<div class="tiny mut" style="margin-top:6px">🛞 Felgen</div><div class="chips" style="gap:4px">${PRTRIMN.map((n,i)=>chip('rims',i,n,i?prTP('rims',i===3?3:1):0,(PRTRIM.indexOf(T.rims||null)===i)||(i===0&&!T.rims))).join('')}</div>`;
+    h+=`<div class="tiny mut" style="margin-top:6px">🪽 Spoiler</div><div class="chips" style="gap:4px">${PRTSP.map((n,i)=>chip('spoiler',i,n,i?prTP('spoiler',i):0,(T.spoiler||0)===i)).join('')}</div>`;
+    h+=`<div class="tiny mut" style="margin-top:6px">⬇️ Tieferlegung · 💡 Unterbodenbeleuchtung</div><div class="chips" style="gap:4px">${chip('low',T.low?0:1,T.low?'⬇️ Tiefergelegt ✓':'⬇️ Tieferlegen',T.low?0:prTP('low'),!!T.low)}${PRTNEONN.map((n,i)=>i?chip('neon',i,'💡 '+n,prTP('neon'),T.neon===PRTNEON[i]):'').join('')}</div>`;}
+  h+=`<div class="tiny mut" style="margin-top:6px">🏷️ Aufkleber · ${prE(prTP('sticker'))}</div><div class="chips" style="gap:4px">${chip('sticker','',`Keiner`,0,!T.sticker)}${chip('sticker','#'+((p.pos.length*7)%30+7),'Rückennummer',prTP('sticker'),T.sticker&&T.sticker[0]==='#')}${chip('sticker',p.name.split(' ').slice(-1)[0].toUpperCase().slice(0,10),'Name',prTP('sticker'),T.sticker&&T.sticker[0]!=='#')}</div>`;
+  return h+`</div>`;}
+ACT.prTune=function(v){const p=PRO.p;const T=prTune();const i=v.indexOf('|');const k=v.slice(0,i),val=v.slice(i+1);let price=0;let set=null;
+  if(k==='col'){if(T.col===val)return;price=prTP('col');set=()=>T.col=val;}
+  else if(k==='fin'){if((T.fin||'gloss')===val)return;price=val==='gloss'?0:prTP(val);set=()=>T.fin=val;}
+  else if(k==='wrap'){const n=+val;if((T.wrap||0)===n)return;price=n?prTP('wrap'):0;set=()=>T.wrap=n;}
+  else if(k==='rims'){const n=+val;price=n?prTP('rims',n===3?3:1):0;set=()=>T.rims=PRTRIM[n];}
+  else if(k==='spoiler'){const n=+val;if((T.spoiler||0)===n)return;price=n?prTP('spoiler',n):0;set=()=>T.spoiler=n;}
+  else if(k==='low'){const n=+val;price=n?prTP('low'):0;set=()=>T.low=n;}
+  else if(k==='neon'){const c=PRTNEON[+val];price=T.neon===c?0:prTP('neon');set=()=>T.neon=T.neon===c?null:c;}
+  else if(k==='sticker'){price=val?prTP('sticker'):0;set=()=>T.sticker=val||null;}
+  if(price>p.money){toast('Zu wenig Geld ('+prE(price)+').');return;}const before=prTuneCount(T);p.money-=price;set();if(prTuneCount(T)>before)p.rel.fan=Math.min(100,p.rel.fan+1);prSave();render();};
+// Protz-Ereignisse
+PREV.push({w:'week',req:'bling',t:'Protz-Alarm',x:'Die Zeitung druckt ein Foto deines aufgemotzten Autos: „Mehr Show als Fußball?“',o:[['Ich lache darüber',{fan:2,tr:-2,laut:1}],['Ich halte mich zurück',{fan:-1,profi:1}]]},
+ {w:'week',req:'bling',t:'Trainer-Kritik',x:'Der Trainer sieht dein Auto auf dem Parkplatz: „Konzentrier dich lieber aufs Training.“',o:[['„Verstanden, Trainer.“',{tr:2,fan:-1}],['„Mein Auto, meine Sache.“',{tr:-4,laut:2,fan:2}]]});
+{const _er=prEvReq;prEvReq=function(e){if(e.req==='bling'){const p=PRO.p;const T=(p.tune||{})[p.car||0]||{};return prTuneCount(T)>=4;}return _er(e);};}
+// ---------- Bildung ----------
+const PRLIC=[null,{n:'C-Lizenz',cost:1500,w:4},{n:'B-Lizenz',cost:5000,w:6,age:20},{n:'A-Lizenz',cost:15000,w:8,age:23,sp:100},{n:'Pro-Lizenz',cost:40000,w:10,age:26,sp:200}];
+const PRUNI={n:'Fernstudium Sportmanagement',cost:1200,w:9,sem:6};
+function prEdu(){const p=PRO.p;return p.edu=p.edu||{lic:0,licW:0,uni:0,uniW:0};}
+function prEduWeek(){const p=PRO.p;const E=prEdu();
+  if(E.licW>0){E.licW--;if(E.licW===0){E.lic++;p.att.int=Math.min(prCap(p),p.att.int+2);prFeed(`🎓 ${p.name} besteht die ${PRLIC[E.lic].n}! (+2 Spielintelligenz)`);prMs(`besteht die ${PRLIC[E.lic].n}`);toast(`🎓 ${PRLIC[E.lic].n} bestanden!`,true);}}
+  if(E.uniW>0){E.uniW--;if(E.uniW===0){E.uni++;prFeed(`📚 Semester ${E.uni}/${PRUNI.sem} geschafft.`);if(E.uni>=PRUNI.sem){prFeed(`🎓 ${p.name} schließt das Studium Sportmanagement ab!`);prMs('schließt das Studium Sportmanagement ab');toast('🎓 Studium abgeschlossen!',true);}}}}
+function prVEdu(){const p=PRO.p;const E=prEdu();const nx=PRLIC[E.lic+1];let h=`<div class="card"><div class="row"><b>🎓 Trainerlizenz</b>${inf('Jede Lizenzstufe kostet Geld und belegt während des Lehrgangs einen deiner 3 Trainingsplätze pro Woche. Vorteile: +2 Spielintelligenz pro Stufe, ab B-Lizenz wächst das Trainer-Vertrauen schneller. Nach dem Karriereende: mit A-Lizenz mehr Ruf, mit Pro-Lizenz startest du die Manager-Karriere direkt bei einem Verein der 3. Liga.')}<span class="sp"></span><span class="pill">${E.lic?PRLIC[E.lic].n:'keine'}</span></div>
+  <div class="row" style="gap:4px;margin:8px 0">${[1,2,3,4].map(i=>`<div style="flex:1;text-align:center;padding:6px 2px;border-radius:8px;background:${E.lic>=i?'var(--acc)':'var(--panel2)'};color:${E.lic>=i?'#14200f':'var(--mut)'};font-size:11px;font-weight:700">${PRLIC[i].n.replace('-Lizenz','')}</div>`).join('')}</div>`;
+  if(E.licW>0)h+=`<div class="small">📖 ${PRLIC[E.lic+1].n} läuft – noch ${E.licW} Woche${E.licW>1?'n':''}.</div>${prBar((1-E.licW/PRLIC[E.lic+1].w)*100,'#d8f34e')}`;
+  else if(nx){const ok=(!nx.age||p.age>=nx.age)&&(!nx.sp||p.tot.sp>=nx.sp);h+=`<div class="small">Nächste Stufe: <b>${nx.n}</b> · ${prE(nx.cost)} · ${nx.w} Wochen${nx.age?` · ab ${nx.age} J.`:''}${nx.sp?` · ab ${nx.sp} Profispielen`:''}</div><button class="btn block" style="margin-top:6px" data-a="prLic" ${ok&&p.money>=nx.cost?'':'disabled'}>${!ok?'Voraussetzungen fehlen':p.money<nx.cost?'Zu wenig Geld':'Lehrgang starten'}</button>`;}
+  else h+=`<div class="small" style="color:#3fd0a0">✅ Du hast die höchste Lizenz.</div>`;
+  h+=`</div><div class="card"><div class="row"><b>📚 ${PRUNI.n}</b>${inf('6 Semester, je eine halbe Saison (9 Wochen). Jedes Semester kostet Geld und belegt einen Trainingsplatz pro Woche. Ab Semester 3: +10 % bei Gehaltsangeboten und bessere Chancen beim Nachverhandeln. Mit Abschluss: weniger Steuern und mehr Startkapital in der Manager-Karriere.')}<span class="sp"></span><span class="pill">${E.uni}/${PRUNI.sem}</span></div>${prBar(E.uni/PRUNI.sem*100,'#6fa8ff')}`;
+  if(E.uni>=PRUNI.sem)h+=`<div class="small" style="color:#3fd0a0;margin-top:6px">🎓 Abschluss geschafft!</div>`;
+  else if(E.uniW>0)h+=`<div class="small" style="margin-top:6px">📖 Semester ${E.uni+1} läuft – noch ${E.uniW} Woche${E.uniW>1?'n':''}.</div>`;
+  else h+=`<button class="btn block" style="margin-top:6px" data-a="prUni" ${p.money>=PRUNI.cost?'':'disabled'}>${p.money>=PRUNI.cost?`Semester ${E.uni+1} belegen – ${prE(PRUNI.cost)}`:'Zu wenig Geld'}</button>`;
+  h+=`<div class="tiny mut" style="margin-top:6px">⚠️ Lizenz und Studium gleichzeitig belegen zwei deiner drei Trainingsplätze – du entwickelst dich dann langsamer.</div></div>`;return h;}
+Object.assign(ACT,{
+ prLic(){const p=PRO.p;const E=prEdu();const nx=PRLIC[E.lic+1];if(!nx||E.licW>0)return;if((nx.age&&p.age<nx.age)||(nx.sp&&p.tot.sp<nx.sp)||p.money<nx.cost)return;p.money-=nx.cost;E.licW=nx.w;prFeed(`🎓 ${p.name} startet den Lehrgang zur ${nx.n}.`);if(PRO.ph==='week'){const W=PRO.wk;const i=W.tr.findIndex((s,j)=>j>0&&!(s&&s.a==='edu'));W.tr[i<0?2:i]={a:'edu',t:'lic'};}toast(`📖 Lehrgang ${nx.n} gestartet – ${nx.w} Wochen.`,true);prSave();render();},
+ prUni(){const p=PRO.p;const E=prEdu();if(E.uniW>0||E.uni>=PRUNI.sem||p.money<PRUNI.cost)return;p.money-=PRUNI.cost;E.uniW=PRUNI.w;if(PRO.ph==='week'){const W=PRO.wk;const i=W.tr.findIndex((s,j)=>j>0&&!(s&&s.a==='edu'));W.tr[i<0?1:i]={a:'edu',t:'uni'};}toast(`📚 Semester ${E.uni+1} gestartet.`,true);prSave();render();}
+});
 
 // ---------- Start ----------
 async function initFirebase(cfg){
