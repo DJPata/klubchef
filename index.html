@@ -4052,7 +4052,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='151',APP_RV=13;
+const APP_BUILD='152',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -6098,7 +6098,8 @@ function prVStats(){const p=PRO.p;const cur=Object.assign({},p.stats,{clubN:(prM
   const n=p.stats.notes;if(n.length)h+=`<div class="card"><b>📈 Noten diese Saison</b><div style="display:flex;align-items:flex-end;gap:3px;height:70px;margin-top:8px">${n.map(v=>`<div title="${prNoteS(v)}" style="flex:1;max-width:22px;height:${Math.round((6.5-v)/5.5*100)}%;background:${prNoteCol(v)};border-radius:3px 3px 0 0"></div>`).join('')}</div><div class="tiny mut" style="margin-top:4px">Höher = bessere Note</div></div>`;
   return h;}
 function prVLeague(){const c=prMyClub();const sv=ui.prLgS||'tab';let h=`<div class="chips" style="margin-bottom:8px">${[['tab','🏆 Tabelle'],['st','📊 Meine Statistik']].concat(PRO.eu?[['eu','🌍 Europapokal']]:[]).map(([k,l])=>`<span class="chip ${sv===k?'on':''}" data-a="prLgS" data-v="${k}">${l}</span>`).join('')}</div>`;if(sv==='st')return h+prVStats();if(sv==='eu'&&PRO.eu)return h+prVEu();
-  const lg=ui.prLg||c.lg;const tb=prTable(lg);h+=`<div class="chips" style="margin-bottom:8px;gap:4px">${prAllLg().filter(x=>PRO.L.order[x]).map(x=>`<span class="chip ${lg===x?'on':''}" data-a="prLg" data-v="${x}" style="padding:6px 9px">${LNAME[x]}</span>`).join('')}</div>`;
+  const lg=ui.prLg||c.lg;const tb=prTable(lg);const cc=prCountry(lg);const sel='width:100%;padding:10px;border-radius:10px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-size:15px';
+  h+=`<div class="g2" style="gap:8px;margin-bottom:8px"><select id="prCtySel" style="${sel}">${PRCTY.map(([k,n])=>`<option value="${k}" ${cc===k?'selected':''}>${n}</option>`).join('')}</select><select id="prLgSel" style="${sel}">${prCtyLgs(cc).filter(x=>PRO.L.order[x]).map(x=>`<option value="${x}" ${lg===x?'selected':''}>${(x>6?PRX[x].n:LNAME[x])}${x===c.lg?' ★':''}</option>`).join('')}</select></div>`;
   h+=`<div class="card"><table><tr><th class="l">#</th><th class="l">Verein</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr>${tb.map((r,i)=>{const k=prClub(r.id);return `<tr class="${r.id===c.id?'me':''}"><td class="l" style="border-left:3px solid ${i<2&&(lg>6?!!PRX[lg].up:lg>1)?'var(--acc2)':i>=8&&(lg>6?!!PRX[lg].dn:lg<NL)?'var(--bad)':'transparent'}">${i+1}</td><td class="l">${esc(k.name)}</td><td>${r.sp}</td><td>${r.gf}:${r.ga}</td><td><b>${r.pts}</b></td></tr>`;}).join('')}</table></div>`;
   if(lg===c.lg){const L=PRO.L;h+=`<div class="card"><b>📅 Spielplan</b>${L.sched[lg].map((rd,i)=>{const f=rd.find(x=>x.includes(c.id));const home=f[0]===c.id;const o=prClub(home?f[1]:f[0]);return `<div class="row small" style="padding:4px 0;border-top:1px solid var(--line);${i===L.md?'color:var(--acc)':''}"><span class="mut" style="width:44px">ST ${i+1}</span><span style="width:46px" class="mut">${home?'Heim':'Ausw.'}</span><span style="flex:1">${esc(o.name)}</span></div>`;}).join('')}</div>`;}
   return h;}
@@ -6273,6 +6274,11 @@ function prVEu(){const E=PRO.eu;const me=PRO.p.club;const t=prEuTable();let h=`<
  <table style="margin-top:6px"><tr><th class="l">#</th><th class="l">Verein</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr>${t.map((r,i)=>`<tr class="${r.id===me?'me':''}"><td class="l" style="border-left:3px solid ${i<8?'var(--acc2)':'transparent'}">${i+1}</td><td class="l">${esc(prClub(r.id).name)}</td><td>${r.sp}</td><td>${r.gf}:${r.ga}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table><div class="tiny mut" style="margin-top:4px">🟩 Platz 1–8: Viertelfinale · Spiele in den Wochen nach Spieltag ${PREUMD.map(x=>x+1).join(', ')} · K.o.-Runde nach ${PREUKO.map(x=>x+1).join(', ')}</div></div>`;
  if(E.hist.length||E.pairs.length)h+=`<div class="card"><b>⚔️ K.o.-Runde</b>${E.hist.map(x=>`<div class="row small" style="padding:4px 0;border-top:1px solid var(--line)"><span class="mut" style="width:90px">${x.rd}</span><span style="flex:1">${esc(prClub(x.h).name)} – ${esc(prClub(x.a).name)}</span><b>${esc(prClub(x.w).name)} ✓</b></div>`).join('')}${!E.done?E.pairs.map(([a,b])=>`<div class="row small" style="padding:4px 0;border-top:1px solid var(--line)"><span class="mut" style="width:90px">${['Viertelfinale','Halbfinale','Finale'][E.round]}</span><span style="flex:1">${esc(prClub(a).name)} – ${esc(prClub(b).name)}</span><span class="mut">offen</span></div>`).join(''):''}</div>`;
  return h;}
+
+const PRCTY=[['de','🇩🇪 Deutschland'],['eng','🏴 England'],['esp','🇪🇸 Spanien'],['ita','🇮🇹 Italien'],['fra','🇫🇷 Frankreich'],['ned','🇳🇱 Niederlande']];
+function prCountry(L){return L<=6?'de':PRX[L].c;}
+function prCtyLgs(c){return c==='de'?[1,2,3,4,5,6]:Object.keys(PRX).map(Number).filter(k=>PRX[k].c===c);}
+document.addEventListener('change',e=>{const t=e.target;if(!t||!PRO)return;if(t.id==='prCtySel'){ui.prLg=prCtyLgs(t.value)[0];render();}else if(t.id==='prLgSel'){ui.prLg=+t.value;render();}});
 
 // ---------- Start ----------
 async function initFirebase(cfg){
