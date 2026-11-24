@@ -4052,7 +4052,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='159',APP_RV=13;
+const APP_BUILD='160',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -5657,7 +5657,7 @@ function prNoteCol(n){return n<=2?'#3fd0a0':n<=3?'#c9e86b':n<=4?'#f5c542':'#ff6b
 function prClub(id){return PRO.L.clubs[id];}
 function prMe(){return PRO.p;}
 function prMyClub(){return prClub(PRO.p.club);}
-function prType(){const T=PRO.p.trait||{};const ks=[['team','🤝 Teamplayer'],['laut','📢 Lautsprecher'],['profi','🧘 Profi'],['party','🎉 Partylöwe']];let best=null,bv=2;for(const [k,l] of ks)if((T[k]||0)>bv){bv=T[k];best=l;}return best||'📄 Unbeschriebenes Blatt';}
+function prType(){const T=PRO.p.trait||{};const ks=[['team','🤝 Teamplayer'],['laut','📢 Lautsprecher'],['profi','🧘 Profi'],['party','🎉 Partylöwe']];let best=null,bv=2;for(const [k,l] of ks)if((T[k]||0)>bv){bv=T[k];best=l;}return PRO.p.gbW?'🌟 Weltstar':best||'📄 Unbeschriebenes Blatt';}
 // ---------- Liga ----------
 function prLeagueNew(region,r){const L={season:1,md:0,order:{},clubs:{},tab:{},sched:{}};const st={region};const used=new Set();let k=0;
   for(let lg=1;lg<=NL;lg++){L.order[lg]=[];for(let i=0;i<10;i++){const id='c'+(k++);L.clubs[id]={id,name:regClubName(st,r,used,lg),color:NPC_COL[k%NPC_COL.length],lg,s:TMEAN[lg]+r.int(-4,4)};L.order[lg].push(id);}}
@@ -5930,6 +5930,7 @@ function prSeasonEnd(){const p=PRO.p;const L=PRO.L;const r=prR('se');const c=prM
   // Turnier im Sommer (gerade Saisons)
   if(L.season%2===0&&p.nt.call&&p.nt.caps>0){const s=natStr(p.nat)+(prOvr(p)-70)/10;const x=r.f()*20+s-80;const res=x>14?'win':x>9?'f':x>4?'sf':x>0?'qf':'grp';const NM={win:'🏆 TURNIERSIEG',f:'Finale verloren',sf:'Halbfinale',qf:'Viertelfinale',grp:'Aus in der Gruppe'};rep.tour=`${NATS[p.nat][0]} ${L.season%4===0?'WM':'EM/Kontinentalturnier'}: ${NM[res]}`;if(res==='win')p.trophies.push(`Turniersieg ${NATS[p.nat][1]} ${2026+L.season}`);}
   p.hist.push(Object.assign({},S,{avg,pl,clubN:c.name}));
+  try{prGala(rep,r,c,pl,avg);}catch(e){console.error(e);}
   if(PRO.eu&&PRO.eu.win)rep.aw.push('🌍🏆 Europapokalsieger!');PRO.eu=null;if((c.lg===1||(PRX[c.lg]&&!PRX[c.lg].up&&PRX[c.lg].eq===1))&&pl<=2){PRO.euQ={s:L.season+1,club:c.id};rep.aw.push('🌍 Qualifiziert für den Europapokal!');}
   // Auf-/Abstieg
   const NO={};for(let lg=1;lg<=NL;lg++)NO[lg]=prTable(lg).map(x=>x.id);const M={};for(let lg=1;lg<=NL;lg++)M[lg]=NO[lg].slice(lg>1?2:0,lg<NL?8:10);
@@ -6077,6 +6078,7 @@ function prVPost(){const m=PRO.m;const p=PRO.p;if(!m)return '';const [a,b]=[m.re
   return h;}
 function prVOffers(){const p=PRO.p;const O=PRO.offers||[];return `<div class="card"><h3 style="margin-top:0">📨 Vertragsangebote</h3><p class="small mut">${PRO.offW==='winter'?'Winter-Transferfenster.':'Sommer-Transferfenster.'} Dein Vertrag: ${p.ct>0?p.ct+' Jahr'+(p.ct>1?'e':''):'<b style="color:var(--bad)">läuft aus!</b>'} · Gehalt ${prE(p.wage)}/Woche</p>${O.map((o,i)=>{const c=prClub(o.id);return `<div class="tac"><div class="row" style="gap:10px">${crest(c,32)}<div style="flex:1"><b>${esc(c.name)}</b><div class="tiny mut">${LNAME[o.L]}${o.L>6?' · 🌍 Ausland':''} · Stärke ${c.s} · ${o.role}</div><div class="tiny">${prE(o.wage)}/Woche · ${o.yrs} Jahre</div></div><button class="btn sm ok" data-a="prOff" data-v="${i}">Annehmen</button></div></div>`;}).join('')||'<div class="small mut">Keine Angebote.</div>'}</div>`;}
 function prVSeason(){const R=PRO.rep;const p=PRO.p;if(!R)return '';let h=`<div class="card" style="text-align:center"><div class="tiny mut">Saison ${R.season} · ${esc(R.club)} · ${LNAME[R.lg]}</div><div class="h" style="font-size:30px;margin:6px 0">Platz ${R.pl}</div><div class="row" style="justify-content:center;gap:16px"><div><div class="tiny mut">Spiele</div><b>${R.S.sp}</b></div><div><div class="tiny mut">Tore</div><b>${R.S.g}</b></div><div><div class="tiny mut">Vorlagen</div><b>${R.S.a}</b></div><div><div class="tiny mut">Ø Note</div><b>${R.avg!=null?prNoteS(R.avg):'–'}</b></div></div><div class="small" style="margin-top:8px">Stärke ${R.ovr0} → <b>${R.ovr}</b> · jetzt ${p.age} Jahre</div></div>`;
+  if(R.gala)h+=prVGala(R);
   if(R.aw.length||R.tour)h+=`<div class="card"><b>🏆 Erfolge</b>${R.aw.map(x=>`<div class="small" style="padding:4px 0">${esc(x)}</div>`).join('')}${R.tour?`<div class="small" style="padding:4px 0">🌍 ${esc(R.tour)}</div>`:''}</div>`;
   h+=`<div class="card"><b>🎯 Saisonziele</b>${R.goals.map(g=>`<div class="row small" style="padding:4px 0;border-top:1px solid var(--line)"><span>${g.ok?'✅':'❌'} ${g.t}</span><span class="sp"></span><b>${g.t.startsWith('Durchschnitt')?(typeof g.v==='number'&&g.v<6?prNoteS(g.v):'–'):g.v+' / '+g.n}</b></div>`).join('')}</div>`;
   if(R.retire)h+=`<div class="card" style="border-color:var(--gold)"><b>👋 Zeit, aufzuhören</b><p class="small">Mit ${p.age} Jahren sagt dein Körper: Es reicht. Deine Karriere endet.</p></div>`;
@@ -6551,6 +6553,29 @@ Object.assign(ACT,{
  prTat(v){const p=PRO.p;const L=prLookFix(p);const [k,i]=v.split('|');const n=+i;const cur=L.tats[k]||0;if(cur===n)return;const cost=(cur?PRTATM[cur].p*2:0)+(n?PRTATM[n].p:0);
    if(p.money<cost){toast('Zu wenig Geld ('+prE(cost)+').');return;}if(!conf('tt'+k+n)){toast(`Nochmal tippen: ${cur?'Lasern'+(n?' + ':''):''}${n?PRTATM[n].n:''} für ${prE(cost)}`);return;}p.money-=cost;L.tats[k]=n||0;if(n)prFeed(`🖋️ ${p.name} lässt sich ein neues Tattoo stechen.`);prSave();render();}
 });
+
+// ---------- Gala: Goldener Ball & Golden Kid ----------
+const PRGFN=['Luca','Mateo','Rafael','Joao','Pedro','Federico','Marcus','Kai','Florian','Rodrigo','Victor','Jamal','Dusan','Theo','Martin','Nico','Alejandro','Rasmus','Youssef','Bruno','Hugo','Mason','Dani','Elias','Tiago','Samuel','Adrien','Lorenzo','Malik','Oskar','Ivan','Emil','Diego','Noah','Felix'];
+const PRGLN=['Moreira','Okafor','Lindqvist','Castellano','Varga','Benali','Hartmann','Silvano','Kovac','Duarte','Nkemelu','Rossetti','Andersen','Mbeki','Fontaine','Ivanovic','Zamora','Kessler','Haddad','Laurent','Novak','Ferreira','Baptiste','Sorensen','Akande','Petrov','Calderon','Weiss','Mensah','Delgado','Ricci','Holm','Tanaka','Oliveira'];
+const PRGFL=['🇫🇷','🇧🇷','🇦🇷','🇪🇸','🇬🇧','🇵🇹','🇳🇱','🇮🇹','🇩🇪','🇳🇴','🇧🇪','🇭🇷','🇳🇬','🇲🇦','🇺🇾','🇸🇳','🇩🇰','🇯🇵'];
+function prGalaList(r,n,top,step,minAge,maxAge){const L=[];const used=new Set();for(let i=0;i<n;i++){let nm;do{nm=r.pick(PRGFN)+' '+r.pick(PRGLN);}while(used.has(nm));used.add(nm);L.push({n:nm,f:r.pick(PRGFL),s:top-i*step+r.f()*6-3,age:r.int(minAge,maxAge)});}return L;}
+function prGala(rep,r,c,pl,avg){const p=PRO.p;const S=rep.S;if(S.sp<10||avg==null)return;const eq=prEq(c.lg);const yr=2025+rep.season;
+  let sc=(4.2-avg)*20+S.g*1.5+S.a+(pl===1?10:pl<=3?4:0)+(PRO.eu?(PRO.eu.win?15:PRO.eu.out?3:8):0)+(rep.tour&&rep.tour.includes('TURNIERSIEG')?10:0)+Math.min(6,(p.nt.caps||0)*0.3);
+  sc=Math.max(0,sc);const G={};
+  const place=(list,my,cnt)=>{const all=list.concat([{n:p.name,f:NATS[p.nat][0],s:my,me:1,age:p.age}]).sort((a,b)=>b.s-a.s);const rk=all.findIndex(x=>x.me)+1;return {list:all.slice(0,cnt),rk,in:rk<=cnt};};
+  if(eq===1){const res=place(prGalaList(r,29,112,2.4,22,33),sc,30);G.gb=res;
+    if(res.rk===1){p.trophies.push(`🌟 Goldener Ball ${yr}`);p.gbW=(p.gbW||0)+1;p.rel.fan=Math.min(100,p.rel.fan+15);p.scout=Math.max(p.scout||0,100);prFeed(`🌟 ${p.name} gewinnt den Goldenen Ball ${yr}!`);prMs('gewinnt den Goldenen Ball');rep.aw.push('🌟 GOLDENER BALL!');}
+    else if(res.rk<=10){p.awards.push(`Goldener Ball ${yr}: Platz ${res.rk}`);p.rel.fan=Math.min(100,p.rel.fan+5);prFeed(`🌟 ${p.name} landet beim Goldenen Ball auf Platz ${res.rk}.`);}
+    else if(res.rk<=30)p.awards.push(`Goldener Ball ${yr}: Platz ${res.rk}`);}
+  if(p.age<21&&eq<=2){const res=place(prGalaList(r,9,64,3.2,18,20),sc*(eq===2?0.75:1),10);G.gk=res;
+    if(res.rk===1){p.trophies.push(`👶 Golden Kid ${yr}`);p.rel.fan=Math.min(100,p.rel.fan+8);p.scout=Math.min(100,(p.scout||0)+30);prFeed(`👶 ${p.name} ist das Golden Kid ${yr} – das größte Talent der Welt!`);prMs('wird Golden Kid');rep.aw.push('👶 GOLDEN KID!');}
+    else if(res.rk<=10){p.awards.push(`Golden Kid ${yr}: Platz ${res.rk}`);prFeed(`👶 ${p.name} landet beim Golden Kid auf Platz ${res.rk}.`);}}
+  if(G.gb||G.gk)rep.gala=G;}
+function prVGala(R){const G=R.gala;const done=ui.galaDone===R.season;const tbl=(T,title,ic,cnt)=>{if(!T)return '';const meIn=T.in;return `<div style="margin-top:10px"><div class="row"><b>${ic} ${title}</b><span class="sp"></span><span class="pill">${T.rk===1?'🏆 Sieger!':meIn?'Platz '+T.rk:'nicht nominiert'}</span></div>
+  <div class="prgala" data-gid="${title}">${T.list.map((x,i)=>i>=10&&!x.me?'':`${i>=10?'<div class="tiny mut prg '+(done?'show':'')+'" style="text-align:center">…</div>':''}<div class="row small prg ${done?'show':''}" style="padding:4px 6px;border-radius:6px;gap:8px;${x.me?'background:rgba(216,242,74,.15);font-weight:700':''}${i===0?';color:#ffd84a':''}"><span style="width:24px;text-align:right">${i+1}.</span><span>${x.f}</span><span style="flex:1">${esc(x.n)}${x.me?' (Du)':''}</span><span class="tiny mut">${x.age} J.</span></div>`).join('')}</div>${!meIn?`<div class="tiny mut" style="margin-top:4px">Du warst diesmal nicht unter den Top ${cnt} (Rang ${T.rk}).</div>`:''}</div>`;};
+  return `<div class="card" style="border-color:#ffd84a"><div class="row"><b>🎬 Gala ${2025+R.season}</b>${inf('Goldener Ball: bester Spieler der Welt, nur für Spieler der Top-Ligen. Golden Kid: bestes Talent unter 21, ab der 2. Liga. Gewertet werden Note, Tore, Vorlagen, Titel, Europapokal und Nationalmannschaft.')}<span class="sp"></span>${done?'':`<button class="btn sm pri" data-a="prGalaGo">▶ Gala starten</button>`}</div>${tbl(G.gb,'Goldener Ball','🌟',30)}${tbl(G.gk,'Golden Kid','👶',10)}</div>`;}
+ACT.prGalaGo=function(){const R=PRO.rep;if(!R)return;const rows=[...document.querySelectorAll('.prgala')].flatMap(g=>[...g.querySelectorAll('.prg')].reverse());let i=0;const iv=setInterval(()=>{if(i>=rows.length){clearInterval(iv);ui.galaDone=R.season;return;}rows[i].classList.add('show');if(i===rows.length-1||rows[i].style.background)rows[i].scrollIntoView({block:'nearest',behavior:'smooth'});i++;},rows.length>20?160:320);const b=document.querySelector('[data-a=prGalaGo]');if(b)b.remove();};
+{const st=document.createElement('style');st.textContent=`.prg{opacity:0;transform:translateX(-10px);transition:all .35s}.prg.show{opacity:1;transform:none}`;document.head.appendChild(st);}
 
 // ---------- Start ----------
 async function initFirebase(cfg){
