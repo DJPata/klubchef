@@ -4052,7 +4052,7 @@ ACT.tutStart=function(){ui.tut=0;tutGo();};
 const _settingsTut=VIEWS.settings;VIEWS.settings=function(){return _settingsTut()+(ST&&ST.career?'<div class="card"><div class="row"><b>👩‍💼 Einführung</b><span class="sp"></span><button class="btn sm" data-a="tutStart">Nochmal ansehen</button></div></div>':'');};
 
 // ---------- Versionscheck / Update-Hinweis ----------
-const APP_BUILD='164',APP_RV=13;
+const APP_BUILD='165',APP_RV=13;
 function updBanner(txt){if(document.getElementById('updb'))return;const d=document.createElement('div');d.id='updb';d.style.cssText='position:fixed;left:10px;right:10px;top:10px;z-index:80;max-width:520px;margin:0 auto';
   d.innerHTML=`<div class="card" style="margin:0;border:1px solid var(--acc);background:var(--panel2);box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="row" style="gap:10px"><span style="font-size:24px">🔄</span><div style="flex:1" class="small">${txt}</div><button class="btn sm pri" id="updgo">Aktualisieren</button></div></div>`;
   document.body.appendChild(d);document.getElementById('updgo').onclick=()=>{location.replace(location.pathname+'?v='+Date.now());};}
@@ -6456,9 +6456,9 @@ Object.assign(ACT,{
 
 // ---------- Schuss mit pulsierendem Kreis ----------
 const PGZC=z=>[[78,56],[150,56],[222,56],[78,118],[150,118],[222,118]][z];
-function pgCirc(){const v=prAtt(PRO.p,'sch');const rmin=clamp(13-(v-40)*0.15,5,13);return {rmax:36,rmin,tol:clamp(0.8+(v-40)*0.04,0.8,2.8)};}
+function pgCirc(){const v=prAtt(PRO.p,'sch');const rmin=clamp(14-(v-40)*0.12,7,14);return {rmax:36,rmin,tol:clamp(0.6+(v-40)*0.03,0.6,2.2)};}
 function pgLf(){try{const e=PRO.m&&PRO.m.nt?1:prEq(prMyClub().lg);return e<=1?1.3:e===2?1.18:e===3?1.08:1;}catch(x){return 1;}}
-function pgPeriod(){if(PG.pen)return Math.round(1350/pgLf());if(PG.match)return Math.round((520+PG.pr*800)/pgLf());return Math.max(750,1300-PG.n*110);}
+function pgPeriod(){if(PG.pen)return Math.round(1150/pgLf());if(PG.match)return Math.round((440+PG.pr*650)/pgLf());return Math.max(650,1150-PG.n*100);}
 function pgR(t){const C=PG.circ;return C.rmin+(C.rmax-C.rmin)*(0.5+0.5*Math.cos(2*Math.PI*t/PG.per));}
 function pgShotBody(){let net='';for(let x=50;x<=250;x+=20)net+=`<line x1="${x}" y1="32" x2="${x}" y2="150" stroke="rgba(255,255,255,.18)"/>`;for(let y=46;y<=146;y+=16)net+=`<line x1="42" y1="${y}" x2="258" y2="${y}" stroke="rgba(255,255,255,.18)"/>`;
   const kz=PG.kz;const kx=kz==null?138:[66,138,210][kz%3],ky=kz==null?96:kz<3?44:96;const bx=PG.bx==null?150:PG.bx,by=PG.by==null?178:PG.by;
@@ -6469,7 +6469,7 @@ function pgShotBody(){let net='';for(let x=50;x<=250;x+=20)net+=`<line x1="${x}"
 function pgAim(z){PG.z=z;PG.aim=true;PG.shot=false;PG.circ=pgCirc();PG.per=pgPeriod();PG.t0=performance.now();pgDraw();
   const step=t=>{if(!PG||!PG.aim||PG.shot)return;if(t-PG.t0>PG.per*2){PG.shot=true;PG.n++;PG.miss=true;PG.shotMiss=true;PG.pres={kz:PG.z,miss:true,perf:false};PG.msg='⏱️ Zu lange gezögert – der Schuss wird geblockt!';pgDraw();PG.to=setTimeout(pgRound,1200);return;}const e=document.getElementById('pgC');if(e)e.setAttribute('r',pgR(t-PG.t0).toFixed(1));PG.raf=requestAnimationFrame(step);};PG.raf=requestAnimationFrame(step);}
 function pgFire(){if(!PG||!PG.aim||PG.shot)return;cancelAnimationFrame(PG.raf);PG.shot=true;const C=PG.circ;const rr=pgR(performance.now()-PG.t0);const q=clamp((rr-C.rmin)/(C.rmax-C.rmin),0,1);const perf=rr<=C.rmin+C.tol;const z=PG.z;const [cx,cy]=PGZC(z);
-  let miss=false,save=false;if(!perf){miss=Math.random()<Math.max(0,(q-0.55)*1.6);const ps=PG.pen?clamp(0.1+q*0.55,0.08,0.7):PG.match?clamp((PG.guess||0.5)*(0.4+q*0.9),0.05,0.95):clamp(0.12+q*0.55,0.1,0.7);save=!miss&&Math.random()<ps;}
+  let miss=false,save=false;if(!perf){miss=Math.random()<Math.max(0,(q-0.55)*1.6);const ps=PG.pen?clamp(0.1+q*0.55,0.08,0.7):PG.match?clamp((PG.guess||0.5)*(0.5+q*0.9),0.05,0.95):clamp(0.12+q*0.55,0.1,0.7);save=!miss&&Math.random()<ps;}
   const kz=save?z:(()=>{let k;do{k=Math.floor(Math.random()*6);}while(k===z);return k;})();
   const ang=Math.random()*2*Math.PI;if(perf){PG.bx=cx+(z%3===0?-26:z%3===2?26:0);PG.by=cy+(z<3?-18:20);}else if(miss){PG.bx=z%3===0?24:z%3===2?276:cx+Math.cos(ang)*20;PG.by=z<3?14:cy+Math.sin(ang)*rr*0.4;if(z%3===1){PG.by=12;}}else{PG.bx=cx+Math.cos(ang)*rr*0.6;PG.by=cy+Math.sin(ang)*rr*0.6;}
   PG.kz=kz;PG.miss=miss;PG.shotMiss=miss;const ok=!miss&&!save;if(ok)PG.hit++;if(perf){PG.pf=(PG.pf||0)+1;if(PG.match||PG.pen)PG.perf=true;}PG.n++;PG.pres={kz,miss,perf};
